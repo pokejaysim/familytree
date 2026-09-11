@@ -11,7 +11,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password. Storage bucket `media` (private, signed URLs)
 
 ## Data model (see `supabase/migrations/`)
-- `trees` → `tree_members` (owner / editor / viewer). RLS helpers: `can_view_tree(tree_id)`, `can_edit_tree(tree_id)`
+- `trees` → `tree_members` (owner / editor / viewer). RLS helpers (schema `private`, not exposed over REST): `can_view_tree(tree_id)`, `can_edit_tree(tree_id)`
 - `people` – one row per person. Dates are stored twice: `birth_date` as written ("abt 1921") and `birth_date_sort` (ISO, derived by `toSortDate` in `src/lib/dates.ts`)
 - `families` – a union of two partners (either may be null). `family_children` links children to a family. This is the GEDCOM model: parent–child links always go through a family
 - `events` – timeline entries for a person or family

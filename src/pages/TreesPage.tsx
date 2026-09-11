@@ -44,6 +44,7 @@ export default function TreesPage() {
           <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); await create.mutateAsync({ name, description: desc || undefined }); setOpen(false); setName(''); setDesc('') }}>
             <div><label className="label">Name</label><input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. The Sim family" autoFocus /></div>
             <div><label className="label">Description</label><input className="input" value={desc} onChange={(e) => setDesc(e.target.value)} /></div>
+            {create.error && <p className="text-sm text-red-700">{create.error.message}</p>}
             <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={create.isPending}>Create</button></div>
           </form>
         </Modal>
