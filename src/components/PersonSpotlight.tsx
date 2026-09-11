@@ -33,7 +33,8 @@ export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJ
   )
 
   return (
-    <aside className="absolute bottom-7 left-8 z-20 w-[300px] max-w-[calc(100%-4rem)] rounded-md border border-line bg-white p-5 shadow-[0_8px_24px_rgba(42,42,38,.08)]" style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)' }}>
+    <aside className="absolute inset-x-0 bottom-0 z-20 max-h-[62%] overflow-y-auto rounded-t-xl border border-line bg-white p-5 shadow-[0_-8px_24px_rgba(42,42,38,.10)] sm:inset-x-auto sm:bottom-7 sm:left-8 sm:max-h-none sm:w-[300px] sm:rounded-md sm:shadow-[0_8px_24px_rgba(42,42,38,.08)]" style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)', paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
+      <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line sm:hidden" />
       <button onClick={onClose} className="absolute top-3 right-3 rounded-full p-1 text-ink-mute hover:bg-paper" aria-label="Close"><X size={14} /></button>
       <div className="flex items-center gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-moss text-[15px] text-cream">

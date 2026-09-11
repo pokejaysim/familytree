@@ -11,8 +11,8 @@ export default function SourcesPage() {
   const { create } = useSourceMutations(treeId)
   const [adding, setAdding] = useState(false)
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl">Sources</h2>
           <p className="text-sm text-ink/60">Letters, certificates, photos, interviews, books: anything a fact came from.</p>

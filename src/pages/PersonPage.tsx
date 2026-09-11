@@ -80,23 +80,23 @@ export default function PersonPage() {
     rel?.kind === 'child' || rel?.kind === 'sibling' ? { surname: person.surname } : rel?.kind === 'parent' ? { surname: person.surname } : undefined
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:space-y-5 sm:p-6">
       {/* Header */}
-      <div className="card flex items-start gap-5">
+      <div className="card flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <Avatar person={person} size={96} />
           <button className="absolute -right-1 -bottom-1 rounded-full border border-line bg-white p-1.5 shadow hover:bg-moss-light" title="Change photo" onClick={() => fileRef.current?.click()}><Camera size={14} /></button>
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])} />
         </div>
         <div className="flex-1">
-          <h2 className="font-serif text-3xl">{displayName(person)}</h2>
+          <h2 className="font-serif text-2xl sm:text-3xl">{displayName(person)}</h2>
           <p className="text-ink/60">{lifespan(person)}</p>
           <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-sm">
             {person.birth_date || person.birth_place ? (<><dt className="text-ink/50">Born</dt><dd>{[person.birth_date, person.birth_place].filter(Boolean).join(', ')}</dd></>) : null}
             {!person.is_living && (person.death_date || person.death_place) ? (<><dt className="text-ink/50">Died</dt><dd>{[person.death_date, person.death_place].filter(Boolean).join(', ')}</dd></>) : null}
           </dl>
         </div>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           <Link className="btn-ghost" to={`/trees/${treeId}/chart/${personId}`}><GitFork size={14} /> Chart</Link>
           <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> Edit</button>
           <button className="btn-danger" title="Delete person" onClick={async () => { if (confirm(`Delete ${fullName(person)}? This cannot be undone.`)) { await deletePerson.mutateAsync(personId); nav(`/trees/${treeId}/people`) } }}><Trash2 size={14} /></button>
@@ -195,12 +195,12 @@ function Timeline({ treeId, personId }: { treeId: string; personId: string }) {
         ))}
       </ul>
       {adding && (
-        <form onSubmit={submit} className="mt-3 grid grid-cols-2 gap-3 rounded-md border border-line bg-paper p-3">
+        <form onSubmit={submit} className="mt-3 grid grid-cols-1 gap-3 rounded-md border border-line bg-paper p-3 sm:grid-cols-2">
           <div><label className="label">Type</label><select className="input capitalize" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
           <div><label className="label">Date</label><input className="input" value={f.date_text} onChange={(e) => setF({ ...f, date_text: e.target.value })} placeholder="e.g. 1954 or Jun 1954" /></div>
           <div><label className="label">Place</label><input className="input" value={f.place} onChange={(e) => setF({ ...f, place: e.target.value })} /></div>
           <div><label className="label">Description</label><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
-          <div className="col-span-2 flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" disabled={create.isPending}>Add</button></div>
+          <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" disabled={create.isPending}>Add</button></div>
         </form>
       )}
     </section>
@@ -242,7 +242,7 @@ function Citations({ treeId, personId }: { treeId: string; personId: string }) {
       </ul>
       {adding && (
         <form onSubmit={submit} className="mt-3 space-y-3 rounded-md border border-line bg-paper p-3">
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1"><label className="label">Source</label>
               <select className="input" required value={f.source_id} onChange={(e) => setF({ ...f, source_id: e.target.value })}>
                 <option value="">Choose…</option>{sources?.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
@@ -250,7 +250,7 @@ function Citations({ treeId, personId }: { treeId: string; personId: string }) {
             </div>
             <button type="button" className="btn-ghost" onClick={() => setNewSource(true)}>New source</button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div><label className="label">Page / record / location in source</label><input className="input" value={f.page} onChange={(e) => setF({ ...f, page: e.target.value })} /></div>
             <div><label className="label">Confidence</label>
               <select className="input" value={f.confidence} onChange={(e) => setF({ ...f, confidence: +e.target.value })}>{CONFIDENCE_LABELS.map((l, i) => <option key={i} value={i}>{l}</option>)}</select>
@@ -281,7 +281,7 @@ function Gallery({ treeId, personId }: { treeId: string; personId: string }) {
         <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => Array.from(e.target.files ?? []).forEach((file) => upload.mutate({ file }))} />
       </div>
       {media?.length === 0 && <p className="text-sm text-ink/40">No photos or scans yet.</p>}
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {media?.map((m) => <MediaTile key={m.id} m={m} onDelete={() => { if (confirm('Delete this file?')) remove.mutate(m) }} />)}
       </div>
     </section>

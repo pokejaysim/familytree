@@ -42,20 +42,20 @@ export default function ChartPage() {
       <TreeCanvas graph={graph} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
 
       {/* Title block */}
-      <div className="pointer-events-none absolute top-6 left-8 z-10 grid gap-0.5">
-        <span className="text-[24px] leading-tight text-ink">{tree?.name ?? ''}</span>
-        <span className="text-[12px] uppercase tracking-[.08em] text-brass">{words[info.generations] ?? info.generations} generation{info.generations === 1 ? '' : 's'} · {info.people} {info.people === 1 ? 'person' : 'people'}</span>
+      <div className="pointer-events-none absolute top-4 left-4 sm:top-6 sm:left-8 z-10 grid gap-0.5 max-w-[60%]">
+        <span className="truncate text-[19px] sm:text-[24px] leading-tight text-ink">{tree?.name ?? ''}</span>
+        <span className="text-[11px] sm:text-[12px] uppercase tracking-[.08em] text-brass">{words[info.generations] ?? info.generations} generation{info.generations === 1 ? '' : 's'} · {info.people} {info.people === 1 ? 'person' : 'people'}</span>
       </div>
 
       {/* Find */}
-      <button className="absolute top-6 right-8 z-10 flex h-9 w-[240px] items-center gap-2 rounded border border-line bg-white px-3 text-[14px] italic text-ink-mute hover:border-moss" onClick={() => setPicking(true)}>
-        <Search size={15} /> Find a relative
+      <button className="absolute top-4 right-4 sm:top-6 sm:right-8 z-10 flex h-9 w-9 sm:w-[240px] items-center justify-center sm:justify-start gap-2 rounded border border-line bg-white sm:px-3 text-[14px] italic text-ink-mute hover:border-moss" onClick={() => setPicking(true)} aria-label="Find a relative">
+        <Search size={15} /> <span className="hidden sm:inline">Find a relative</span>
       </button>
 
-      <p className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2 text-[13px] italic text-ink-mute">Drag to explore · Scroll to zoom</p>
+      <p className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 text-[13px] italic text-ink-mute sm:block">Drag to explore · Scroll to zoom</p>
 
       {/* Zoom controls, above the minimap */}
-      <div className="absolute right-8 bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink">
+      <div className={`absolute right-4 bottom-4 sm:right-8 sm:bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink ${selected ? "hidden sm:flex" : ""}`}>
         <button className={`${ctl} border-r border-line`} title="Fit whole family" onClick={() => { select(null); canvas.current?.fit() }}><User size={16} className="text-moss" /></button>
         <button className={`${ctl} border-r border-line`} title="Zoom out" onClick={() => canvas.current?.zoomBy(1 / 1.4)}><Minus size={16} /></button>
         <button className={ctl} title="Zoom in" onClick={() => canvas.current?.zoomBy(1.4)}><Plus size={16} /></button>

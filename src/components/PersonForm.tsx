@@ -43,7 +43,7 @@ export default function PersonForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div><label className="label">Given names</label><input className="input" value={f.given_names} onChange={set('given_names')} autoFocus /></div>
         <div><label className="label">Surname</label><input className="input" value={f.surname} onChange={set('surname')} /></div>
         <div><label className="label">Maiden name</label><input className="input" value={f.maiden_name} onChange={set('maiden_name')} /></div>

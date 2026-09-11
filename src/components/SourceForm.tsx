@@ -15,7 +15,7 @@ export default function SourceForm({ initial, onSubmit, onCancel, submitting }: 
   return (
     <form onSubmit={submit} className="space-y-3">
       <div><label className="label">Title</label><input className="input" required value={f.title} onChange={set('title')} placeholder="e.g. Letter from Grandpa to LKC, 1 Oct 2002" autoFocus /></div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div><label className="label">Author</label><input className="input" value={f.author} onChange={set('author')} /></div>
         <div><label className="label">Publication / date</label><input className="input" value={f.publication} onChange={set('publication')} /></div>
       </div>

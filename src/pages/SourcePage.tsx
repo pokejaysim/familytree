@@ -16,8 +16,8 @@ export default function SourcePage() {
   const [editing, setEditing] = useState(false)
   if (!s) return <p className="p-6 text-ink/50">Loading…</p>
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
-      <div className="flex items-start justify-between">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl">{s.title}</h2>
           <p className="text-sm text-ink/60">{[s.author, s.publication].filter(Boolean).join(' · ')}</p>

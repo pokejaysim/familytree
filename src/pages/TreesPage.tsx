@@ -13,8 +13,8 @@ export default function TreesPage() {
   const [desc, setDesc] = useState('')
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <header className="mb-8 flex items-center justify-between">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6">
+      <header className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-serif text-3xl">Your family trees</h1>
         <div className="flex gap-2">
           <button className="btn-primary" onClick={() => setOpen(true)}><Plus size={16} /> New tree</button>

@@ -138,8 +138,9 @@ export default function TreeCanvas({
     const pos = layout.cardPos.get(personId)
     if (!svg || !pos) return
     const { width, height } = svg.getBoundingClientRect()
-    const k = 1.4
-    animateTo(zoomIdentity.translate(width / 2 - pos.x * k, height * 0.42 - pos.y * k).scale(k))
+    const phone = width < 640
+    const k = phone ? 1.2 : 1.4
+    animateTo(zoomIdentity.translate(width / 2 - pos.x * k, height * (phone ? 0.22 : 0.42) - pos.y * k).scale(k))
   }, [layout, animateTo])
 
   const zoomBy = useCallback((f: number) => {
@@ -181,7 +182,7 @@ export default function TreeCanvas({
       </svg>
 
       {/* Minimap (bottom-right, below the zoom controls the page renders) */}
-      <svg width={MM_W} height={MM_H} className="absolute right-8 bottom-7 rounded border border-line bg-white" style={{ pointerEvents: 'none' }}>
+      <svg width={MM_W} height={MM_H} className="absolute right-8 bottom-7 hidden rounded border border-line bg-white sm:block" style={{ pointerEvents: 'none' }}>
         {layout.placed.map((n) => (
           <rect key={n.id} x={mmX(n.x - nodeWidth(n) / 2)} y={mmY(n.y - CARD_H / 2)} width={Math.max(2, nodeWidth(n) * mmK)} height={Math.max(2, CARD_H * mmK)} rx={1} fill={n.a.id === selectedId || n.b?.id === selectedId ? '#2E4A38' : '#D6D0C2'} />
         ))}
