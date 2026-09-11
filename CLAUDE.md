@@ -20,6 +20,9 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - `media` – photos/scans in the `media` bucket at `<tree_id>/<uuid>.<ext>`. `people.photo_path` is the profile photo
 - `src/lib/graph.ts` indexes a tree snapshot for parent/child/sibling/partner lookups
 
+## Hosting
+- GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
+
 ## Commands
 ```bash
 npm run dev      # http://localhost:5173

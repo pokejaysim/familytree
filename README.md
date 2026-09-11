@@ -10,8 +10,8 @@ npm run dev
 ```
 Sign up with email + password, confirm the email, create a tree, add people.
 
-## Deploy
-Static build (`npm run build` → `dist/`). Deploy to Cloudflare Pages, Vercel, or Netlify with the two `VITE_*` env vars set.
-Add the deployed URL to Supabase → Authentication → URL Configuration so confirmation emails redirect correctly.
+## Live site
+https://pokejaysim.github.io/familytree/ — deployed automatically by `.github/workflows/deploy.yml` on every push to `main`.
+The two `VITE_*` values live in the repo's Actions variables. Supabase → Authentication → URL Configuration must list this URL as the Site URL so email confirmation links land on the live app.
 
 See `CLAUDE.md` for architecture and data model.
