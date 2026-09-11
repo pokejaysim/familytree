@@ -6,8 +6,9 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Stack
 - React 19 + Vite + TypeScript SPA (no separate backend; the browser talks to Supabase directly under RLS)
 - Tailwind CSS v4 (`@theme` in `src/index.css`, no tailwind.config). Custom classes: `btn-primary`, `btn-ghost`, `btn-danger`, `input`, `label`, `card`
+- Visual design: "Kinfolk" (Claude Design project `Family Tree Options.dc.html`, option 7a). Paper #FAF8F3, moss header #2E4A38, brass accent #A8843A / #D9B25C, sage lines #B9C7B9, EB Garamond everywhere. Generation disc tints cycle sage → honey → clay → sky (`TINTS` in `src/components/TreeCanvas.tsx`). Selected card inverts to moss with cream text.
 - TanStack Query for all data access (`src/lib/queries.ts`), React Router v7
-- d3-hierarchy + d3-zoom for the chart (`src/components/TreeChart.tsx`)
+- d3-hierarchy + d3-zoom + d3-transition for the infinite-canvas map (`src/components/TreeCanvas.tsx`): couples share a node, orthogonal connectors, minimap, `zoomTo` glide. `PersonSpotlight.tsx` is the bottom-left card shown on select.
 - Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password. Storage bucket `media` (private, signed URLs)
 
 ## Data model (see `supabase/migrations/`)

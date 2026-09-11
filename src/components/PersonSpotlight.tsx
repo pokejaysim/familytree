@@ -2,51 +2,59 @@ import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import type { Graph } from '../lib/graph'
 import type { Person } from '../lib/types'
-import { displayName, fullName, lifespan } from '../lib/dates'
+import { fullName } from '../lib/dates'
 import { useSignedUrl } from '../lib/queries'
 
-/** Slide-in panel shown when a person is selected on the canvas. */
-export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJump }: { person: Person; graph: Graph; treeId: string; onClose: () => void; onJump: (id: string) => void }) {
+/** Bottom-left spotlight card from the Kinfolk design: disc, name, born line, one-paragraph summary, brass/moss actions. */
+export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJump, onAddRelative }: {
+  person: Person; graph: Graph; treeId: string; onClose: () => void; onJump: (id: string) => void; onAddRelative?: () => void
+}) {
   const { data: photo } = useSignedUrl(p.photo_path)
   const parents = graph.parentsOf(p.id)
   const partners = (graph.familiesOfParent.get(p.id) ?? []).map((f) => graph.partnerOf(f, p.id)).filter((q): q is Person => !!q)
   const children = graph.childrenOf(p.id)
   const siblings = graph.siblingsOf(p.id)
-  const Chip = ({ q }: { q: Person }) => (
-    <button className="rounded-full border border-line bg-paper px-2.5 py-0.5 text-sm hover:border-moss hover:bg-moss-light" onClick={() => onJump(q.id)}>{fullName(q)}</button>
+  const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
+
+  const born = [p.birth_date ? `Born ${p.birth_date}` : null, p.birth_place].filter(Boolean).join(', ')
+  const died = !p.is_living && (p.death_date || p.death_place) ? ['Died', p.death_date, p.death_place].filter(Boolean).join(' ').replace('Died ', 'Died ') : null
+
+  // Relationship summary sentence, like "Married to Daniel Reyes, 2017. Two children. One brother."
+  const bits: string[] = []
+  const fams = graph.familiesOfParent.get(p.id) ?? []
+  partners.forEach((q) => { const f = fams.find((f) => f.partner1_id === q.id || f.partner2_id === q.id); bits.push(`${f?.union_type === 'partnership' ? 'Partner of' : 'Married to'} ${fullName(q)}${f?.start_date ? `, ${f.start_date}` : ''}.`) })
+  if (children.length) bits.push(`${count(children.length)} ${children.length === 1 ? 'child' : 'children'}.`)
+  if (siblings.length) bits.push(`${count(siblings.length)} ${siblings.length === 1 ? 'sibling' : 'siblings'}.`)
+  if (parents.length) bits.push(`${parents.length === 1 ? 'Child' : 'Child'} of ${parents.map(fullName).join(' and ')}.`)
+  const summary = p.bio ? p.bio : bits.join(' ')
+
+  const chip = (q: Person) => (
+    <button key={q.id} className="rounded-full border border-line bg-paper px-2.5 py-0.5 text-[13px] hover:border-moss hover:bg-moss-light" onClick={() => onJump(q.id)}>{fullName(q)}</button>
   )
-  const Row = ({ label, people }: { label: string; people: Person[] }) => people.length ? (
-    <div><div className="label">{label}</div><div className="flex flex-wrap gap-1.5">{people.map((q) => <Chip key={q.id} q={q} />)}</div></div>
-  ) : null
 
   return (
-    <aside className="absolute inset-y-4 right-4 z-20 flex w-[380px] max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl" style={{ animation: 'slideIn .35s cubic-bezier(.2,.8,.2,1)' }}>
-      <div className="relative h-56 bg-moss-light">
-        {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : (
-          <div className="flex h-full items-center justify-center font-serif text-7xl text-moss/40">{`${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase()}</div>
-        )}
-        <button onClick={onClose} className="absolute top-3 right-3 rounded-full bg-white/90 p-1.5 shadow hover:bg-white" aria-label="Close"><X size={16} /></button>
+    <aside className="absolute bottom-7 left-8 z-20 w-[300px] max-w-[calc(100%-4rem)] rounded-md border border-line bg-white p-5 shadow-[0_8px_24px_rgba(42,42,38,.08)]" style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)' }}>
+      <button onClick={onClose} className="absolute top-3 right-3 rounded-full p-1 text-ink-mute hover:bg-paper" aria-label="Close"><X size={14} /></button>
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-moss text-[15px] text-cream">
+          {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : initials}
+        </span>
+        <span className="grid gap-px">
+          <span className="text-[18px] leading-tight text-ink">{fullName(p)}</span>
+          <span className="text-[13px] italic text-ink-mute">{born || died || (p.is_living ? 'Living' : 'Dates unknown')}</span>
+        </span>
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto p-5">
-        <div>
-          <h2 className="font-serif text-2xl leading-tight">{displayName(p)}</h2>
-          <p className="text-ink/60">{lifespan(p)}</p>
-        </div>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-          {(p.birth_date || p.birth_place) && <><dt className="text-ink/50">Born</dt><dd>{[p.birth_date, p.birth_place].filter(Boolean).join(', ')}</dd></>}
-          {!p.is_living && (p.death_date || p.death_place) && <><dt className="text-ink/50">Died</dt><dd>{[p.death_date, p.death_place].filter(Boolean).join(', ')}</dd></>}
-        </dl>
-        {p.bio ? <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">{p.bio}</p> : <p className="text-sm italic text-ink/40">No biography yet. Open the profile to write one.</p>}
-        <div className="space-y-3 border-t border-line pt-3">
-          <Row label="Parents" people={parents} />
-          <Row label={partners.length > 1 ? 'Partners' : 'Partner'} people={partners} />
-          <Row label="Siblings" people={siblings} />
-          <Row label="Children" people={children} />
-        </div>
-      </div>
-      <div className="border-t border-line p-3">
-        <Link to={`/trees/${treeId}/people/${p.id}`} className="btn-primary w-full justify-center">Open full profile</Link>
+      {died && born && <p className="mt-1 text-[13px] italic text-ink-mute">{died}</p>}
+      {summary && <p className="mt-3 line-clamp-5 text-[14px] leading-relaxed text-ink-soft">{summary}</p>}
+      {(parents.length + partners.length + children.length + siblings.length) > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">{[...parents, ...partners, ...siblings, ...children].map(chip)}</div>
+      )}
+      <div className="mt-3.5 flex justify-between border-t border-line pt-3 text-[12px] uppercase tracking-[.12em]">
+        <Link to={`/trees/${treeId}/people/${p.id}`} className="text-brass hover:underline">Open profile</Link>
+        <button className="text-moss hover:underline" onClick={onAddRelative}>Add a relative</button>
       </div>
     </aside>
   )
 }
+
+const count = (n: number) => ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n] ?? String(n)

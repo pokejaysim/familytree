@@ -1,22 +1,35 @@
 @import "tailwindcss";
 
+/* "Kinfolk" palette — from the chosen design (option 7a): warm paper, moss header, brass accent,
+   and one soft disc tint per generation. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Fraunces", Georgia, serif;
-  --color-paper: #faf7f2;
-  --color-ink: #2b2620;
-  --color-bark: #6b4f3a;
-  --color-moss: #4f6b4a;
-  --color-moss-light: #e6ede4;
-  --color-line: #e2dbd0;
+  --font-sans: "EB Garamond", Georgia, serif;
+  --font-serif: "EB Garamond", Georgia, serif;
+  --color-paper: #FAF8F3;
+  --color-ink: #2A2A26;
+  --color-ink-soft: #4C4A44;
+  --color-ink-mute: #8A8578;
+  --color-line: #E2DDD2;
+  --color-moss: #2E4A38;
+  --color-moss-light: #DCE8DD;
+  --color-sage: #B9C7B9;
+  --color-brass: #A8843A;
+  --color-brass-light: #D9B25C;
+  --color-cream: #FAF8F3;
+  --color-honey: #F6E7C6;
+  --color-honey-ink: #7A5A12;
+  --color-clay: #F1DCD0;
+  --color-clay-ink: #7A4A32;
+  --color-sky: #DCE6EC;
+  --color-sky-ink: #2F4A5C;
 }
 
 html, body, #root { height: 100%; }
-body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); }
+body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); font-size: 16px; }
 
-.btn-primary { @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition bg-moss text-white hover:bg-moss/90 disabled:opacity-50; }
-.btn-ghost { @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition border border-line bg-white text-ink hover:bg-moss-light; }
-.btn-danger { @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition text-red-700 hover:bg-red-50; }
-.input { @apply w-full rounded-md border border-line bg-white px-3 py-1.5 text-sm outline-none focus:border-moss focus:ring-2 focus:ring-moss/20; }
-.label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink/60; }
-.card { @apply rounded-lg border border-line bg-white p-4 shadow-sm; }
+.btn-primary { @apply inline-flex items-center gap-1.5 rounded px-3.5 py-1.5 text-[13px] font-medium uppercase tracking-[.12em] transition bg-moss text-cream hover:bg-moss/90 disabled:opacity-50; }
+.btn-ghost { @apply inline-flex items-center gap-1.5 rounded px-3.5 py-1.5 text-[13px] font-medium uppercase tracking-[.12em] transition border border-line bg-white text-ink hover:bg-moss-light; }
+.btn-danger { @apply inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[13px] font-medium transition text-red-800 hover:bg-red-50; }
+.input { @apply w-full rounded border border-line bg-white px-3 py-1.5 text-[15px] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15; }
+.label { @apply mb-1 block text-[11px] font-medium uppercase tracking-[.12em] text-ink-mute; }
+.card { @apply rounded-md border border-line bg-white p-5; }

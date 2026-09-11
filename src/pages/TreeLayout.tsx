@@ -1,22 +1,31 @@
 import { NavLink, Outlet, Link, useParams } from 'react-router-dom'
-import { BookMarked, ChevronLeft, GitFork, Users } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useTree } from '../lib/queries'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 
+/** Moss header from the Kinfolk design: brand, uppercase nav with brass underline, user disc. */
 export default function TreeLayout() {
   const { treeId = '' } = useParams()
   const { data: tree } = useTree(treeId)
+  const { session } = useAuth()
+  const initials = (session?.user.email ?? '?').slice(0, 2).toUpperCase()
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${isActive ? 'bg-moss-light text-moss font-medium' : 'text-ink/70 hover:bg-moss-light/60'}`
+    `pt-5 pb-[18px] text-[14px] uppercase tracking-[.12em] border-b transition ${isActive ? 'text-cream border-brass-light' : 'text-sage border-transparent hover:text-cream'}`
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center gap-4 border-b border-line bg-white px-4 py-2">
-        <Link to="/" className="flex items-center gap-1 text-sm text-ink/60 hover:text-ink"><ChevronLeft size={16} /> Trees</Link>
-        <h1 className="font-serif text-lg">{tree?.name ?? '…'}</h1>
-        <nav className="ml-auto flex gap-1">
-          <NavLink to="chart" className={tab}><GitFork size={16} /> Chart</NavLink>
-          <NavLink to="people" className={tab}><Users size={16} /> People</NavLink>
-          <NavLink to="sources" className={tab}><BookMarked size={16} /> Sources</NavLink>
+      <header className="flex h-[60px] shrink-0 items-center gap-10 bg-moss px-8">
+        <Link to="/" className="text-[22px] font-medium tracking-[.01em] text-cream" title="All trees">Kinfolk</Link>
+        <nav className="flex gap-7">
+          <NavLink to="chart" className={tab}>Map</NavLink>
+          <NavLink to="people" className={tab}>People</NavLink>
+          <NavLink to="sources" className={tab}>Sources</NavLink>
         </nav>
+        <div className="ml-auto flex items-center gap-4">
+          {tree && <span className="hidden text-[14px] italic text-[#D6CFBF] sm:inline">{tree.name}</span>}
+          <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brass text-[13px] text-cream" title={session?.user.email}>{initials}</span>
+          <button className="text-sage hover:text-cream" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>
+        </div>
       </header>
       <main className="min-h-0 flex-1 overflow-auto"><Outlet /></main>
     </div>
