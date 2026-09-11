@@ -23,8 +23,8 @@ export default function TreeLayout() {
         </nav>
         <div className="ml-auto flex items-center gap-3 sm:gap-4">
           {tree && <span className="hidden text-[14px] italic text-[#D6CFBF] sm:inline">{tree.name}</span>}
-          <span className="flex h-[30px] w-[30px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-brass text-[12px] sm:text-[13px] text-cream" title={session?.user.email}>{initials}</span>
-          <button className="text-sage hover:text-cream" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>
+          {session && <span className="flex h-[30px] w-[30px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-brass text-[12px] sm:text-[13px] text-cream" title={session.user.email}>{initials}</span>}
+          {session && <button className="text-sage hover:text-cream" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>}
         </div>
       </header>
       <main className="min-h-0 flex-1 overflow-auto"><Outlet /></main>

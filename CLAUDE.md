@@ -9,7 +9,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - Visual design: "Kinfolk" (Claude Design project `Family Tree Options.dc.html`, option 7a). Paper #FAF8F3, moss header #2E4A38, brass accent #A8843A / #D9B25C, sage lines #B9C7B9, EB Garamond everywhere. Generation disc tints cycle sage → honey → clay → sky (`TINTS` in `src/components/TreeCanvas.tsx`). Selected card inverts to moss with cream text.
 - TanStack Query for all data access (`src/lib/queries.ts`), React Router v7
 - d3-hierarchy + d3-zoom + d3-transition for the infinite-canvas map (`src/components/TreeCanvas.tsx`): couples share a node, orthogonal connectors, minimap, `zoomTo` glide. `PersonSpotlight.tsx` is the bottom-left card shown on select.
-- Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password. Storage bucket `media` (private, signed URLs)
+- Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password, but the login gate is OFF for now (`REQUIRE_LOGIN` in `src/App.tsx`; `open-access:` RLS policies in `supabase/migrations/20260911000000_open_access_no_login.sql`). Anyone with the link can read and write. Storage bucket `media` (private, signed URLs)
 
 ## Data model (see `supabase/migrations/`)
 - `trees` → `tree_members` (owner / editor / viewer). RLS helpers (schema `private`, not exposed over REST): `can_view_tree(tree_id)`, `can_edit_tree(tree_id)`

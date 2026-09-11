@@ -10,12 +10,16 @@ import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
 
 export default function App() {
+  // Login is switched off for now (open-access mode, see supabase/migrations/20260911000000_open_access_no_login.sql).
+  // Set REQUIRE_LOGIN back to true to gate the app again.
+  const REQUIRE_LOGIN = false
   const { session, loading } = useAuth()
-  if (loading) return <div className="flex h-full items-center justify-center text-ink/50">Loading…</div>
-  if (!session) return <LoginPage />
+  if (REQUIRE_LOGIN && loading) return <div className="flex h-full items-center justify-center text-ink/50">Loading…</div>
+  if (REQUIRE_LOGIN && !session) return <LoginPage />
   return (
     <Routes>
       <Route path="/" element={<TreesPage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />

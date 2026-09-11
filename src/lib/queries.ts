@@ -32,7 +32,7 @@ export function useCreateTree() {
   return useMutation({
     mutationFn: async (input: { name: string; description?: string }) => {
       const { data: u } = await supabase.auth.getUser()
-      return unwrap<Tree>(supabase.from('trees').insert({ ...input, owner_id: u.user!.id }).select().single())
+      return unwrap<Tree>(supabase.from('trees').insert({ ...input, owner_id: u.user?.id ?? null }).select().single())
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['trees'] }),
   })

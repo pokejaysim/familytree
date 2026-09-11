@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { LogOut, Plus, TreeDeciduous } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useCreateTree, useTrees } from '../lib/queries'
+import { useAuth } from '../lib/auth'
 import Modal from '../components/Modal'
 
 export default function TreesPage() {
   const { data: trees, isLoading, error } = useTrees()
   const create = useCreateTree()
+  const { session } = useAuth()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
@@ -18,7 +20,7 @@ export default function TreesPage() {
         <h1 className="font-serif text-3xl">Your family trees</h1>
         <div className="flex gap-2">
           <button className="btn-primary" onClick={() => setOpen(true)}><Plus size={16} /> New tree</button>
-          <button className="btn-ghost" onClick={() => supabase.auth.signOut()}><LogOut size={16} /> Sign out</button>
+          {session && <button className="btn-ghost" onClick={() => supabase.auth.signOut()}><LogOut size={16} /> Sign out</button>}
         </div>
       </header>
       {isLoading && <p className="text-ink/50">Loading…</p>}
