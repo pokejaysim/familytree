@@ -36,7 +36,7 @@ export default function LoginPage() {
     <div className="flex h-full items-center justify-center bg-paper p-4">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
         <div>
-          <div className="mb-3 text-[22px] font-medium text-moss">Kinfolk</div>
+          <div className="mb-3 text-[22px] font-medium text-moss">Sim Family Tree</div>
           <h1 className="text-2xl">{title}</h1>
           <p className="text-sm text-ink-mute">{blurb}</p>
         </div>

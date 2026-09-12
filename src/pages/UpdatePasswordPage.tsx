@@ -17,7 +17,7 @@ export default function UpdatePasswordPage() {
   return (
     <div className="flex h-full items-center justify-center bg-paper p-4">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
-        <div><div className="mb-3 text-[22px] font-medium text-moss">Kinfolk</div><h1 className="text-2xl">Choose a new password</h1></div>
+        <div><div className="mb-3 text-[22px] font-medium text-moss">Sim Family Tree</div><h1 className="text-2xl">Choose a new password</h1></div>
         <div><label className="label">New password</label><input className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></div>
         {msg && <p className="text-sm text-red-800">{msg}</p>}
         <button className="btn-primary w-full justify-center" disabled={busy}>Save password</button>

@@ -1,4 +1,4 @@
-# Family Tree
+# Sim Family Tree
 
 A private, hosted family-tree app for recording ancestors, relationships, photos, and the sources each fact came from.
 Origin: rebuilding and extending the family tree Jason's granddad made in the 1990s.
@@ -6,7 +6,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Stack
 - React 19 + Vite + TypeScript SPA (no separate backend; the browser talks to Supabase directly under RLS)
 - Tailwind CSS v4 (`@theme` in `src/index.css`, no tailwind.config). Custom classes: `btn-primary`, `btn-ghost`, `btn-danger`, `input`, `label`, `card`
-- Visual design: "Kinfolk" (Claude Design project `Family Tree Options.dc.html`, option 7a). Paper #FAF8F3, moss header #2E4A38, brass accent #A8843A / #D9B25C, sage lines #B9C7B9, EB Garamond everywhere. Generation disc tints cycle sage → honey → clay → sky (`TINTS` in `src/components/TreeCanvas.tsx`). Selected card inverts to moss with cream text.
+- Product name: "Sim Family Tree" (header, tab title, login). Visual design: "Kinfolk" (Claude Design project `Family Tree Options.dc.html`, option 7a). Paper #FAF8F3, moss header #2E4A38, brass accent #A8843A / #D9B25C, sage lines #B9C7B9, EB Garamond everywhere. Generation disc tints cycle sage → honey → clay → sky (`TINTS` in `src/components/TreeCanvas.tsx`). Selected card inverts to moss with cream text.
 - TanStack Query for all data access (`src/lib/queries.ts`), React Router v7
 - d3-hierarchy + d3-zoom + d3-transition for the infinite-canvas map (`src/components/TreeCanvas.tsx`): couples share a node, orthogonal connectors, minimap, `zoomTo` glide. `PersonSpotlight.tsx` is the bottom-left card shown on select.
 - Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password with self-serve sign-up and password reset on the login page. Any signed-in user can read/edit every tree for now (`open-access:` policies scoped `to authenticated`); anonymous visitors get nothing. Local dev auto-signs-in with `VITE_DEV_EMAIL`/`VITE_DEV_PASSWORD` from `.env.local` (git-ignored, dev builds only) so the login screen never shows on Jason's machine. Storage bucket `media` (private, signed URLs)

@@ -1,4 +1,4 @@
-# Family Tree
+# Sim Family Tree
 
 Private family-tree app: people, relationships, an interactive pan/zoom chart, photos, and sources with citations.
 
