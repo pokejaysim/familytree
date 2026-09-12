@@ -1,0 +1,9 @@
+-- Member approval (applied 2026-09-12 via Supabase MCP, name: member_approval_queue).
+-- Every account gets a profile that starts "pending"; nobody sees family data until an admin approves.
+-- Approved members are viewers by default; admins promote to editor. Replaces the "open-access:" policies.
+--
+-- profiles(id, email, name, status pending|approved|declined, role admin|editor|viewer, note, reviewed_at, reviewed_by)
+-- trigger on auth.users → profiles row; helpers private.is_approved() / private.is_admin() / private.can_edit()
+-- policies "members: read" (is_approved) and "members: write" (can_edit) on every tree table + storage bucket
+-- public.pending_member_count() → badge for admins
+-- (Full SQL is in the Supabase migration history for the project.)

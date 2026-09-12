@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useSource, useSourceCitations, useSourceMutations } from '../lib/queries'
 import { CONFIDENCE_LABELS } from '../lib/types'
+import { useCanEdit } from '../lib/profile'
 import { fullName } from '../lib/dates'
 import Modal from '../components/Modal'
 import SourceForm from '../components/SourceForm'
@@ -14,6 +15,7 @@ export default function SourcePage() {
   const { data: cites } = useSourceCitations(sourceId)
   const { update, remove } = useSourceMutations(treeId)
   const [editing, setEditing] = useState(false)
+  const canEdit = useCanEdit()
   if (!s) return <p className="p-6 text-ink/50">Loading…</p>
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
@@ -24,15 +26,15 @@ export default function SourcePage() {
           {s.repository && <p className="text-sm text-ink/60">Repository: {s.repository}</p>}
           {s.url && <a className="text-sm text-moss underline" href={s.url} target="_blank" rel="noreferrer">{s.url}</a>}
         </div>
-        <div className="flex gap-1">
+        {canEdit && <div className="flex gap-1">
           <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> Edit</button>
           <button className="btn-danger" onClick={async () => { if (confirm('Delete this source and all its citations?')) { await remove.mutateAsync(s.id); nav(`/trees/${treeId}/sources`) } }}><Trash2 size={14} /></button>
-        </div>
+        </div>}
       </div>
       {s.notes && <p className="card whitespace-pre-wrap text-sm">{s.notes}</p>}
       <section className="card">
         <h3 className="mb-2 font-medium">Cited by</h3>
-        {cites?.length === 0 && <p className="text-sm text-ink/50">No citations yet. Add citations from a person's profile.</p>}
+        {cites?.length === 0 && <p className="text-sm text-ink/50">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}
         <ul className="divide-y divide-line">
           {cites?.map((c) => (
             <li key={c.id} className="py-2 text-sm">

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useCreatePerson, useTreeData } from '../lib/queries'
+import { useCanEdit } from '../lib/profile'
 import { fullName, lifespan } from '../lib/dates'
 import Modal from '../components/Modal'
 import PersonForm from '../components/PersonForm'
@@ -12,6 +13,7 @@ export default function PeoplePage() {
   const nav = useNavigate()
   const { data, isLoading } = useTreeData(treeId)
   const create = useCreatePerson(treeId)
+  const canEdit = useCanEdit()
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
 
@@ -24,10 +26,10 @@ export default function PeoplePage() {
     <div className="mx-auto max-w-3xl p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-3">
         <input className="input" placeholder="Search by name…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <button className="btn-primary shrink-0" onClick={() => setAdding(true)}><Plus size={16} /> <span className="hidden sm:inline">Add person</span><span className="sm:hidden">Add</span></button>
+        {canEdit && <button className="btn-primary shrink-0" onClick={() => setAdding(true)}><Plus size={16} /> <span className="hidden sm:inline">Add person</span><span className="sm:hidden">Add</span></button>}
       </div>
       {isLoading && <p className="text-ink/50">Loading…</p>}
-      {data && data.people.length === 0 && <p className="card text-center text-ink/60">No people yet. Add the first person, then build out parents, partners and children from their profile.</p>}
+      {data && data.people.length === 0 && <p className="card text-center text-ink/60">{canEdit ? 'No people yet. Add the first person, then build out parents, partners and children from their profile.' : 'No people in this tree yet.'}</p>}
       <ul className="divide-y divide-line rounded-lg border border-line bg-white">
         {people.map((p) => (
           <li key={p.id}>

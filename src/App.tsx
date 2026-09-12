@@ -4,6 +4,9 @@ import LoginPage from './pages/LoginPage'
 import UpdatePasswordPage from './pages/UpdatePasswordPage'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { useProfile } from './lib/profile'
+import PendingPage from './pages/PendingPage'
+import MembersPage from './pages/MembersPage'
 import TreesPage from './pages/TreesPage'
 import TreeLayout from './pages/TreeLayout'
 import PeoplePage from './pages/PeoplePage'
@@ -29,12 +32,15 @@ export default function App() {
   // Login is required. On this dev machine, VITE_DEV_EMAIL/PASSWORD in .env.local sign in automatically (see lib/auth.tsx).
   const { session, loading } = useAuth()
   const recovering = useIsPasswordRecovery()
-  if (loading) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
+  const profile = useProfile()
+  if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
   if (!session) return <LoginPage />
   if (recovering) return <UpdatePasswordPage />
+  if (profile.data?.status !== 'approved') return <PendingPage profile={profile.data ?? null} />
   return (
     <Routes>
       <Route path="/" element={<TreesPage />} />
+      <Route path="/members" element={<MembersPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />

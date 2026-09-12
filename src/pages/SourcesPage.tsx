@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useSourceMutations, useSources } from '../lib/queries'
+import { useCanEdit } from '../lib/profile'
 import Modal from '../components/Modal'
 import SourceForm from '../components/SourceForm'
 
@@ -10,6 +11,7 @@ export default function SourcesPage() {
   const { data: sources, isLoading } = useSources(treeId)
   const { create } = useSourceMutations(treeId)
   const [adding, setAdding] = useState(false)
+  const canEdit = useCanEdit()
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -17,7 +19,7 @@ export default function SourcesPage() {
           <h2 className="font-serif text-2xl">Sources</h2>
           <p className="text-sm text-ink/60">Letters, certificates, photos, interviews, books: anything a fact came from.</p>
         </div>
-        <button className="btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Add source</button>
+        {canEdit && <button className="btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Add source</button>}
       </div>
       {isLoading && <p className="text-ink/50">Loading…</p>}
       {sources?.length === 0 && <p className="card text-center text-ink/60">No sources yet.</p>}

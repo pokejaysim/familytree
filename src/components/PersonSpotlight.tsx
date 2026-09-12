@@ -52,7 +52,7 @@ export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJ
       )}
       <div className="mt-3.5 flex justify-between border-t border-line pt-3 text-[12px] uppercase tracking-[.12em]">
         <Link to={`/trees/${treeId}/people/${p.id}`} className="text-brass hover:underline">Open profile</Link>
-        <button className="text-moss hover:underline" onClick={onAddRelative}>Add a relative</button>
+        {onAddRelative && <button className="text-moss hover:underline" onClick={onAddRelative}>Add a relative</button>}
       </div>
     </aside>
   )

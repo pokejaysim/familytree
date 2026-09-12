@@ -7,6 +7,7 @@ import TreeCanvas, { type LayoutInfo, type TreeCanvasHandle } from '../component
 import PersonSpotlight from '../components/PersonSpotlight'
 import PersonPicker from '../components/PersonPicker'
 import Modal from '../components/Modal'
+import { useCanEdit } from '../lib/profile'
 
 export default function ChartPage() {
   const { treeId = '', personId } = useParams()
@@ -18,6 +19,7 @@ export default function ChartPage() {
   const [picking, setPicking] = useState(false)
   const [info, setInfo] = useState<LayoutInfo>({ generations: 0, people: 0 })
   const selected = personId && graph ? graph.people.get(personId) ?? null : null
+  const canEdit = useCanEdit()
 
   useEffect(() => { if (personId && graph) requestAnimationFrame(() => canvas.current?.zoomTo(personId)) }, [personId, graph])
   const select = (id: string | null) => nav(id ? `/trees/${treeId}/chart/${id}` : `/trees/${treeId}/chart`, { replace: true })
@@ -28,7 +30,7 @@ export default function ChartPage() {
       <div className="flex h-full items-center justify-center p-6">
         <div className="card max-w-md text-center text-ink-mute">
           <p className="mb-3">The map is empty because there are no people yet.</p>
-          <Link to={`/trees/${treeId}/people`} className="btn-primary">Add the first person</Link>
+          {canEdit && <Link to={`/trees/${treeId}/people`} className="btn-primary">Add the first person</Link>}
         </div>
       </div>
     )
@@ -62,7 +64,7 @@ export default function ChartPage() {
       </div>
 
       {selected && (
-        <PersonSpotlight person={selected} graph={graph} treeId={treeId} onClose={() => select(null)} onJump={select} onAddRelative={() => nav(`/trees/${treeId}/people/${selected.id}`)} />
+        <PersonSpotlight person={selected} graph={graph} treeId={treeId} onClose={() => select(null)} onJump={select} onAddRelative={canEdit ? () => nav(`/trees/${treeId}/people/${selected.id}`) : undefined} />
       )}
       {picking && (
         <Modal title="Find a relative" onClose={() => setPicking(false)}>

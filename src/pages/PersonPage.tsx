@@ -14,6 +14,7 @@ import PersonForm from '../components/PersonForm'
 import PickOrCreate from '../components/PickOrCreate'
 import SourceForm from '../components/SourceForm'
 import Avatar from '../components/Avatar'
+import { useCanEdit } from '../lib/profile'
 
 type RelAction = { kind: 'parent' } | { kind: 'partner' } | { kind: 'child'; family: Family } | { kind: 'sibling' }
 
@@ -32,6 +33,7 @@ export default function PersonPage() {
   const addChild = useAddChild(treeId)
   const removeChild = useRemoveChild(treeId)
 
+  const canEdit = useCanEdit()
   const [editing, setEditing] = useState(false)
   const [rel, setRel] = useState<RelAction | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -85,7 +87,7 @@ export default function PersonPage() {
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <Avatar person={person} size={96} />
-          <button className="absolute -right-1 -bottom-1 rounded-full border border-line bg-white p-1.5 shadow hover:bg-moss-light" title="Change photo" onClick={() => fileRef.current?.click()}><Camera size={14} /></button>
+          {canEdit && <button className="absolute -right-1 -bottom-1 rounded-full border border-line bg-white p-1.5 shadow hover:bg-moss-light" title="Change photo" onClick={() => fileRef.current?.click()}><Camera size={14} /></button>}
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])} />
         </div>
         <div className="flex-1">
@@ -98,8 +100,8 @@ export default function PersonPage() {
         </div>
         <div className="flex flex-wrap gap-1">
           <Link className="btn-ghost" to={`/trees/${treeId}/chart/${personId}`}><GitFork size={14} /> Chart</Link>
-          <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> Edit</button>
-          <button className="btn-danger" title="Delete person" onClick={async () => { if (confirm(`Delete ${fullName(person)}? This cannot be undone.`)) { await deletePerson.mutateAsync(personId); nav(`/trees/${treeId}/people`) } }}><Trash2 size={14} /></button>
+          {canEdit && <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> Edit</button>}
+          {canEdit && <button className="btn-danger" title="Delete person" onClick={async () => { if (confirm(`Delete ${fullName(person)}? This cannot be undone.`)) { await deletePerson.mutateAsync(personId); nav(`/trees/${treeId}/people`) } }}><Trash2 size={14} /></button>}
         </div>
       </div>
 
@@ -108,8 +110,8 @@ export default function PersonPage() {
       {/* Family */}
       <section className="card space-y-4">
         <div className="flex items-center justify-between"><h3 className="font-serif text-xl">Family</h3></div>
-        <Group title="Parents" people={parents} treeId={treeId} onAdd={parents.length < 2 ? () => setRel({ kind: 'parent' }) : undefined} />
-        <Group title="Siblings" people={siblings} treeId={treeId} onAdd={() => setRel({ kind: 'sibling' })} />
+        <Group title="Parents" people={parents} treeId={treeId} onAdd={canEdit && parents.length < 2 ? () => setRel({ kind: 'parent' }) : undefined} />
+        <Group title="Siblings" people={siblings} treeId={treeId} onAdd={canEdit ? () => setRel({ kind: 'sibling' }) : undefined} />
         {ownFamilies.map((f) => {
           const partner = graph.partnerOf(f, personId)
           const kids = graph.childrenOfFamily.get(f.id) ?? []
@@ -122,16 +124,16 @@ export default function PersonPage() {
                   {f.start_date && <span className="text-ink/50"> · {f.start_date}{f.start_place ? `, ${f.start_place}` : ''}</span>}
                 </span>
               </div>
-              <Group title="Children" people={kids} treeId={treeId} onAdd={() => setRel({ kind: 'child', family: f })} onRemove={(p) => removeChild.mutate({ family_id: f.id, person_id: p.id })} />
+              <Group title="Children" people={kids} treeId={treeId} onAdd={canEdit ? () => setRel({ kind: 'child', family: f }) : undefined} onRemove={canEdit ? (p) => removeChild.mutate({ family_id: f.id, person_id: p.id }) : undefined} />
             </div>
           )
         })}
-        <button className="btn-ghost" onClick={() => setRel({ kind: 'partner' })}><Plus size={14} /> Add partner / spouse</button>
+        {canEdit && <button className="btn-ghost" onClick={() => setRel({ kind: 'partner' })}><Plus size={14} /> Add partner / spouse</button>}
       </section>
 
-      <Timeline treeId={treeId} personId={personId} />
-      <Citations treeId={treeId} personId={personId} />
-      <Gallery treeId={treeId} personId={personId} />
+      <Timeline treeId={treeId} personId={personId} canEdit={canEdit} />
+      <Citations treeId={treeId} personId={personId} canEdit={canEdit} />
+      <Gallery treeId={treeId} personId={personId} canEdit={canEdit} />
 
       {editing && (
         <Modal title="Edit person" onClose={() => setEditing(false)}>
@@ -168,7 +170,7 @@ function Group({ title, people, treeId, onAdd, onRemove }: { title: string; peop
   )
 }
 
-function Timeline({ treeId, personId }: { treeId: string; personId: string }) {
+function Timeline({ treeId, personId, canEdit }: { treeId: string; personId: string; canEdit: boolean }) {
   const { data: events } = usePersonEvents(personId)
   const { create, remove } = useEventMutations(treeId, personId)
   const [adding, setAdding] = useState(false)
@@ -182,15 +184,15 @@ function Timeline({ treeId, personId }: { treeId: string; personId: string }) {
     <section className="card">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="font-serif text-xl">Life events</h3>
-        <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Add event</button>
+        {canEdit && <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Add event</button>}
       </div>
-      {events?.length === 0 && !adding && <p className="text-sm text-ink/40">No events yet. Birth and death are shown above; add residences, occupations, immigration, and more here.</p>}
+      {events?.length === 0 && !adding && <p className="text-sm text-ink/40">No events yet.{canEdit ? ' Birth and death are shown above; add residences, occupations, immigration, and more here.' : ''}</p>}
       <ul className="divide-y divide-line">
         {events?.map((ev) => (
           <li key={ev.id} className="group flex items-start gap-3 py-2 text-sm">
             <span className="w-28 shrink-0 text-ink/50">{ev.date_text ?? '—'}</span>
             <span className="flex-1"><span className="font-medium capitalize">{ev.type}</span>{ev.place && <span className="text-ink/70"> · {ev.place}</span>}{ev.description && <div className="text-ink/70">{ev.description}</div>}</span>
-            <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" onClick={() => remove.mutate(ev.id)}><Trash2 size={14} /></button>
+            {canEdit && <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" onClick={() => remove.mutate(ev.id)}><Trash2 size={14} /></button>}
           </li>
         ))}
       </ul>
@@ -207,7 +209,7 @@ function Timeline({ treeId, personId }: { treeId: string; personId: string }) {
   )
 }
 
-function Citations({ treeId, personId }: { treeId: string; personId: string }) {
+function Citations({ treeId, personId, canEdit }: { treeId: string; personId: string; canEdit: boolean }) {
   const { data: cites } = usePersonCitations(personId)
   const { data: sources } = useSources(treeId)
   const { create, remove } = useCitationMutations(treeId, personId)
@@ -224,9 +226,9 @@ function Citations({ treeId, personId }: { treeId: string; personId: string }) {
     <section className="card">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="font-serif text-xl">Sources</h3>
-        <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Cite a source</button>
+        {canEdit && <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Cite a source</button>}
       </div>
-      {cites?.length === 0 && !adding && <p className="text-sm text-ink/40">No sources cited yet. Record where each fact came from so future you can trust it.</p>}
+      {cites?.length === 0 && !adding && <p className="text-sm text-ink/40">No sources cited yet.{canEdit ? ' Record where each fact came from so future you can trust it.' : ''}</p>}
       <ul className="divide-y divide-line">
         {cites?.map((c) => (
           <li key={c.id} className="group py-2 text-sm">
@@ -234,7 +236,7 @@ function Citations({ treeId, personId }: { treeId: string; personId: string }) {
               <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/sources/${c.source_id}`}>{c.source.title}</Link>
               {c.page && <span className="text-ink/60">· {c.page}</span>}
               <span className="ml-auto text-xs text-ink/50">{CONFIDENCE_LABELS[c.confidence]}</span>
-              <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" onClick={() => remove.mutate(c.id)}><Trash2 size={14} /></button>
+              {canEdit && <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" onClick={() => remove.mutate(c.id)}><Trash2 size={14} /></button>}
             </div>
             {c.quote && <blockquote className="mt-1 border-l-2 border-line pl-2 italic text-ink/70">{c.quote}</blockquote>}
           </li>
@@ -269,7 +271,7 @@ function Citations({ treeId, personId }: { treeId: string; personId: string }) {
   )
 }
 
-function Gallery({ treeId, personId }: { treeId: string; personId: string }) {
+function Gallery({ treeId, personId, canEdit }: { treeId: string; personId: string; canEdit: boolean }) {
   const { data: media } = usePersonMedia(personId)
   const { upload, remove } = useMediaMutations(treeId, personId)
   const ref = useRef<HTMLInputElement>(null)
@@ -277,24 +279,24 @@ function Gallery({ treeId, personId }: { treeId: string; personId: string }) {
     <section className="card">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="font-serif text-xl">Photos & documents</h3>
-        <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={upload.isPending}><Plus size={14} /> {upload.isPending ? 'Uploading…' : 'Upload'}</button>
+        {canEdit && <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={upload.isPending}><Plus size={14} /> {upload.isPending ? 'Uploading…' : 'Upload'}</button>}
         <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => Array.from(e.target.files ?? []).forEach((file) => upload.mutate({ file }))} />
       </div>
       {media?.length === 0 && <p className="text-sm text-ink/40">No photos or scans yet.</p>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {media?.map((m) => <MediaTile key={m.id} m={m} onDelete={() => { if (confirm('Delete this file?')) remove.mutate(m) }} />)}
+        {media?.map((m) => <MediaTile key={m.id} m={m} onDelete={canEdit ? () => { if (confirm('Delete this file?')) remove.mutate(m) } : undefined} />)}
       </div>
     </section>
   )
 }
 
-function MediaTile({ m, onDelete }: { m: Media; onDelete: () => void }) {
+function MediaTile({ m, onDelete }: { m: Media; onDelete?: () => void }) {
   const { data: url } = useSignedUrl(m.storage_path)
   const isImg = m.mime_type?.startsWith('image/')
   return (
     <div className="group relative aspect-square overflow-hidden rounded-md border border-line bg-paper">
       {url && (isImg ? <img src={url} alt={m.caption ?? ''} className="h-full w-full object-cover" /> : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-sm text-moss underline">Open document</a>)}
-      <button className="absolute top-1 right-1 hidden rounded bg-white/90 p-1 text-red-700 group-hover:block" onClick={onDelete}><Trash2 size={14} /></button>
+      {onDelete && <button className="absolute top-1 right-1 hidden rounded bg-white/90 p-1 text-red-700 group-hover:block" onClick={onDelete}><Trash2 size={14} /></button>}
       {m.caption && <div className="absolute inset-x-0 bottom-0 bg-ink/60 px-2 py-1 text-xs text-white">{m.caption}</div>}
     </div>
   )

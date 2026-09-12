@@ -1,34 +1,33 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, Plus, TreeDeciduous } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { Plus, TreeDeciduous } from 'lucide-react'
 import { useCreateTree, useTrees } from '../lib/queries'
-import { useAuth } from '../lib/auth'
+import { useCanEdit } from '../lib/profile'
+import AppHeader from '../components/AppHeader'
 import Modal from '../components/Modal'
 
 export default function TreesPage() {
   const { data: trees, isLoading, error } = useTrees()
   const create = useCreateTree()
-  const { session } = useAuth()
+  const canEdit = useCanEdit()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
 
   return (
-    <div className="mx-auto max-w-3xl p-4 sm:p-6">
+    <div className="flex h-full flex-col">
+    <AppHeader />
+    <div className="mx-auto w-full max-w-3xl flex-1 overflow-auto p-4 sm:p-6">
       <header className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-serif text-3xl">Your family trees</h1>
-        <div className="flex gap-2">
-          <button className="btn-primary" onClick={() => setOpen(true)}><Plus size={16} /> New tree</button>
-          {session && <button className="btn-ghost" onClick={() => supabase.auth.signOut()}><LogOut size={16} /> Sign out</button>}
-        </div>
+        <h1 className="font-serif text-3xl">Family trees</h1>
+        {canEdit && <button className="btn-primary" onClick={() => setOpen(true)}><Plus size={16} /> New tree</button>}
       </header>
       {isLoading && <p className="text-ink/50">Loading…</p>}
       {error && <p className="text-red-700">{error.message}</p>}
       {trees?.length === 0 && (
         <div className="card text-center text-ink/60">
           <TreeDeciduous className="mx-auto mb-2 text-moss" size={40} />
-          No trees yet. Create one to start adding people.
+          {canEdit ? 'No trees yet. Create one to start adding people.' : 'No trees have been shared yet.'}
         </div>
       )}
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -51,6 +50,7 @@ export default function TreesPage() {
           </form>
         </Modal>
       )}
+    </div>
     </div>
   )
 }
