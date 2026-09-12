@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/profile'
+import { ADMIN_NAME } from '../config'
 
 /** Shown to signed-in accounts that an admin hasn't approved yet (or has declined). */
 export default function PendingPage({ profile }: { profile: Profile | null }) {
@@ -11,12 +12,12 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
         {declined ? (
           <>
             <h1 className="text-2xl">This request wasn't approved</h1>
-            <p className="text-ink-soft">If you think that's a mistake, get in touch with Jason directly.</p>
+            <p className="text-ink-soft">If you think that's a mistake, get in touch with {ADMIN_NAME} directly.</p>
           </>
         ) : (
           <>
             <h1 className="text-2xl">Thanks{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}. You're on the list.</h1>
-            <p className="text-ink-soft">This tree holds details about living relatives, so every new account is checked by Jason before it can see anything. You'll be able to sign in and browse once that's done.</p>
+            <p className="text-ink-soft">This tree holds details about living relatives, so every new account is checked by {ADMIN_NAME} before it can see anything. You'll be able to sign in and browse once that's done.</p>
             <p className="text-sm text-ink-mute">Signed in as {profile?.email}</p>
           </>
         )}

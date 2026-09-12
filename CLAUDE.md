@@ -23,6 +23,9 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Hosting
 - GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
+## Site settings
+`src/config.ts`: `DONATE_URL` (set it to show the "chip in for hosting" line on the Trees page; empty hides it) and `ADMIN_NAME`.
+
 ## Commands
 ```bash
 npm run dev      # http://localhost:5173

@@ -4,6 +4,7 @@ import { Plus, TreeDeciduous } from 'lucide-react'
 import { useCreateTree, useTrees } from '../lib/queries'
 import { useCanEdit } from '../lib/profile'
 import AppHeader from '../components/AppHeader'
+import SupportLine from '../components/SupportLine'
 import Modal from '../components/Modal'
 
 export default function TreesPage() {
@@ -40,6 +41,7 @@ export default function TreesPage() {
           </li>
         ))}
       </ul>
+      <SupportLine />
       {open && (
         <Modal title="New family tree" onClose={() => setOpen(false)}>
           <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); await create.mutateAsync({ name, description: desc || undefined }); setOpen(false); setName(''); setDesc('') }}>
