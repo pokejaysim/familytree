@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import LoginPage from './pages/LoginPage'
+import UpdatePasswordPage from './pages/UpdatePasswordPage'
+import { useEffect, useState } from 'react'
+import { supabase } from './lib/supabase'
 import TreesPage from './pages/TreesPage'
 import TreeLayout from './pages/TreeLayout'
 import PeoplePage from './pages/PeoplePage'
@@ -9,17 +12,29 @@ import ChartPage from './pages/ChartPage'
 import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
 
+/** True from the moment a password-recovery link lands until the user saves a new password. */
+function useIsPasswordRecovery() {
+  const [recovering, setRecovering] = useState(() => window.location.hash.includes('type=recovery'))
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
+      if (event === 'USER_UPDATED' || event === 'SIGNED_OUT') setRecovering(false)
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+  return recovering
+}
+
 export default function App() {
-  // Login is switched off for now (open-access mode, see supabase/migrations/20260911000000_open_access_no_login.sql).
-  // Set REQUIRE_LOGIN back to true to gate the app again.
-  const REQUIRE_LOGIN = false
+  // Login is required. On this dev machine, VITE_DEV_EMAIL/PASSWORD in .env.local sign in automatically (see lib/auth.tsx).
   const { session, loading } = useAuth()
-  if (REQUIRE_LOGIN && loading) return <div className="flex h-full items-center justify-center text-ink/50">Loading…</div>
-  if (REQUIRE_LOGIN && !session) return <LoginPage />
+  const recovering = useIsPasswordRecovery()
+  if (loading) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
+  if (!session) return <LoginPage />
+  if (recovering) return <UpdatePasswordPage />
   return (
     <Routes>
       <Route path="/" element={<TreesPage />} />
-      <Route path="/login" element={<LoginPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />
