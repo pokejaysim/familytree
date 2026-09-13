@@ -194,6 +194,26 @@ export function useCitationMutations(treeId: string, personId: string) {
 export const usePersonMedia = (personId: string) =>
   useQuery({ queryKey: ['media', personId], queryFn: () => unwrap<Media[]>(supabase.from('media').select('*').eq('person_id', personId).order('created_at')) })
 
+export const useSourceMedia = (sourceId: string) =>
+  useQuery({ queryKey: ['media', 'source', sourceId], queryFn: () => unwrap<Media[]>(supabase.from('media').select('*').eq('source_id', sourceId).order('caption').order('created_at')) })
+
+export function useSourceMediaMutations(treeId: string, sourceId: string) {
+  const qc = useQueryClient()
+  const inv = () => qc.invalidateQueries({ queryKey: ['media', 'source', sourceId] })
+  const upload = useMutation({
+    mutationFn: async ({ file, caption }: { file: File; caption?: string }) => {
+      const storage_path = await uploadToTree(treeId, file)
+      return unwrap<Media>(supabase.from('media').insert({ tree_id: treeId, source_id: sourceId, storage_path, mime_type: file.type, caption: caption ?? file.name.replace(/\.[^.]+$/, '') }).select().single())
+    },
+    onSuccess: inv,
+  })
+  const remove = useMutation({
+    mutationFn: async (m: Media) => { await supabase.storage.from('media').remove([m.storage_path]); return unwrap(supabase.from('media').delete().eq('id', m.id)) },
+    onSuccess: inv,
+  })
+  return { upload, remove }
+}
+
 export async function uploadToTree(treeId: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
   const path = `${treeId}/${crypto.randomUUID()}.${ext}`

@@ -290,7 +290,7 @@ function Gallery({ treeId, personId, canEdit }: { treeId: string; personId: stri
   )
 }
 
-function MediaTile({ m, onDelete }: { m: Media; onDelete?: () => void }) {
+export function MediaTile({ m, onDelete }: { m: Media; onDelete?: () => void }) {
   const { data: url } = useSignedUrl(m.storage_path)
   const isImg = m.mime_type?.startsWith('image/')
   return (

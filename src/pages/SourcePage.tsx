@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Pencil, Trash2 } from 'lucide-react'
-import { useSource, useSourceCitations, useSourceMutations } from '../lib/queries'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useSource, useSourceCitations, useSourceMedia, useSourceMediaMutations, useSourceMutations } from '../lib/queries'
+import { MediaTile } from './PersonPage'
 import { CONFIDENCE_LABELS } from '../lib/types'
 import { useCanEdit } from '../lib/profile'
 import { fullName } from '../lib/dates'
@@ -16,6 +17,9 @@ export default function SourcePage() {
   const { update, remove } = useSourceMutations(treeId)
   const [editing, setEditing] = useState(false)
   const canEdit = useCanEdit()
+  const { data: pages } = useSourceMedia(sourceId)
+  const pageOps = useSourceMediaMutations(treeId, sourceId)
+  const fileRef = useRef<HTMLInputElement>(null)
   if (!s) return <p className="p-6 text-ink/50">Loading…</p>
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
@@ -32,6 +36,17 @@ export default function SourcePage() {
         </div>}
       </div>
       {s.notes && <p className="card whitespace-pre-wrap text-sm">{s.notes}</p>}
+      <section className="card">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-medium">Scanned pages</h3>
+          {canEdit && <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={pageOps.upload.isPending}><Plus size={14} /> {pageOps.upload.isPending ? 'Uploading…' : 'Add pages'}</button>}
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => Array.from(e.target.files ?? []).forEach((file) => pageOps.upload.mutate({ file }))} />
+        </div>
+        {pages?.length === 0 && <p className="text-sm text-ink/50">No pages scanned yet.</p>}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {pages?.map((m) => <MediaTile key={m.id} m={m} onDelete={canEdit ? () => { if (confirm('Delete this page?')) pageOps.remove.mutate(m) } : undefined} />)}
+        </div>
+      </section>
       <section className="card">
         <h3 className="mb-2 font-medium">Cited by</h3>
         {cites?.length === 0 && <p className="text-sm text-ink/50">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}
