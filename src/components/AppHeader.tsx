@@ -26,7 +26,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
           </NavLink>
         )}
         {session && <span className="flex h-[30px] w-[30px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-brass text-[12px] sm:text-[13px] text-cream" title={`${label} · ${profile?.role ?? ''}`}>{initials}</span>}
-        {session && <button className="hidden text-sage hover:text-cream sm:block" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>}
+        {session && <button className="text-sage hover:text-cream" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>}
       </div>
     </header>
   )
