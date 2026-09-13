@@ -1,10 +1,12 @@
-import { NavLink, Outlet, useParams } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useParams } from 'react-router-dom'
 import { useTree } from '../lib/queries'
 import AppHeader, { tabClass } from '../components/AppHeader'
 
 export default function TreeLayout() {
   const { treeId = '' } = useParams()
-  useTree(treeId) // warm the cache for the chart title
+  // A stale link to a tree that no longer exists (or one you can't see) goes home instead of showing an empty map.
+  const { error } = useTree(treeId)
+  if (error) return <Navigate to="/" replace />
   return (
     <div className="flex h-full flex-col">
       <AppHeader tabs={<>
