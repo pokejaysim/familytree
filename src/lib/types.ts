@@ -6,6 +6,9 @@ export interface Tree {
   name: string
   description: string | null
   owner_id: string | null
+  intro_title: string | null
+  intro: string | null
+  intro_byline: string | null
   created_at: string
 }
 

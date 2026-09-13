@@ -15,6 +15,7 @@ import PersonPage from './pages/PersonPage'
 import ChartPage from './pages/ChartPage'
 import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
+import AboutPage from './pages/AboutPage'
 
 /** True from the moment a password-recovery link lands until the user saves a new password. */
 function useIsPasswordRecovery() {
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="people/:personId" element={<PersonPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="sources/:sourceId" element={<SourcePage />} />
+        <Route path="about" element={<AboutPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

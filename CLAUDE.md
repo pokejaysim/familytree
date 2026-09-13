@@ -18,6 +18,8 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - `events` – timeline entries for a person or family
 - `sources` → `citations` (attach to a person, family, or event; confidence 0–3)
 - `media` – photos/scans in the `media` bucket at `<tree_id>/<uuid>.<ext>`. `people.photo_path` is the profile photo
+- `trees.intro_title / intro / intro_byline`: the tree's introduction, shown on the About tab (`AboutPage`). For the Sim family it is Bernard's 2007 preface, verbatim.
+- Families with no partners are sibling groups whose parents are unknown; the map draws them under an invisible "ghost" root (a bus line, no parent stem) so the tree starts at that generation.
 - `src/lib/graph.ts` indexes a tree snapshot for parent/child/sibling/partner lookups
 
 ## Hosting

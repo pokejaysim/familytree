@@ -38,6 +38,15 @@ export function useCreateTree() {
   })
 }
 
+export function useUpdateTree(treeId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Partial<Pick<Tree, 'name' | 'description' | 'intro_title' | 'intro' | 'intro_byline'>>) =>
+      unwrap<Tree>(supabase.from('trees').update(input).eq('id', treeId).select().single()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tree', treeId] }); qc.invalidateQueries({ queryKey: ['trees'] }) },
+  })
+}
+
 // Whole-tree snapshot (people + families + children) — small trees load in one go.
 export interface TreeData {
   people: Person[]
