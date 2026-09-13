@@ -18,7 +18,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - `events` – timeline entries for a person or family
 - `sources` → `citations` (attach to a person, family, or event; confidence 0–3)
 - `media` – photos/scans in the `media` bucket at `<tree_id>/<uuid>.<ext>`. `people.photo_path` is the profile photo
-- `trees.intro_title / intro / intro_byline`: the tree's introduction, opened from a "Preface" note on the map (`IntroPane`), auto-opened once per device (localStorage `sft-intro-seen:<treeId>`); editors edit it at `/trees/:id/about` (`AboutPage`, no nav tab). For the Sim family it is Bernard's 2007 preface, verbatim.
+- `trees.foreword*` (Jason's September 2026 note) and `trees.intro*` (Bernard's 2007 preface): the tree's introduction, foreword first, opened from a "Preface" note on the map (`IntroPane`), auto-opened once per device (localStorage `sft-intro-seen:<treeId>`); editors edit it at `/trees/:id/about` (`AboutPage`, no nav tab). For the Sim family it is Bernard's 2007 preface, verbatim.
 - Families with no partners are sibling groups whose parents are unknown; the map draws them under an invisible "ghost" root (a bus line, no parent stem) so the tree starts at that generation.
 - `src/lib/graph.ts` indexes a tree snapshot for parent/child/sibling/partner lookups
 

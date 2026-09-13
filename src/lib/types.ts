@@ -9,6 +9,9 @@ export interface Tree {
   intro_title: string | null
   intro: string | null
   intro_byline: string | null
+  foreword_title: string | null
+  foreword: string | null
+  foreword_byline: string | null
   created_at: string
 }
 

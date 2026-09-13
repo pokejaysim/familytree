@@ -41,7 +41,7 @@ export function useCreateTree() {
 export function useUpdateTree(treeId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: Partial<Pick<Tree, 'name' | 'description' | 'intro_title' | 'intro' | 'intro_byline'>>) =>
+    mutationFn: (input: Partial<Pick<Tree, 'name' | 'description' | 'intro_title' | 'intro' | 'intro_byline' | 'foreword_title' | 'foreword' | 'foreword_byline'>>) =>
       unwrap<Tree>(supabase.from('trees').update(input).eq('id', treeId).select().single()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tree', treeId] }); qc.invalidateQueries({ queryKey: ['trees'] }) },
   })
