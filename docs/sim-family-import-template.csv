@@ -1,0 +1,5 @@
+id,given_names,surname,maiden_name,nickname,sex,birth_date,birth_place,death_date,death_place,living,father_id,mother_id,spouse_id,marriage_date,marriage_place,notes,source
+1,Ah Kow,Sim,,,M,abt 1890,"Fujian, China",1962,Singapore,no,,,2,1919,,Ran a provisions shop near Chinatown,Grandpa's book p.1
+2,Mei Ling,Tan,,,F,1895,Penang,1970,Singapore,no,,,1,1919,,,Grandpa's book p.1
+3,Boon Huat,Sim,,,M,12 Mar 1921,Singapore,3 Jun 2005,Singapore,no,1,2,4,1946,Singapore,Ship's purser; compiled the first family tree,Grandpa's book p.2
+4,Siew Lan,Lim,,,F,1925,Singapore,,,yes,,,3,1946,Singapore,,Grandpa's book p.2

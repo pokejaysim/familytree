@@ -5,6 +5,7 @@ import { useSourceMutations, useSources } from '../lib/queries'
 import { useCanEdit } from '../lib/profile'
 import Modal from '../components/Modal'
 import SourceForm from '../components/SourceForm'
+import EmptyState from '../components/EmptyState'
 
 export default function SourcesPage() {
   const { treeId = '' } = useParams()
@@ -22,7 +23,7 @@ export default function SourcesPage() {
         {canEdit && <button className="btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Add source</button>}
       </div>
       {isLoading && <p className="text-ink/50">Loading…</p>}
-      {sources?.length === 0 && <p className="card text-center text-ink/60">No sources yet.</p>}
+      {sources?.length === 0 && <EmptyState art="family-archive" wide title="Keep the memories close." text="Give photographs, letters, and family records a place in the shared story." action={canEdit ? { label: 'Add a family source', onClick: () => setAdding(true) } : undefined} />}
       <ul className="divide-y divide-line rounded-lg border border-line bg-white">
         {sources?.map((s) => (
           <li key={s.id}>

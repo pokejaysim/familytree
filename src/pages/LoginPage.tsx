@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import BrandPanel from '../components/BrandPanel'
 
 type Mode = 'signin' | 'signup' | 'reset'
 
@@ -35,9 +36,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-full items-center justify-center bg-paper p-4">
+      <div className="flex w-full max-w-4xl items-center justify-center gap-10">
+      <BrandPanel />
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
         <div>
-          <div className="mb-3 text-[22px] font-medium text-moss">Sim Family Tree</div>
+          <div className="mb-3 text-[22px] font-medium text-moss lg:hidden">Sim Family Tree</div>
           <h1 className="text-2xl">{title}</h1>
           <p className="text-sm text-ink-mute">{blurb}</p>
         </div>
@@ -62,6 +65,7 @@ export default function LoginPage() {
           )}
         </div>
       </form>
+      </div>
     </div>
   )
 }

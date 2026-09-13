@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Minus, Plus, Search, User } from 'lucide-react'
 import { useTree, useTreeData } from '../lib/queries'
 import { buildGraph } from '../lib/graph'
@@ -8,6 +8,7 @@ import PersonSpotlight from '../components/PersonSpotlight'
 import PersonPicker from '../components/PersonPicker'
 import Modal from '../components/Modal'
 import { useCanEdit } from '../lib/profile'
+import EmptyState from '../components/EmptyState'
 
 export default function ChartPage() {
   const { treeId = '', personId } = useParams()
@@ -28,9 +29,8 @@ export default function ChartPage() {
   if (data.people.length === 0)
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="card max-w-md text-center text-ink-mute">
-          <p className="mb-3">The map is empty because there are no people yet.</p>
-          {canEdit && <Link to={`/trees/${treeId}/people`} className="btn-primary">Add the first person</Link>}
+        <div className="w-full max-w-md">
+          <EmptyState art="first-branch" title="Begin with one connection." text="The map fills in as people and their connections are added." action={canEdit ? { label: 'Add your first relative', onClick: () => nav(`/trees/${treeId}/people`) } : undefined} />
         </div>
       </div>
     )

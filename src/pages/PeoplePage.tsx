@@ -7,6 +7,7 @@ import { fullName, lifespan } from '../lib/dates'
 import Modal from '../components/Modal'
 import PersonForm from '../components/PersonForm'
 import Avatar from '../components/Avatar'
+import EmptyState from '../components/EmptyState'
 
 export default function PeoplePage() {
   const { treeId = '' } = useParams()
@@ -29,7 +30,7 @@ export default function PeoplePage() {
         {canEdit && <button className="btn-primary shrink-0" onClick={() => setAdding(true)}><Plus size={16} /> <span className="hidden sm:inline">Add person</span><span className="sm:hidden">Add</span></button>}
       </div>
       {isLoading && <p className="text-ink/50">Loading…</p>}
-      {data && data.people.length === 0 && <p className="card text-center text-ink/60">{canEdit ? 'No people yet. Add the first person, then build out parents, partners and children from their profile.' : 'No people in this tree yet.'}</p>}
+      {data && data.people.length === 0 && <EmptyState art="first-branch" title="Begin with one connection." text={canEdit ? 'Add your first relative, then build out parents, partners and children from their profile.' : 'No people in this tree yet.'} action={canEdit ? { label: 'Add your first relative', onClick: () => setAdding(true) } : undefined} />}
       <ul className="divide-y divide-line rounded-lg border border-line bg-white">
         {people.map((p) => (
           <li key={p.id}>

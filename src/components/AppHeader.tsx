@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useIsAdmin, usePendingCount, useProfile } from '../lib/profile'
+import treeMarkLight from '../assets/tree-mark-light.svg'
 
 /** Moss header: brand, optional tree tabs, Members (admins) with a pending badge, user disc. */
 export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
@@ -15,7 +16,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
   const initials = label.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
   return (
     <header className="flex h-[56px] sm:h-[60px] shrink-0 items-center gap-4 sm:gap-10 bg-moss px-3 sm:px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <Link to="/" className="whitespace-nowrap text-[17px] sm:text-[22px] font-medium tracking-[.01em] text-cream" title="All trees">Sim Family Tree</Link>
+      <Link to="/" className="flex items-center gap-2 whitespace-nowrap text-[17px] sm:text-[22px] font-medium tracking-[.01em] text-cream" title="All trees"><img src={treeMarkLight} alt="" width={30} height={30} className="h-[26px] w-[26px] sm:h-[30px] sm:w-[30px]" />Sim Family Tree</Link>
       {tabs && <nav className="flex gap-3 sm:gap-7">{tabs}</nav>}
       <div className="ml-auto flex items-center gap-3 sm:gap-4">
         {isAdmin && (

@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/profile'
 import { ADMIN_NAME } from '../config'
+import treeMark from '../assets/tree-mark.svg'
+import divider from '../assets/branch-divider.svg'
 
 /** Shown to signed-in accounts that an admin hasn't approved yet (or has declined). */
 export default function PendingPage({ profile }: { profile: Profile | null }) {
@@ -8,7 +10,9 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
   return (
     <div className="flex h-full items-center justify-center bg-paper p-4">
       <div className="card w-full max-w-md space-y-4 text-center">
+        <img src={treeMark} alt="" width={56} height={56} className="mx-auto" />
         <div className="text-[22px] font-medium text-moss">Sim Family Tree</div>
+        <img src={divider} alt="" width={200} height={20} className="mx-auto opacity-90" />
         {declined ? (
           <>
             <h1 className="text-2xl">This request wasn't approved</h1>

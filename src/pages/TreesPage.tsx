@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, TreeDeciduous } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import EmptyState from '../components/EmptyState'
 import { useCreateTree, useTrees } from '../lib/queries'
 import { useCanEdit } from '../lib/profile'
 import AppHeader from '../components/AppHeader'
@@ -26,10 +27,7 @@ export default function TreesPage() {
       {isLoading && <p className="text-ink/50">Loading…</p>}
       {error && <p className="text-red-700">{error.message}</p>}
       {trees?.length === 0 && (
-        <div className="card text-center text-ink/60">
-          <TreeDeciduous className="mx-auto mb-2 text-moss" size={40} />
-          {canEdit ? 'No trees yet. Create one to start adding people.' : 'No trees have been shared yet.'}
-        </div>
+        <EmptyState art="first-branch" title="Begin with one connection." text={canEdit ? 'Every family tree starts with someone. Create a tree, then add your first relative.' : 'No trees have been shared with you yet.'} action={canEdit ? { label: 'Create a tree', onClick: () => setOpen(true) } : undefined} />
       )}
       <ul className="grid gap-3 sm:grid-cols-2">
         {trees?.map((t) => (
