@@ -43,9 +43,9 @@ export function yearOf(sort: string | null | undefined): string {
 export function lifespan(p: { birth_date_sort: string | null; death_date_sort: string | null; is_living: boolean }): string {
   const b = yearOf(p.birth_date_sort)
   const d = yearOf(p.death_date_sort)
-  if (!b && !d) return p.is_living ? 'Living' : ''
-  if (p.is_living) return `b. ${b}`
-  return `${b || '?'} – ${d || '?'}`
+  if (d) return `${b || '?'} – ${d}`   // death recorded
+  if (b) return `b. ${b}`               // no death recorded: never assume one
+  return p.is_living ? 'Living' : ''
 }
 
 export function fullName(p: { given_names: string; surname: string; maiden_name?: string | null; nickname?: string | null }) {
