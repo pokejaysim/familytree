@@ -6,6 +6,7 @@ import { useCanEdit } from '../lib/profile'
 import Modal from '../components/Modal'
 import SourceForm from '../components/SourceForm'
 import EmptyState from '../components/EmptyState'
+import SupportLine from '../components/SupportLine'
 
 export default function SourcesPage() {
   const { treeId = '' } = useParams()
@@ -34,6 +35,7 @@ export default function SourcesPage() {
           </li>
         ))}
       </ul>
+      <SupportLine />
       {adding && (
         <Modal title="Add source" onClose={() => setAdding(false)}>
           <SourceForm submitting={create.isPending} onCancel={() => setAdding(false)} onSubmit={async (s) => { await create.mutateAsync(s); setAdding(false) }} />

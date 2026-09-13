@@ -4,5 +4,5 @@
  * DONATE_URL: a link where relatives can chip in for hosting (Ko-fi, Buy Me a Coffee,
  * PayPal.me, a Stripe payment link, etc). Leave empty to hide the "chip in" line entirely.
  */
-export const DONATE_URL = ''
+export const DONATE_URL = 'https://buymeacoffee.com/jsim90'
 export const ADMIN_NAME = 'Jason'

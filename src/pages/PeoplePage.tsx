@@ -8,6 +8,7 @@ import Modal from '../components/Modal'
 import PersonForm from '../components/PersonForm'
 import Avatar from '../components/Avatar'
 import EmptyState from '../components/EmptyState'
+import SupportLine from '../components/SupportLine'
 
 export default function PeoplePage() {
   const { treeId = '' } = useParams()
@@ -43,6 +44,7 @@ export default function PeoplePage() {
         ))}
       </ul>
       <p className="mt-2 text-xs text-ink/50">{people.length} of {data?.people.length ?? 0} people</p>
+      <SupportLine />
       {adding && (
         <Modal title="Add person" onClose={() => setAdding(false)}>
           <PersonForm submitting={create.isPending} onCancel={() => setAdding(false)} onSubmit={async (input) => { const p = await create.mutateAsync(input); setAdding(false); nav(`/trees/${treeId}/people/${(p as { id: string }).id}`) }} />
