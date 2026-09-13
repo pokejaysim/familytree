@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useSource, useSourceCitations, useSourceMedia, useSourceMediaMutations, useSourceMutations } from '../lib/queries'
 import { MediaTile } from './PersonPage'
+import Lightbox from '../components/Lightbox'
 import { CONFIDENCE_LABELS } from '../lib/types'
 import { useCanEdit } from '../lib/profile'
 import { fullName } from '../lib/dates'
@@ -20,6 +21,7 @@ export default function SourcePage() {
   const { data: pages } = useSourceMedia(sourceId)
   const pageOps = useSourceMediaMutations(treeId, sourceId)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [viewing, setViewing] = useState<number | null>(null)
   if (!s) return <p className="p-6 text-ink/50">Loading…</p>
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
@@ -44,9 +46,10 @@ export default function SourcePage() {
         </div>
         {pages?.length === 0 && <p className="text-sm text-ink/50">No pages scanned yet.</p>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {pages?.map((m) => <MediaTile key={m.id} m={m} onDelete={canEdit ? () => { if (confirm('Delete this page?')) pageOps.remove.mutate(m) } : undefined} />)}
+          {pages?.map((m, i) => <MediaTile key={m.id} m={m} onOpen={() => setViewing(i)} onDelete={canEdit ? () => { if (confirm('Delete this page?')) pageOps.remove.mutate(m) } : undefined} />)}
         </div>
       </section>
+      {viewing !== null && pages?.[viewing] && <Lightbox items={pages} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
       <section className="card">
         <h3 className="mb-2 font-medium">Cited by</h3>
         {cites?.length === 0 && <p className="text-sm text-ink/50">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}

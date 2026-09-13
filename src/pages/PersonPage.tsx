@@ -14,6 +14,7 @@ import PersonForm from '../components/PersonForm'
 import PickOrCreate from '../components/PickOrCreate'
 import SourceForm from '../components/SourceForm'
 import Avatar from '../components/Avatar'
+import Lightbox from '../components/Lightbox'
 import { useCanEdit } from '../lib/profile'
 
 type RelAction = { kind: 'parent' } | { kind: 'partner' } | { kind: 'child'; family: Family } | { kind: 'sibling' }
@@ -36,6 +37,8 @@ export default function PersonPage() {
   const canEdit = useCanEdit()
   const [editing, setEditing] = useState(false)
   const [rel, setRel] = useState<RelAction | null>(null)
+  const { data: media = [] } = usePersonMedia(personId)
+  const [viewing, setViewing] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   if (!data || !graph) return <p className="p-6 text-ink/50">Loading…</p>
@@ -85,8 +88,8 @@ export default function PersonPage() {
     <div className="mx-auto max-w-4xl space-y-4 p-4 sm:space-y-5 sm:p-6">
       {/* Header */}
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-        <div className="relative">
-          <Avatar person={person} size={96} />
+        <div className="relative self-start">
+          <button type="button" className="block rounded-full" title={person.photo_path ? 'View photo' : undefined} onClick={() => { const i = media.findIndex((m) => m.storage_path === person.photo_path); if (i >= 0) setViewing(i) }}><Avatar person={person} size={144} /></button>
           {canEdit && <button className="absolute -right-1 -bottom-1 rounded-full border border-line bg-white p-1.5 shadow hover:bg-moss-light" title="Change photo" onClick={() => fileRef.current?.click()}><Camera size={14} /></button>}
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])} />
         </div>
@@ -133,7 +136,8 @@ export default function PersonPage() {
 
       <Timeline treeId={treeId} personId={personId} canEdit={canEdit} />
       <Citations treeId={treeId} personId={personId} canEdit={canEdit} />
-      <Gallery treeId={treeId} personId={personId} canEdit={canEdit} />
+      <Gallery treeId={treeId} personId={personId} canEdit={canEdit} onOpen={setViewing} />
+      {viewing !== null && media[viewing] && <Lightbox items={media} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
 
       {editing && (
         <Modal title="Edit person" onClose={() => setEditing(false)}>
@@ -271,7 +275,7 @@ function Citations({ treeId, personId, canEdit }: { treeId: string; personId: st
   )
 }
 
-function Gallery({ treeId, personId, canEdit }: { treeId: string; personId: string; canEdit: boolean }) {
+function Gallery({ treeId, personId, canEdit, onOpen }: { treeId: string; personId: string; canEdit: boolean; onOpen: (i: number) => void }) {
   const { data: media } = usePersonMedia(personId)
   const { upload, remove } = useMediaMutations(treeId, personId)
   const ref = useRef<HTMLInputElement>(null)
@@ -283,21 +287,23 @@ function Gallery({ treeId, personId, canEdit }: { treeId: string; personId: stri
         <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => Array.from(e.target.files ?? []).forEach((file) => upload.mutate({ file }))} />
       </div>
       {media?.length === 0 && <p className="text-sm text-ink/40">No photos or scans yet.</p>}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {media?.map((m) => <MediaTile key={m.id} m={m} onDelete={canEdit ? () => { if (confirm('Delete this file?')) remove.mutate(m) } : undefined} />)}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {media?.map((m, i) => <MediaTile key={m.id} m={m} onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Delete this file?')) remove.mutate(m) } : undefined} />)}
       </div>
     </section>
   )
 }
 
-export function MediaTile({ m, onDelete }: { m: Media; onDelete?: () => void }) {
+export function MediaTile({ m, onDelete, onOpen }: { m: Media; onDelete?: () => void; onOpen?: () => void }) {
   const { data: url } = useSignedUrl(m.storage_path)
   const isImg = m.mime_type?.startsWith('image/')
   return (
     <div className="group relative aspect-square overflow-hidden rounded-md border border-line bg-paper">
-      {url && (isImg ? <img src={url} alt={m.caption ?? ''} className="h-full w-full object-cover" /> : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-sm text-moss underline">Open document</a>)}
+      {url && (isImg
+        ? <img src={url} alt={m.caption ?? ''} className={`h-full w-full object-cover ${onOpen ? 'cursor-zoom-in' : ''}`} onClick={onOpen} />
+        : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-sm text-moss underline">Open document</a>)}
       {onDelete && <button className="absolute top-1 right-1 hidden rounded bg-white/90 p-1 text-red-700 group-hover:block" onClick={onDelete}><Trash2 size={14} /></button>}
-      {m.caption && <div className="absolute inset-x-0 bottom-0 bg-ink/60 px-2 py-1 text-xs text-white">{m.caption}</div>}
+      {m.caption && <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-ink/60 px-2 py-1 text-xs text-white">{m.caption}</div>}
     </div>
   )
 }
