@@ -16,6 +16,7 @@ import ChartPage from './pages/ChartPage'
 import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
 import AboutPage from './pages/AboutPage'
+import SupportPage from './pages/SupportPage'
 
 /** True from the moment a password-recovery link lands until the user saves a new password. */
 function useIsPasswordRecovery() {
@@ -56,6 +57,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<TreesPage />} />
       <Route path="/members" element={<MembersPage />} />
+      <Route path="/support" element={<SupportPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />

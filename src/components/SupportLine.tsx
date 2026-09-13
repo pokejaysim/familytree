@@ -1,7 +1,8 @@
+import { Link } from 'react-router-dom'
 import { ADMIN_NAME, DONATE_URL } from '../config'
 
 /** Coffee-cup-with-leaf line icon from Jason's coffee asset pack (currentColor). */
-function CoffeeIcon({ className }: { className?: string }) {
+export function CoffeeIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
       <path d="M7 14h16v7a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z" />
@@ -31,6 +32,7 @@ export default function SupportLine({ variant = 'full' }: { variant?: 'full' | '
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
         <h2 className="text-[22px] leading-tight text-ink">Help keep our family tree online.</h2>
         <p className="mt-1 text-[15px] text-ink-mute">{ADMIN_NAME} keeps this site online. Optional donations help cover hosting.</p>
+        <Link to="/support" className="mt-2 inline-block text-[12px] uppercase tracking-[.12em] text-brass underline underline-offset-4 hover:text-moss">Where it goes</Link>
       </div>
       <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[44px] shrink-0 px-5">
         <CoffeeIcon className="h-5 w-5" /> Donate via Buy Me a Coffee

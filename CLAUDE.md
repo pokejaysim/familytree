@@ -36,7 +36,7 @@ Below the `sm` breakpoint the tree tabs move to a bottom tab bar (`BottomTabs` i
 From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.svg` (header/login mark, `branch-divider.svg`), `public/brand/` (favicons, manifest icons), `public/art/*.webp` (heritage-tree, first-branch, family-archive at 640/1200; coffee-cup at 480/960 from the coffee pack, `docs/coffee-assets/`). Illustrations have an opaque ivory background matching `--color-paper`, so place them on paper, never on white. `EmptyState` and `BrandPanel` components wrap them.
 
 ## Site settings
-`src/config.ts`: `DONATE_URL` (Buy Me a Coffee page; empty hides every support element) and `ADMIN_NAME`. `SupportLine` renders the illustrated coffee footer on the Trees/People/Sources pages and a compact line at the foot of the intro pane.
+`src/config.ts`: `DONATE_URL` (Buy Me a Coffee page; empty hides every support element) and `ADMIN_NAME`. `SupportLine` renders the illustrated coffee footer on the Trees/People/Sources pages and a compact line at the foot of the intro pane; `/support` (`SupportPage`) explains where donations go, with the pack's journal illustration.
 
 ## Commands
 ```bash
