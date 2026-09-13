@@ -5,7 +5,7 @@ import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zo
 import 'd3-transition'
 import { easeCubicInOut } from 'd3-ease'
 import type { Graph } from '../lib/graph'
-import type { Person } from '../lib/types'
+import type { Family, Person } from '../lib/types'
 import { lifespan } from '../lib/dates'
 import { useSignedUrl } from '../lib/queries'
 
@@ -55,8 +55,16 @@ export default function TreeCanvas({
     const build = (p: Person): CoupleNode => {
       seen.add(p.id)
       const fams = graph.familiesOfParent.get(p.id) ?? []
-      const partner = fams.map((f) => graph.partnerOf(f, p.id)).find((q) => q && !seen.has(q.id)) ?? null
+      // With several marriages, show the partner whose family has children beside the person; other partners stay on the profile page
+      // (unless they have descendants of their own elsewhere, in which case they get their own place on the map).
+      const kidsOf = (f: Family) => graph.childrenOfFamily.get(f.id)?.length ?? 0
+      const ranked = [...fams].sort((a, b) => kidsOf(b) - kidsOf(a))
+      const partner = ranked.map((f) => graph.partnerOf(f, p.id)).find((q) => q && !seen.has(q.id)) ?? null
       if (partner) seen.add(partner.id)
+      for (const f of fams) {
+        const q = graph.partnerOf(f, p.id)
+        if (q && q.id !== partner?.id && (graph.familiesOfParent.get(q.id) ?? []).every((g) => g.id === f.id || kidsOf(g) === 0)) seen.add(q.id)
+      }
       const kids = fams.flatMap((f) => graph.childrenOfFamily.get(f.id) ?? []).filter((k) => !seen.has(k.id))
       return { id: p.id, a: p, b: partner, children: kids.map(build) }
     }
