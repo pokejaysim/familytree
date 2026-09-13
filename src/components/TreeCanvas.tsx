@@ -31,7 +31,7 @@ export const TINTS = [
   { bg: '#DCE6EC', ink: '#2F4A5C' },
 ]
 
-export interface TreeCanvasHandle { zoomTo: (personId: string) => void; fit: () => void; zoomBy: (k: number) => void }
+export interface TreeCanvasHandle { zoomTo: (personId: string) => void; fit: (animate?: boolean) => void; zoomBy: (k: number) => void }
 export interface LayoutInfo { generations: number; people: number }
 
 export default function TreeCanvas({
@@ -48,7 +48,7 @@ export default function TreeCanvas({
   const [t, setT] = useState<ZoomTransform>(zoomIdentity)
   const [size, setSize] = useState({ w: 1, h: 1 })
   const fittedRef = useRef(false)
-  const fitRef = useRef<(() => void) | null>(null)
+  const fitRef = useRef<((animate?: boolean) => void) | null>(null)
 
   // ---- Layout: forest of couple-nodes; roots are people with no recorded parents ----
   const layout = useMemo(() => {
@@ -145,7 +145,7 @@ export default function TreeCanvas({
     const ro = new ResizeObserver(() => {
       const r = svg.getBoundingClientRect()
       setSize({ w: r.width, h: r.height })
-      if (!fittedRef.current && r.width > 0) { fittedRef.current = true; fitRef.current?.() }
+      if (!fittedRef.current && r.width > 0) { fittedRef.current = true; fitRef.current?.(false) } // first paint: jump straight to the fitted view
     })
     ro.observe(svg)
     return () => { select(svg).on('.zoom', null); ro.disconnect() }
@@ -154,12 +154,14 @@ export default function TreeCanvas({
   const animateTo = useCallback((tr: ZoomTransform, ms = 700) => {
     const svg = svgRef.current, z = zoomRef.current
     if (!svg || !z) return
+    if (ms <= 0) { select(svg).call(z.transform, tr); return } // synchronous: cannot be lost to an interrupted transition
     select(svg).transition().duration(ms).ease(easeCubicInOut).call(z.transform, tr)
   }, [])
 
-  const fit = useCallback(() => {
+  const fit = useCallback((animate = true) => {
     const svg = svgRef.current
     if (!svg) return
+    const ms = animate ? 700 : 0
     const { width, height } = svg.getBoundingClientRect()
     const { minX, maxX, minY, maxY } = layout.bounds
     // leave headroom for the title block (top) and spotlight card (bottom-left)
@@ -167,8 +169,8 @@ export default function TreeCanvas({
     const fitK = 0.78 * Math.min(width / (maxX - minX + 120), (height - 120) / (maxY - minY + 80))
     const minK = phone ? 0.5 : 0.3 // never open so far out that cards turn into dots; show the first generation readably instead
     const k = Math.min(1, Math.max(fitK, minK))
-    if (fitK >= minK) animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, 90 + (height - 120) / 2 - ((minY + maxY) / 2) * k).scale(k))
-    else animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, (phone ? 150 : 110) - minY * k).scale(k))
+    if (fitK >= minK) animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, 90 + (height - 120) / 2 - ((minY + maxY) / 2) * k).scale(k), ms)
+    else animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, (phone ? 150 : 110) - minY * k).scale(k), ms)
   }, [layout, animateTo])
   fitRef.current = fit
 

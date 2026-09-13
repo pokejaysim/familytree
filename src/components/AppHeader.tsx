@@ -15,7 +15,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
   const label = profile?.name || session?.user.email || '?'
   const initials = label.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
   return (
-    <header className="flex h-[56px] sm:h-[60px] shrink-0 items-center gap-4 sm:gap-10 bg-moss px-3 sm:px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <header className="flex min-h-[56px] sm:min-h-[60px] shrink-0 items-center gap-4 sm:gap-10 bg-moss px-3 sm:px-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <Link to="/" className="flex items-center gap-2 whitespace-nowrap text-[17px] sm:text-[22px] font-medium tracking-[.01em] text-cream" title="All trees"><img src={treeMarkLight} alt="" width={30} height={30} className="h-[26px] w-[26px] sm:h-[30px] sm:w-[30px]" />Sim Family Tree</Link>
       {tabs && <nav className="hidden gap-7 sm:flex">{tabs}</nav>}
       <div className="ml-auto flex items-center gap-3 sm:gap-4">
