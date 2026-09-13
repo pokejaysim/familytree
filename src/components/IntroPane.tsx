@@ -8,8 +8,12 @@ export function Letter({ text }: { text: string }) {
   return (
     <div className="space-y-5 text-[17px] leading-relaxed text-ink-soft">
       {text.split(/\n\s*\n/).map((para, i) => {
-        const t = para.trim()
-        const quoted = /^["“].*["”]$/s.test(t)
+        let t = para.trim()
+        // Light markup: **date line**, *italic quote*, or a paragraph wrapped in quotation marks → block quote
+        if (/^\*\*.+\*\*$/s.test(t)) return <p key={i} className="text-[12px] uppercase tracking-[.12em] text-brass">{t.slice(2, -2)}</p>
+        const starred = /^\*[^*].*\*$/s.test(t)
+        if (starred) t = t.slice(1, -1)
+        const quoted = starred || /^["“].*["”]$/s.test(t)
         return quoted
           ? <blockquote key={i} className="border-l-2 border-brass-light pl-4 italic text-ink-mute">{t}</blockquote>
           : <p key={i} className="whitespace-pre-wrap">{t}</p>
