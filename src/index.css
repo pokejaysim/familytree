@@ -25,6 +25,9 @@
 }
 
 html, body, #root { height: 100%; }
+
+/* Illustrations from the asset pack carry an opaque ivory rectangle; fade the edges so it never shows. */
+.art-fade { -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 55%, transparent 85%); mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 55%, transparent 85%); }
 body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); font-size: 16px; }
 
 .btn-primary { @apply inline-flex items-center gap-1.5 rounded px-3.5 py-1.5 text-[13px] font-medium uppercase tracking-[.12em] transition bg-moss text-cream hover:bg-moss/90 disabled:opacity-50; }
