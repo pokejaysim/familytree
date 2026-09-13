@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Outlet, useParams } from 'react-router-dom'
 import { useTree } from '../lib/queries'
-import AppHeader, { tabClass } from '../components/AppHeader'
+import AppHeader, { BottomTabs, tabClass } from '../components/AppHeader'
+import { BookMarked, GitFork, Users } from 'lucide-react'
 
 export default function TreeLayout() {
   const { treeId = '' } = useParams()
@@ -15,6 +16,7 @@ export default function TreeLayout() {
         <NavLink to="sources" className={tabClass}>Sources</NavLink>
       </>} />
       <main className="min-h-0 flex-1 overflow-auto"><Outlet /></main>
+      <BottomTabs items={[{ to: 'chart', label: 'Map', icon: <GitFork size={20} /> }, { to: 'people', label: 'People', icon: <Users size={20} /> }, { to: 'sources', label: 'Sources', icon: <BookMarked size={20} /> }]} />
     </div>
   )
 }

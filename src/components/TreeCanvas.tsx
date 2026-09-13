@@ -163,8 +163,12 @@ export default function TreeCanvas({
     const { width, height } = svg.getBoundingClientRect()
     const { minX, maxX, minY, maxY } = layout.bounds
     // leave headroom for the title block (top) and spotlight card (bottom-left)
-    const k = Math.min(1, 0.78 * Math.min(width / (maxX - minX + 120), (height - 120) / (maxY - minY + 80)))
-    animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, 90 + (height - 120) / 2 - ((minY + maxY) / 2) * k).scale(k))
+    const phone = width < 640
+    const fitK = 0.78 * Math.min(width / (maxX - minX + 120), (height - 120) / (maxY - minY + 80))
+    const minK = phone ? 0.5 : 0.3 // never open so far out that cards turn into dots; show the first generation readably instead
+    const k = Math.min(1, Math.max(fitK, minK))
+    if (fitK >= minK) animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, 90 + (height - 120) / 2 - ((minY + maxY) / 2) * k).scale(k))
+    else animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, (phone ? 150 : 110) - minY * k).scale(k))
   }, [layout, animateTo])
   fitRef.current = fit
 
