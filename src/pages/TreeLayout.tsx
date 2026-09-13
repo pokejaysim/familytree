@@ -13,7 +13,6 @@ export default function TreeLayout() {
         <NavLink to="chart" className={tabClass}>Map</NavLink>
         <NavLink to="people" className={tabClass}>People</NavLink>
         <NavLink to="sources" className={tabClass}>Sources</NavLink>
-        <NavLink to="about" className={tabClass}>About</NavLink>
       </>} />
       <main className="min-h-0 flex-1 overflow-auto"><Outlet /></main>
     </div>
