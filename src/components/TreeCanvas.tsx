@@ -15,10 +15,11 @@ import { useSignedUrl } from '../lib/queries'
  * a brass line to the selected person, and a minimap.
  */
 
-interface CoupleNode { id: string; a: Person | null; b: Person | null; children?: CoupleNode[] } // a === null: invisible root that groups siblings whose parents are unknown
-interface Placed { id: string; a: Person | null; b: Person | null; x: number; y: number; depth: number; parentId: string | null; ghost: boolean }
+interface CoupleNode { id: string; a: Person | null; b: Person | null; others?: Person[]; children?: CoupleNode[] } // a === null: invisible root that groups siblings whose parents are unknown; others = further spouses of a, drawn as small cards beneath
+interface Placed { id: string; a: Person | null; b: Person | null; others: Person[]; x: number; y: number; depth: number; parentId: string | null; ghost: boolean }
 
 export const CARD_W = 160, CARD_H = 56
+const MINI_W = 150, MINI_H = 40, MINI_GAP = 6
 const COUPLE_GAP = 20, NODE_GAP_X = 40, ROW_GAP = 104
 const nodeWidth = (n: { b: Person | null }) => (n.b ? CARD_W * 2 + COUPLE_GAP : CARD_W)
 
@@ -61,12 +62,13 @@ export default function TreeCanvas({
       const ranked = [...fams].sort((a, b) => kidsOf(b) - kidsOf(a))
       const partner = ranked.map((f) => graph.partnerOf(f, p.id)).find((q) => q && !seen.has(q.id)) ?? null
       if (partner) seen.add(partner.id)
+      const others: Person[] = []
       for (const f of fams) {
         const q = graph.partnerOf(f, p.id)
-        if (q && q.id !== partner?.id && (graph.familiesOfParent.get(q.id) ?? []).every((g) => g.id === f.id || kidsOf(g) === 0)) seen.add(q.id)
+        if (q && q.id !== partner?.id && !seen.has(q.id) && (graph.familiesOfParent.get(q.id) ?? []).every((g) => g.id === f.id || kidsOf(g) === 0)) { seen.add(q.id); others.push(q) }
       }
       const kids = fams.flatMap((f) => graph.childrenOfFamily.get(f.id) ?? []).filter((k) => !seen.has(k.id))
-      return { id: p.id, a: p, b: partner, children: kids.map(build) }
+      return { id: p.id, a: p, b: partner, others, children: kids.map(build) }
     }
     const people = [...graph.people.values()].sort((a, b) => (a.birth_date_sort ?? '9999').localeCompare(b.birth_date_sort ?? '9999'))
     const roots: CoupleNode[] = []
@@ -94,7 +96,7 @@ export default function TreeCanvas({
       const lift = ghostRoot ? CARD_H + ROW_GAP : 0 // the ghost row is empty, so pull the subtree up one row
       for (const n of nodes) {
         const depth = n.depth - (ghostRoot ? 1 : 0)
-        all.push({ id: n.data.id, a: n.data.a, b: n.data.b, x: n.x - minX + offsetX, y: n.y - lift, depth, parentId: n.parent?.data.id ?? null, ghost: n.data.a === null })
+        all.push({ id: n.data.id, a: n.data.a, b: n.data.b, others: n.data.others ?? [], x: n.x - minX + offsetX, y: n.y - lift, depth, parentId: n.parent?.data.id ?? null, ghost: n.data.a === null })
         if (n.data.a) maxDepth = Math.max(maxDepth, depth)
       }
       offsetX += Math.max(...nodes.map((n) => n.x - minX + nodeWidth(n.data) / 2)) + NODE_GAP_X * 4
@@ -107,6 +109,8 @@ export default function TreeCanvas({
         cardPos.set(p.a!.id, { x: p.x - (CARD_W + COUPLE_GAP) / 2, y: p.y, depth: p.depth })
         cardPos.set(p.b.id, { x: p.x + (CARD_W + COUPLE_GAP) / 2, y: p.y, depth: p.depth })
       } else cardPos.set(p.a!.id, { x: p.x, y: p.y, depth: p.depth })
+      const ax = cardPos.get(p.a!.id)!.x
+      p.others.forEach((q, i) => cardPos.set(q.id, { x: ax, y: p.y + CARD_H / 2 + MINI_GAP + MINI_H / 2 + i * (MINI_H + 4), depth: p.depth }))
     }
     // Orthogonal connectors: parent couple → bus line → each child. Under a ghost root there is no parent stem, just the bus.
     const edges = placed.filter((p) => p.parentId).map((c) => {
@@ -198,7 +202,7 @@ export default function TreeCanvas({
   return (
     <div className="relative h-full w-full">
       <svg ref={svgRef} className="h-full w-full cursor-grab touch-none select-none active:cursor-grabbing" style={{ background: '#FAF8F3' }} onClick={() => onSelect(null)}>
-        <defs><clipPath id="disc"><circle cx={0} cy={0} r={17} /></clipPath></defs>
+        <defs><clipPath id="disc"><circle cx={0} cy={0} r={17} /></clipPath><clipPath id="disc-sm"><circle cx={0} cy={0} r={12} /></clipPath></defs>
         <g transform={t.toString()}>
           {layout.edges.map((e) => (
             <path key={e.id} d={e.d} fill="none" stroke={e.id === selectedEdge ? '#A8843A' : '#B9C7B9'} strokeWidth={dots ? 4 : e.id === selectedEdge ? 1.5 : 1} />
@@ -208,6 +212,7 @@ export default function TreeCanvas({
               {n.b && <line x1={n.x - COUPLE_GAP / 2 - 2} y1={n.y} x2={n.x + COUPLE_GAP / 2 + 2} y2={n.y} stroke="#B9C7B9" strokeWidth={dots ? 4 : 1} />}
               <PersonCard person={n.a!} x={layout.cardPos.get(n.a!.id)!.x} y={n.y} depth={n.depth} dots={dots} selected={selectedId === n.a!.id} onSelect={onSelect} />
               {n.b && <PersonCard person={n.b} x={layout.cardPos.get(n.b.id)!.x} y={n.y} depth={n.depth} dots={dots} selected={selectedId === n.b.id} onSelect={onSelect} />}
+              {!dots && n.others.map((q) => <MiniCard key={q.id} person={q} x={layout.cardPos.get(q.id)!.x} y={layout.cardPos.get(q.id)!.y} selected={selectedId === q.id} onSelect={onSelect} />)}
             </g>
           ))}
         </g>
@@ -246,6 +251,27 @@ function PersonCard({ person: p, x, y, depth, dots, selected, onSelect }: { pers
       </g>
       <text x={54} y={24} fontSize={15} fontWeight={selected ? 500 : 400} fill={selected ? '#FAF8F3' : '#2A2A26'}>{trunc(first, 12)}</text>
       <text x={54} y={41} fontSize={11} letterSpacing=".04em" fill={selected ? '#D6CFBF' : '#8A8578'}>{lifespan(p) || '—'}</text>
+    </g>
+  )
+}
+
+/** A further spouse (e.g. an earlier marriage), stacked beneath the person's own card. */
+function MiniCard({ person: p, x, y, selected, onSelect }: { person: Person; x: number; y: number; selected: boolean; onSelect: (id: string) => void }) {
+  const { data: photo } = useSignedUrl(p.photo_path)
+  const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
+  const first = p.nickname ? p.nickname : p.given_names.split(' ')[0] || p.surname || '?'
+  const left = x - MINI_W / 2, top = y - MINI_H / 2
+  return (
+    <g className="cursor-pointer" onClick={(e) => { e.stopPropagation(); onSelect(p.id) }}>
+      <line x1={x} y1={top - MINI_GAP} x2={x} y2={top} stroke="#C4B8A6" strokeWidth={1} />
+      <rect x={left} y={top} width={MINI_W} height={MINI_H} rx={6} fill={selected ? '#2E4A38' : '#fff'} stroke={selected ? '#2E4A38' : '#C4B8A6'} strokeWidth={1} strokeDasharray={selected ? undefined : '3 2'} />
+      <g transform={`translate(${left + 8 + 12},${y})`}>
+        <circle r={12} fill={selected ? '#FAF8F3' : '#F6F3EE'} />
+        {photo ? <image href={photo} x={-12} y={-12} width={24} height={24} preserveAspectRatio="xMidYMid slice" clipPath="url(#disc-sm)" />
+          : <text textAnchor="middle" dominantBaseline="central" fontSize={10} fill="#6B5D4D">{initials}</text>}
+      </g>
+      <text x={left + 36} y={y - 2} fontSize={12} fill={selected ? '#FAF8F3' : '#2A2A26'}>{trunc(first, 14)}</text>
+      <text x={left + 36} y={y + 11} fontSize={9.5} letterSpacing=".04em" fill={selected ? '#D6CFBF' : '#8A8578'}>{lifespan(p) || 'm.'}</text>
     </g>
   )
 }
