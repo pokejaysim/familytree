@@ -23,6 +23,9 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Hosting
 - GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
+## Splash
+`src/lib/splash.ts` (from Jason's splash pack, `docs/splash-README.md`): 2-second animated emblem overlay in a shadow-root, pointer-events none, reduced-motion skips. `useLoginSplash` in `src/App.tsx` plays it once per signed-in user per page load (sign-in, or opening the site already signed in), never on route changes.
+
 ## Brand assets
 From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.svg` (header/login mark, `branch-divider.svg`), `public/brand/` (favicons, manifest icons), `public/art/*.webp` (heritage-tree, first-branch, family-archive at 640/1200). Illustrations have an opaque ivory background matching `--color-paper`, so place them on paper, never on white. `EmptyState` and `BrandPanel` components wrap them.
 

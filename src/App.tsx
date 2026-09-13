@@ -7,6 +7,7 @@ import { supabase } from './lib/supabase'
 import { useProfile } from './lib/profile'
 import PendingPage from './pages/PendingPage'
 import MembersPage from './pages/MembersPage'
+import { showSplash } from './lib/splash'
 import TreesPage from './pages/TreesPage'
 import TreeLayout from './pages/TreeLayout'
 import PeoplePage from './pages/PeoplePage'
@@ -28,11 +29,24 @@ function useIsPasswordRecovery() {
   return recovering
 }
 
+/** Plays the two-second splash each time an approved member arrives in the app: on sign-in, and on opening the site already signed in. */
+function useLoginSplash(ready: boolean) {
+  const [shownFor, setShownFor] = useState<string | null>(null)
+  const { session } = useAuth()
+  const uid = session?.user.id ?? null
+  useEffect(() => {
+    if (ready && uid && shownFor !== uid) { setShownFor(uid); showSplash() }
+    if (!uid && shownFor) setShownFor(null) // signed out: next sign-in plays it again
+  }, [ready, uid, shownFor])
+}
+
 export default function App() {
   // Login is required. On this dev machine, VITE_DEV_EMAIL/PASSWORD in .env.local sign in automatically (see lib/auth.tsx).
   const { session, loading } = useAuth()
   const recovering = useIsPasswordRecovery()
   const profile = useProfile()
+  const approved = !!session && !recovering && profile.data?.status === 'approved'
+  useLoginSplash(approved)
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
   if (!session) return <LoginPage />
   if (recovering) return <UpdatePasswordPage />
