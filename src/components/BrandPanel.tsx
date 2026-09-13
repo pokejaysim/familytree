@@ -11,7 +11,6 @@ export default function BrandPanel() {
         <img src={`${base}art/heritage-tree-640.webp`} srcSet={`${base}art/heritage-tree-640.webp 640w, ${base}art/heritage-tree-1200.webp 1200w`} sizes="480px" alt="" width={640} height={427} className="w-[115%] max-w-none -translate-x-[16%]" />
       </div>
       <p className="text-[12px] uppercase tracking-[.12em] text-brass">Connected through generations</p>
-      <h2 className="mt-1 text-[34px] leading-tight">Every family has a story.</h2>
     </div>
   )
 }
