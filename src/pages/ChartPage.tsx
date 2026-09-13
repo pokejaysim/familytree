@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BookOpen, Minus, Plus, Search, User } from 'lucide-react'
+import { BookOpen, ChevronsDownUp, ChevronsUpDown, Minus, Plus, Search, User } from 'lucide-react'
 import { useTree, useTreeData } from '../lib/queries'
 import { buildGraph } from '../lib/graph'
 import TreeCanvas, { type LayoutInfo, type TreeCanvasHandle } from '../components/TreeCanvas'
@@ -19,7 +19,7 @@ export default function ChartPage() {
   const graph = useMemo(() => (data ? buildGraph(data) : null), [data])
   const canvas = useRef<TreeCanvasHandle | null>(null)
   const [picking, setPicking] = useState(false)
-  const [info, setInfo] = useState<LayoutInfo>({ generations: 0, people: 0 })
+  const [info, setInfo] = useState<LayoutInfo>({ generations: 0, people: 0, collapsed: 0 })
   const [introOpen, setIntroOpen] = useState(false)
 
   // Show the introduction automatically the first time this device opens the tree; the note on the map reopens it any time.
@@ -50,7 +50,7 @@ export default function ChartPage() {
   return (
     <div className="relative h-full overflow-hidden">
       <style>{`@keyframes riseIn { from { transform: translateY(12px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
-      <TreeCanvas graph={graph} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
+      <TreeCanvas graph={graph} treeId={treeId} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
 
       {/* Title block */}
       <div className="pointer-events-none absolute top-4 left-4 sm:top-6 sm:left-8 z-10 grid gap-0.5 max-w-[60%]">
@@ -75,10 +75,13 @@ export default function ChartPage() {
         <Search size={15} /> <span className="hidden sm:inline">Find a relative</span>
       </button>
 
-      <p className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 text-[13px] italic text-ink-mute sm:block">Drag to explore · Scroll to zoom</p>
+      <p className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 text-[13px] italic text-ink-mute sm:block">Drag to explore · Scroll to zoom · Fold a branch with the − under a couple</p>
 
       {/* Zoom controls, above the minimap */}
       <div className={`absolute right-4 bottom-4 sm:right-8 sm:bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink ${selected ? "hidden sm:flex" : ""}`}>
+        {info.collapsed > 0
+          ? <button className={`${ctl} border-r border-line`} title={`Unfold all branches (${info.collapsed} folded)`} onClick={() => { select(null); canvas.current?.expandAll() }}><ChevronsUpDown size={16} /></button>
+          : <button className={`${ctl} border-r border-line`} title="Fold every branch below the first generation" onClick={() => { select(null); canvas.current?.collapseAll() }}><ChevronsDownUp size={16} /></button>}
         <button className={`${ctl} border-r border-line`} title="Fit whole family" onClick={() => { select(null); canvas.current?.fit() }}><User size={16} className="text-moss" /></button>
         <button className={`${ctl} border-r border-line`} title="Zoom out" onClick={() => canvas.current?.zoomBy(1 / 1.4)}><Minus size={16} /></button>
         <button className={ctl} title="Zoom in" onClick={() => canvas.current?.zoomBy(1.4)}><Plus size={16} /></button>

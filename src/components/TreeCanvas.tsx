@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { hierarchy, tree as d3tree } from 'd3-hierarchy'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom'
@@ -13,10 +13,14 @@ import { useSignedUrl } from '../lib/queries'
  * Infinite-canvas family map in the Kinfolk style (design option 7a):
  * compact 160×56 cards, one soft disc tint per generation, orthogonal sage connectors,
  * a brass line to the selected person, and a minimap.
+ *
+ * Branches fold: every couple with children carries a small toggle under the card. Folded
+ * branches show a "+N" pill with the number of hidden relatives. Folds are remembered per
+ * device and unfold automatically when someone inside is searched for.
  */
 
-interface CoupleNode { id: string; a: Person | null; b: Person | null; others?: Person[]; children?: CoupleNode[] } // a === null: invisible root that groups siblings whose parents are unknown; others = further spouses of a, drawn as small cards beneath
-interface Placed { id: string; a: Person | null; b: Person | null; others: Person[]; x: number; y: number; depth: number; parentId: string | null; ghost: boolean }
+interface CoupleNode { id: string; a: Person | null; b: Person | null; others?: Person[]; children?: CoupleNode[]; kids?: number; hidden?: number } // a === null: invisible root that groups siblings whose parents are unknown; others = further spouses of a, drawn as small cards beneath
+interface Placed { id: string; a: Person | null; b: Person | null; others: Person[]; x: number; y: number; depth: number; parentId: string | null; ghost: boolean; kids: number; hidden: number }
 
 export const CARD_W = 160, CARD_H = 56
 const MINI_W = 150, MINI_H = 40, MINI_GAP = 6
@@ -31,13 +35,16 @@ export const TINTS = [
   { bg: '#DCE6EC', ink: '#2F4A5C' },
 ]
 
-export interface TreeCanvasHandle { zoomTo: (personId: string) => void; fit: (animate?: boolean) => void; zoomBy: (k: number) => void }
-export interface LayoutInfo { generations: number; people: number }
+export interface TreeCanvasHandle { zoomTo: (personId: string) => void; fit: (animate?: boolean) => void; zoomBy: (k: number) => void; expandAll: () => void; collapseAll: () => void }
+export interface LayoutInfo { generations: number; people: number; collapsed: number }
+
+const countPeople = (n: CoupleNode): number => (n.a ? 1 : 0) + (n.b ? 1 : 0) + (n.others?.length ?? 0) + (n.children ?? []).reduce((s, c) => s + countPeople(c), 0)
 
 export default function TreeCanvas({
-  graph, selectedId, onSelect, handleRef, onLayout,
+  graph, treeId, selectedId, onSelect, handleRef, onLayout,
 }: {
   graph: Graph
+  treeId?: string
   selectedId: string | null
   onSelect: (id: string | null) => void
   handleRef: React.MutableRefObject<TreeCanvasHandle | null>
@@ -46,12 +53,27 @@ export default function TreeCanvas({
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [t, setT] = useState<ZoomTransform>(zoomIdentity)
+  const tRef = useRef<ZoomTransform>(zoomIdentity)
   const [size, setSize] = useState({ w: 1, h: 1 })
   const fittedRef = useRef(false)
   const fitRef = useRef<((animate?: boolean) => void) | null>(null)
+  const zoomToRef = useRef<((personId: string) => void) | null>(null)
+  const anchorRef = useRef<{ id: string; x: number; y: number } | null>(null) // couple to keep still on screen across a fold/unfold
+  const pendingZoomRef = useRef<string | null>(null) // person to zoom to once their branch has unfolded
+  const fitAfterRef = useRef(false) // fit the whole map once the next layout lands (fold all / unfold all)
 
-  // ---- Layout: forest of couple-nodes; roots are people with no recorded parents ----
-  const layout = useMemo(() => {
+  // ---- Folded branches, remembered per device ----
+  const storageKey = treeId ? `sft-collapsed:${treeId}` : null
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try { const raw = storageKey && localStorage.getItem(storageKey); return new Set(raw ? (JSON.parse(raw) as string[]) : []) } catch { return new Set() }
+  })
+  const updateCollapsed = useCallback((next: Set<string>) => {
+    setCollapsed(next)
+    try { if (storageKey) localStorage.setItem(storageKey, JSON.stringify([...next])) } catch { /* storage unavailable: folds last for this visit only */ }
+  }, [storageKey])
+
+  // ---- Forest of couple-nodes; roots are people with no recorded parents ----
+  const forest = useMemo(() => {
     const seen = new Set<string>()
     const build = (p: Person): CoupleNode => {
       seen.add(p.id)
@@ -84,6 +106,25 @@ export default function TreeCanvas({
       } else if (!sibFam) roots.push(build(p))
     }
     for (const p of people) if (!seen.has(p.id)) roots.push(build(p))
+    // For every person, the couple-nodes above them (so a search can unfold the way down to them).
+    const chain = new Map<string, string[]>()
+    const walk = (n: CoupleNode, anc: string[]) => {
+      for (const p of [n.a, n.b, ...(n.others ?? [])]) if (p) chain.set(p.id, anc)
+      for (const c of n.children ?? []) walk(c, [...anc, n.id])
+    }
+    roots.forEach((r) => walk(r, []))
+    return { roots, chain }
+  }, [graph])
+
+  // ---- Layout of the forest with folded branches pruned ----
+  const layout = useMemo(() => {
+    const active = new Set<string>()
+    const prune = (n: CoupleNode): CoupleNode => {
+      const kids = n.children ?? []
+      if (kids.length && collapsed.has(n.id)) { active.add(n.id); return { ...n, children: [], kids: kids.length, hidden: kids.reduce((s, c) => s + countPeople(c), 0) } }
+      return { ...n, children: kids.map(prune), kids: kids.length, hidden: 0 }
+    }
+    const roots = forest.roots.map(prune)
 
     const all: Placed[] = []
     let offsetX = 0
@@ -96,7 +137,7 @@ export default function TreeCanvas({
       const lift = ghostRoot ? CARD_H + ROW_GAP : 0 // the ghost row is empty, so pull the subtree up one row
       for (const n of nodes) {
         const depth = n.depth - (ghostRoot ? 1 : 0)
-        all.push({ id: n.data.id, a: n.data.a, b: n.data.b, others: n.data.others ?? [], x: n.x - minX + offsetX, y: n.y - lift, depth, parentId: n.parent?.data.id ?? null, ghost: n.data.a === null })
+        all.push({ id: n.data.id, a: n.data.a, b: n.data.b, others: n.data.others ?? [], x: n.x - minX + offsetX, y: n.y - lift, depth, parentId: n.parent?.data.id ?? null, ghost: n.data.a === null, kids: n.data.kids ?? 0, hidden: n.data.hidden ?? 0 })
         if (n.data.a) maxDepth = Math.max(maxDepth, depth)
       }
       offsetX += Math.max(...nodes.map((n) => n.x - minX + nodeWidth(n.data) / 2)) + NODE_GAP_X * 4
@@ -128,18 +169,18 @@ export default function TreeCanvas({
       }
     }
     const xs = placed.flatMap((p) => [p.x - nodeWidth(p) / 2, p.x + nodeWidth(p) / 2])
-    const ys = placed.flatMap((p) => [p.y - CARD_H / 2 - ROW_GAP / 2, p.y + CARD_H / 2])
+    const ys = placed.flatMap((p) => [p.y - CARD_H / 2 - ROW_GAP / 2, p.y + CARD_H / 2 + (p.hidden ? 30 : 0)])
     const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-    return { placed, edges, bounds, cardPos, generations: maxDepth + 1 }
-  }, [graph])
+    return { placed, edges, bounds, cardPos, generations: maxDepth + 1, collapsed: active.size }
+  }, [forest, collapsed])
 
-  useEffect(() => { onLayout?.({ generations: layout.generations, people: graph.people.size }) }, [layout, graph, onLayout])
+  useEffect(() => { onLayout?.({ generations: layout.generations, people: graph.people.size, collapsed: layout.collapsed }) }, [layout, graph, onLayout])
 
   // ---- Zoom behaviour + resize tracking ----
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.08, 3]).on('zoom', (ev) => setT(ev.transform))
+    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.08, 3]).on('zoom', (ev) => { tRef.current = ev.transform; setT(ev.transform) })
     zoomRef.current = z
     select(svg).call(z).on('dblclick.zoom', null)
     const ro = new ResizeObserver(() => {
@@ -175,6 +216,13 @@ export default function TreeCanvas({
   fitRef.current = fit
 
   const zoomTo = useCallback((personId: string) => {
+    // Inside a folded branch? Unfold the way down first; the layout effect finishes the zoom.
+    const need = (forest.chain.get(personId) ?? []).filter((id) => collapsed.has(id))
+    if (need.length) {
+      pendingZoomRef.current = personId
+      const next = new Set(collapsed); need.forEach((id) => next.delete(id)); updateCollapsed(next)
+      return
+    }
     const svg = svgRef.current
     const pos = layout.cardPos.get(personId)
     if (!svg || !pos) return
@@ -182,7 +230,8 @@ export default function TreeCanvas({
     const phone = width < 640
     const k = phone ? 1.2 : 1.4
     animateTo(zoomIdentity.translate(width / 2 - pos.x * k, height * (phone ? 0.22 : 0.42) - pos.y * k).scale(k))
-  }, [layout, animateTo])
+  }, [layout, forest, collapsed, updateCollapsed, animateTo])
+  zoomToRef.current = zoomTo
 
   const zoomBy = useCallback((f: number) => {
     const svg = svgRef.current, z = zoomRef.current
@@ -190,8 +239,49 @@ export default function TreeCanvas({
     select(svg).transition().duration(220).call(z.scaleBy, f)
   }, [])
 
-  useEffect(() => { handleRef.current = { zoomTo, fit, zoomBy } }, [handleRef, zoomTo, fit, zoomBy])
-  useEffect(() => { if (fittedRef.current) fit() }, [fit])
+  const toggle = useCallback((n: Placed) => {
+    anchorRef.current = { id: n.id, x: n.x, y: n.y }
+    const next = new Set(collapsed)
+    if (next.has(n.id)) next.delete(n.id); else next.add(n.id)
+    updateCollapsed(next)
+  }, [collapsed, updateCollapsed])
+
+  const expandAll = useCallback(() => { fitAfterRef.current = true; updateCollapsed(new Set()) }, [updateCollapsed])
+  /** Fold every branch below the first generation: the founding couple and their children stay, everyone else waits behind a "+N" pill. */
+  const collapseAll = useCallback(() => {
+    const next = new Set<string>()
+    const walk = (n: CoupleNode, depth: number) => {
+      if (depth >= 1 && n.children?.length) next.add(n.id)
+      for (const c of n.children ?? []) walk(c, depth + 1)
+    }
+    for (const r of forest.roots) { if (r.a === null) (r.children ?? []).forEach((c) => walk(c, 0)); else walk(r, 0) }
+    fitAfterRef.current = true
+    updateCollapsed(next)
+  }, [forest, updateCollapsed])
+
+  useEffect(() => { handleRef.current = { zoomTo, fit, zoomBy, expandAll, collapseAll } }, [handleRef, zoomTo, fit, zoomBy, expandAll, collapseAll])
+
+  // Re-fit when people are added or removed (not on every refetch, and not on folds).
+  const peopleCountRef = useRef(graph.people.size)
+  useEffect(() => {
+    if (peopleCountRef.current === graph.people.size) return
+    peopleCountRef.current = graph.people.size
+    if (fittedRef.current) fitRef.current?.()
+  }, [graph])
+
+  // After a fold/unfold the layout shifts; keep the toggled couple where it was on screen, or finish a pending zoom/fit.
+  useLayoutEffect(() => {
+    if (pendingZoomRef.current) { const id = pendingZoomRef.current; pendingZoomRef.current = null; anchorRef.current = null; zoomToRef.current?.(id); return }
+    if (fitAfterRef.current) { fitAfterRef.current = false; anchorRef.current = null; fitRef.current?.(); return }
+    const a = anchorRef.current
+    anchorRef.current = null
+    const svg = svgRef.current, z = zoomRef.current
+    if (!a || !svg || !z) return
+    const n = layout.placed.find((p) => p.id === a.id)
+    if (!n) return
+    const cur = tRef.current, dx = n.x - a.x, dy = n.y - a.y
+    if (dx || dy) select(svg).call(z.transform, zoomIdentity.translate(cur.x - dx * cur.k, cur.y - dy * cur.k).scale(cur.k))
+  }, [layout])
 
   const dots = t.k < 0.22
   const selectedEdge = selectedId ? layout.edges.find((e) => e.childIds.includes(selectedId))?.id : null
@@ -219,6 +309,7 @@ export default function TreeCanvas({
               <PersonCard person={n.a!} x={layout.cardPos.get(n.a!.id)!.x} y={n.y} depth={n.depth} dots={dots} selected={selectedId === n.a!.id} onSelect={onSelect} />
               {n.b && <PersonCard person={n.b} x={layout.cardPos.get(n.b.id)!.x} y={n.y} depth={n.depth} dots={dots} selected={selectedId === n.b.id} onSelect={onSelect} />}
               {!dots && n.others.map((q) => <MiniCard key={q.id} person={q} x={layout.cardPos.get(q.id)!.x} y={layout.cardPos.get(q.id)!.y} selected={selectedId === q.id} onSelect={onSelect} />)}
+              {n.kids > 0 && <FoldToggle x={n.x} y={n.y + CARD_H / 2} kids={n.kids} hidden={n.hidden} dots={dots} onToggle={() => toggle(n)} />}
             </g>
           ))}
         </g>
@@ -232,6 +323,36 @@ export default function TreeCanvas({
         {mmOk && <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="none" stroke="#2E4A38" strokeWidth={1} rx={2} />}
       </svg>
     </div>
+  )
+}
+
+/** Fold control under a couple with children: a "−" on the stem while open, a "+N" pill (N hidden relatives) while folded. */
+function FoldToggle({ x, y, kids, hidden, dots, onToggle }: { x: number; y: number; kids: number; hidden: number; dots: boolean; onToggle: () => void }) {
+  const stop = (e: React.MouseEvent) => { e.stopPropagation(); onToggle() }
+  if (hidden) {
+    const label = `+${hidden}`
+    const w = 18 + label.length * 8
+    const s = dots ? 2.4 : 1 // stay legible when the map is zoomed out to dots
+    const cy = y + (dots ? 34 : 18)
+    return (
+      <g className="cursor-pointer" onClick={stop}>
+        <title>{`Show ${hidden} hidden relative${hidden === 1 ? '' : 's'}`}</title>
+        <line x1={x} y1={y} x2={x} y2={cy - 10 * s} stroke="#B9C7B9" strokeWidth={dots ? 4 : 1} />
+        <g transform={`translate(${x},${cy}) scale(${s})`}>
+          <rect x={-w / 2} y={-10} width={w} height={20} rx={10} fill="#DCE8DD" stroke="#2E4A38" strokeWidth={1} />
+          <text textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={500} fill="#2E4A38">{label}</text>
+        </g>
+      </g>
+    )
+  }
+  if (dots) return null
+  return (
+    <g transform={`translate(${x},${y + 16})`} className="cursor-pointer" onClick={stop}>
+      <title>{`Hide ${kids === 1 ? 'this child' : `these ${kids} children`} and their families`}</title>
+      <circle r={13} fill="transparent" />
+      <circle r={8} fill="#fff" stroke="#B9C7B9" strokeWidth={1} />
+      <line x1={-4} y1={0} x2={4} y2={0} stroke="#2E4A38" strokeWidth={1.5} />
+    </g>
   )
 }
 
