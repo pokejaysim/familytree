@@ -26,6 +26,9 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Hosting
 - GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
+## Phone layout
+Below the `sm` breakpoint the tree tabs move to a bottom tab bar (`BottomTabs` in `AppHeader.tsx`), Members becomes an icon, the spotlight is a bottom sheet, the minimap hides, and the map opens at a readable zoom on the first generation instead of fitting the whole tree. Keep the header's minimum content width under 375px: if it overflows, mobile browsers widen the layout viewport and everything else looks broken.
+
 ## Splash
 `src/lib/splash.ts` (from Jason's splash pack, `docs/splash-README.md`): 2-second animated emblem overlay in a shadow-root, pointer-events none, reduced-motion skips. `useLoginSplash` in `src/App.tsx` plays it once per signed-in user per page load (sign-in, or opening the site already signed in), never on route changes.
 
