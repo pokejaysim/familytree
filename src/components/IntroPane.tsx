@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import type { Tree } from '../lib/types'
 import divider from '../assets/branch-divider.svg'
+import SupportLine from './SupportLine'
 
 /** Paragraphs separated by blank lines; a paragraph wrapped in quotation marks becomes a block quote. */
 export function Letter({ text }: { text: string }) {
@@ -57,6 +58,7 @@ export default function IntroPane({ tree, canEdit, onClose }: { tree: Tree; canE
           <button className="btn-primary" onClick={onClose}>Open the map</button>
           {canEdit && <Link to={`/trees/${tree.id}/about`} className="btn-ghost">Edit</Link>}
         </div>
+        <SupportLine variant="compact" />
       </article>
     </div>
   )

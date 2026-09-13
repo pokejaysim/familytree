@@ -1,0 +1,49 @@
+{
+  "project": "Sim Family Tree",
+  "purpose": "Coffee support footer assets",
+  "created": "2026-09-13",
+  "illustrations": [
+    {
+      "name": "coffee-cup",
+      "provider": "Higgsfield",
+      "model": "gpt_image_2",
+      "job_id": "70231da3-6ff5-4bf4-ad76-90703ce1b87d",
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3J0TtHtVeull0VgoGUdkXcerj5W/hf_20260913_230909_70231da3-6ff5-4bf4-ad76-90703ce1b87d.png",
+      "prompt": "Create an original, polished website illustration for Sim Family Tree, a calm classic genealogy website. The first reference is the existing footer UI: use it only for color and mood, never reproduce its text or layout. The second reference establishes the matching fine botanical engraving aesthetic. Palette is warm ivory #FAF8F4, deep forest green #2F4B3A, muted antique brass #AF8C45, subtle sage. Restrained vintage ink engraving with delicate hatch shading, crisp graceful outlines, generous negative space, almost no cast shadow. Flat even ivory background, with no grain or tinted rectangle so the illustration blends into a website. No letters, words, logos, watermark, signatures, people, faces, or mockup UI. Subject: one elegant small ceramic coffee cup on a simple saucer, in a three-quarter view. A single thin botanical twig with five small almond-shaped leaves rests naturally beside the saucer, echoing a family tree. Two light steam curls rise above the cup, one flowing gently into a leaf-like flourish. An understated brass rim on the cup and one brass leaf are the only gold accents. Artwork centered and fully contained, fills roughly 68% of canvas width and 70% height. Keep the cup silhouette readable at 100px wide. Charming, welcoming, grown-up, carefully drawn, not cute cartoon, not photorealistic.",
+      "reference_media": [
+        {
+          "role": "image",
+          "value": "6fdae55f-1dea-4db0-8f2b-b4b22c875c29"
+        },
+        {
+          "role": "image",
+          "value": "a5c06915-8ecf-4025-acb6-88a1646772f7"
+        }
+      ],
+      "processing": "Background harmonized to #FAF8F4, resized and padded to 4:3; original PNG preserved."
+    },
+    {
+      "name": "coffee-and-memories",
+      "provider": "Higgsfield",
+      "model": "gpt_image_2",
+      "job_id": "c56bb6df-93ea-4177-98e2-42c8ae746e86",
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3J0TtHtVeull0VgoGUdkXcerj5W/hf_20260913_230909_c56bb6df-93ea-4177-98e2-42c8ae746e86.png",
+      "prompt": "Create an original, polished website illustration for Sim Family Tree, a calm classic genealogy website. The first reference is the existing footer UI: use it only for color and mood, never reproduce its text or layout. The second reference establishes the matching fine botanical engraving aesthetic. Palette is warm ivory #FAF8F4, deep forest green #2F4B3A, muted antique brass #AF8C45, subtle sage. Restrained vintage ink engraving with delicate hatch shading, crisp graceful outlines, generous negative space, almost no cast shadow. Flat even ivory background, with no grain or tinted rectangle so the illustration blends into a website. No letters, words, logos, watermark, signatures, people, faces, or mockup UI. Subject: a quiet still life of a closed clothbound family journal in deep forest green with a narrow brass page ribbon, an elegant small coffee cup and saucer in front-right, and one loose botanical twig tucked under the journal. The journal cover is completely blank with no typography or crest. Express the feeling of caring for family memories over a coffee. Restrained composition with just these three objects, fully contained, centered, filling about 76% of canvas width and 65% height. White porcelain cup with a very thin brass rim, deep coffee surface. Crisp heirloom engraving, not photorealistic, not a busy desk scene. Make the journal and coffee individually readable at 320px wide.",
+      "reference_media": [
+        {
+          "role": "image",
+          "value": "6fdae55f-1dea-4db0-8f2b-b4b22c875c29"
+        },
+        {
+          "role": "image",
+          "value": "a5c06915-8ecf-4025-acb6-88a1646772f7"
+        }
+      ],
+      "processing": "Background harmonized to #FAF8F4, resized and padded to 4:3; original PNG preserved."
+    }
+  ],
+  "vectors": "Coffee icons and botanical divider authored as SVG for this pack. Tree mark reused from the existing Sim Family Tree asset pack.",
+  "layout": "Authored HTML/CSS, no external libraries, images referenced locally.",
+  "reference_screenshot": "Screenshot 2026-09-13 at 4.04.24 PM.png; used only for existing footer styling.",
+  "revision": "Footer wording clarified to explicitly invite optional donations through Buy Me a Coffee to help cover hosting. Existing artwork reused."
+}

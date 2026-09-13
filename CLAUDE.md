@@ -33,10 +33,10 @@ Below the `sm` breakpoint the tree tabs move to a bottom tab bar (`BottomTabs` i
 `src/lib/splash.ts` (from Jason's splash pack, `docs/splash-README.md`): 2-second animated emblem overlay in a shadow-root, pointer-events none, reduced-motion skips. `useLoginSplash` in `src/App.tsx` plays it once per signed-in user per page load (sign-in, or opening the site already signed in), never on route changes.
 
 ## Brand assets
-From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.svg` (header/login mark, `branch-divider.svg`), `public/brand/` (favicons, manifest icons), `public/art/*.webp` (heritage-tree, first-branch, family-archive at 640/1200). Illustrations have an opaque ivory background matching `--color-paper`, so place them on paper, never on white. `EmptyState` and `BrandPanel` components wrap them.
+From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.svg` (header/login mark, `branch-divider.svg`), `public/brand/` (favicons, manifest icons), `public/art/*.webp` (heritage-tree, first-branch, family-archive at 640/1200; coffee-cup at 480/960 from the coffee pack, `docs/coffee-assets/`). Illustrations have an opaque ivory background matching `--color-paper`, so place them on paper, never on white. `EmptyState` and `BrandPanel` components wrap them.
 
 ## Site settings
-`src/config.ts`: `DONATE_URL` (set it to show the "chip in for hosting" line on the Trees page; empty hides it) and `ADMIN_NAME`.
+`src/config.ts`: `DONATE_URL` (Buy Me a Coffee page; empty hides every support element) and `ADMIN_NAME`. `SupportLine` renders the illustrated coffee footer on the Trees/People/Sources pages and a compact line at the foot of the intro pane.
 
 ## Commands
 ```bash
