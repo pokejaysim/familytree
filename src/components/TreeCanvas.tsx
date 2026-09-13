@@ -182,6 +182,7 @@ export default function TreeCanvas({
   const MM_W = 200, MM_H = 120
   const { minX, maxX, minY, maxY } = layout.bounds
   const mmK = Math.min((MM_W - 24) / Math.max(1, maxX - minX), (MM_H - 24) / Math.max(1, maxY - minY))
+  const mmOk = Number.isFinite(mmK) && Number.isFinite(t.k) && t.k > 0 && size.w > 1
   const mmX = (x: number) => 12 + (x - minX) * mmK + ((MM_W - 24) - (maxX - minX) * mmK) / 2
   const mmY = (y: number) => 12 + (y - minY) * mmK + ((MM_H - 24) - (maxY - minY) * mmK) / 2
   const view = { x: mmX((0 - t.x) / t.k), y: mmY((0 - t.y) / t.k), w: (size.w / t.k) * mmK, h: (size.h / t.k) * mmK }
@@ -206,10 +207,10 @@ export default function TreeCanvas({
 
       {/* Minimap (bottom-right, below the zoom controls the page renders) */}
       <svg width={MM_W} height={MM_H} className="absolute right-8 bottom-7 hidden rounded border border-line bg-white sm:block" style={{ pointerEvents: 'none' }}>
-        {layout.placed.map((n) => (
+        {mmOk && layout.placed.map((n) => (
           <rect key={n.id} x={mmX(n.x - nodeWidth(n) / 2)} y={mmY(n.y - CARD_H / 2)} width={Math.max(2, nodeWidth(n) * mmK)} height={Math.max(2, CARD_H * mmK)} rx={1} fill={n.a!.id === selectedId || n.b?.id === selectedId ? '#2E4A38' : '#D6D0C2'} />
         ))}
-        <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="none" stroke="#2E4A38" strokeWidth={1} rx={2} />
+        {mmOk && <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="none" stroke="#2E4A38" strokeWidth={1} rx={2} />}
       </svg>
     </div>
   )
