@@ -23,7 +23,7 @@ import { useSignedUrl } from '../lib/queries'
  * connectors tween their paths (d3) or draw themselves in, and the pill pops.
  */
 
-interface CoupleNode { id: string; a: Person | null; b: Person | null; others?: Person[]; children?: CoupleNode[]; kids?: number; hidden?: number } // a === null: invisible root that groups siblings whose parents are unknown; others = further spouses of a, drawn as small cards beneath
+interface CoupleNode { id: string; a: Person | null; b: Person | null; others?: Person[]; children?: CoupleNode[]; kids?: number; hidden?: number; anc?: CoupleNode[] } // a === null: invisible root that groups siblings whose parents are unknown; others = further spouses of a, drawn as small cards beneath; anc = the partner's own ancestors (parents first), stacked above the partner's card
 interface Placed { id: string; a: Person | null; b: Person | null; others: Person[]; x: number; y: number; depth: number; parentId: string | null; ghost: boolean; kids: number; hidden: number }
 interface Shown extends Placed { rel: number; entering?: boolean; leaving?: boolean } // rel: generations below the couple the node emerges from / gathers into
 
@@ -86,27 +86,45 @@ export default function TreeCanvas({
   // ---- Forest of couple-nodes; roots are people with no recorded parents ----
   const forest = useMemo(() => {
     const seen = new Set<string>()
+    const kidsOf = (f: Family) => graph.childrenOfFamily.get(f.id)?.length ?? 0
+    // A spouse's own line (parents, grandparents, …) as far as it is known and not already on the map. Drawn as a stack above the spouse.
+    const climb = (p: Person): CoupleNode[] => {
+      const chain: CoupleNode[] = []
+      let cur: Person | null = p
+      while (cur) {
+        const par: Person[] = graph.parentsOf(cur.id).filter((q: Person) => !seen.has(q.id))
+        if (par.length === 0) break
+        par.forEach((q) => seen.add(q.id))
+        chain.push({ id: par[0].id, a: par[0], b: par[1] ?? null, others: [], children: [] })
+        cur = par[0]
+      }
+      return chain
+    }
     const build = (p: Person): CoupleNode => {
       seen.add(p.id)
       const fams = graph.familiesOfParent.get(p.id) ?? []
       // With several marriages, show the partner whose family has children beside the person; other partners stay on the profile page
       // (unless they have descendants of their own elsewhere, in which case they get their own place on the map).
-      const kidsOf = (f: Family) => graph.childrenOfFamily.get(f.id)?.length ?? 0
       const ranked = [...fams].sort((a, b) => kidsOf(b) - kidsOf(a))
       const partner = ranked.map((f) => graph.partnerOf(f, p.id)).find((q) => q && !seen.has(q.id)) ?? null
       if (partner) seen.add(partner.id)
+      const anc = partner ? climb(partner) : []
       const others: Person[] = []
       for (const f of fams) {
         const q = graph.partnerOf(f, p.id)
         if (q && q.id !== partner?.id && !seen.has(q.id) && (graph.familiesOfParent.get(q.id) ?? []).every((g) => g.id === f.id || kidsOf(g) === 0)) { seen.add(q.id); others.push(q) }
       }
       const kids = fams.flatMap((f) => graph.childrenOfFamily.get(f.id) ?? []).filter((k) => !seen.has(k.id))
-      return { id: p.id, a: p, b: partner, others, children: kids.map(build) }
+      return { id: p.id, a: p, b: partner, others, children: kids.map(build), anc }
     }
+    // Roots are people with no recorded parents. The founding couple (most children) goes first, so a spouse's ancestors become a stack
+    // above the spouse rather than a rival tree; the rest follow in birth order.
+    const kidCount = (p: Person) => (graph.familiesOfParent.get(p.id) ?? []).reduce((s, f) => s + kidsOf(f), 0)
     const people = [...graph.people.values()].sort((a, b) => (a.birth_date_sort ?? '9999').localeCompare(b.birth_date_sort ?? '9999'))
+    const candidates = [...people].sort((a, b) => kidCount(b) - kidCount(a))
     const roots: CoupleNode[] = []
     const usedFams = new Set<string>()
-    for (const p of people) {
+    for (const p of candidates) {
       if (seen.has(p.id) || graph.parentsOf(p.id).length !== 0) continue
       // Siblings recorded under a family with no known parents: group them under an invisible root, in birth order.
       const sibFam = (graph.familiesOfChild.get(p.id) ?? []).find((f) => !f.partner1_id && !f.partner2_id)
@@ -164,6 +182,26 @@ export default function TreeCanvas({
       const ax = cardPos.get(p.a!.id)!.x
       p.others.forEach((q, i) => cardPos.set(q.id, { x: ax, y: p.y + CARD_H / 2 + MINI_GAP + MINI_H / 2 + i * (MINI_H + 4), depth: p.depth }))
     }
+    // A spouse's ancestors: a stack of rows above the spouse's card, each row centred on the card of the person it is the parents of.
+    const ancEdges: Edge[] = []
+    const ancNodes = new Map<string, CoupleNode[]>()
+    const collect = (n: CoupleNode) => { if (n.anc?.length && n.b) ancNodes.set(n.b.id, n.anc); n.children?.forEach(collect) }
+    roots.forEach(collect)
+    for (const p of [...placed]) {
+      const chain = p.b ? ancNodes.get(p.b.id) : undefined
+      if (!chain) continue
+      let belowX = cardPos.get(p.b!.id)!.x, belowY = p.y, belowId = p.b!.id
+      chain.forEach((n, i) => {
+        const y = belowY - (CARD_H + ROW_GAP)
+        const node: Placed = { id: n.id, a: n.a, b: n.b, others: [], x: belowX, y, depth: p.depth - (i + 1), parentId: null, ghost: false, kids: 0, hidden: 0 }
+        placed.push(node)
+        const ax = n.b ? belowX - (CARD_W + COUPLE_GAP) / 2 : belowX
+        cardPos.set(n.a!.id, { x: ax, y, depth: node.depth })
+        if (n.b) cardPos.set(n.b.id, { x: belowX + (CARD_W + COUPLE_GAP) / 2, y, depth: node.depth })
+        ancEdges.push({ id: 'anc-' + n.id, d: `M${belowX},${y + CARD_H / 2} V${belowY - CARD_H / 2}`, childIds: [belowId] })
+        belowX = ax; belowY = y; belowId = n.a!.id
+      })
+    }
     // Orthogonal connectors: parent couple → bus line → each child. Under a ghost root there is no parent stem, just the bus.
     const edges: Edge[] = placed.filter((p) => p.parentId).map((c) => {
       const par = byId.get(c.parentId!)!
@@ -179,6 +217,7 @@ export default function TreeCanvas({
         edges.push({ id: 'bus-' + g.id, d: `M${Math.min(...kids.map((k) => k.x))},${midY} H${Math.max(...kids.map((k) => k.x))}`, childIds: [] })
       }
     }
+    edges.push(...ancEdges)
     const xs = placed.flatMap((p) => [p.x - nodeWidth(p) / 2, p.x + nodeWidth(p) / 2])
     const ys = placed.flatMap((p) => [p.y - CARD_H / 2 - ROW_GAP / 2, p.y + CARD_H / 2 + (p.hidden ? 30 : 0)])
     const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
@@ -455,7 +494,7 @@ function FoldToggle({ kids, hidden, dots, onToggle }: { kids: number; hidden: nu
 /** One person's card, drawn relative to the couple's centre (dx = horizontal offset of the card's centre). */
 function PersonCard({ person: p, dx, depth, dots, selected, onSelect }: { person: Person; dx: number; depth: number; dots: boolean; selected: boolean; onSelect: (id: string) => void }) {
   const { data: photo } = useSignedUrl(p.photo_path)
-  const tint = TINTS[depth % TINTS.length]
+  const tint = TINTS[((depth % TINTS.length) + TINTS.length) % TINTS.length] // ancestors above the founders have negative depths
   const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(p.id) }
   const left = dx - CARD_W / 2, top = -CARD_H / 2
