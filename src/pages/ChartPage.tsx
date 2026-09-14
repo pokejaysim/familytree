@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BookOpen, ChevronsDownUp, ChevronsUpDown, Minus, Plus, Search, User } from 'lucide-react'
+import { ArrowDownFromLine, ArrowRightFromLine, BookOpen, ChevronsDownUp, ChevronsUpDown, Minus, Plus, Search, User } from 'lucide-react'
 import { useTree, useTreeData } from '../lib/queries'
 import { buildGraph } from '../lib/graph'
-import TreeCanvas, { type LayoutInfo, type TreeCanvasHandle } from '../components/TreeCanvas'
+import TreeCanvas, { type LayoutInfo, type Orient, type TreeCanvasHandle } from '../components/TreeCanvas'
 import PersonSpotlight from '../components/PersonSpotlight'
 import PersonPicker from '../components/PersonPicker'
 import Modal from '../components/Modal'
@@ -21,6 +21,12 @@ export default function ChartPage() {
   const [picking, setPicking] = useState(false)
   const [info, setInfo] = useState<LayoutInfo>({ generations: 0, people: 0, collapsed: 0 })
   const [introOpen, setIntroOpen] = useState(false)
+  // Map orientation: the book's top-down chart on wide screens; generations flowing left to right (siblings stacked) on phones. Remembered per device once chosen.
+  const [orient, setOrient] = useState<Orient>(() => {
+    try { const s = localStorage.getItem('sft-orient'); if (s === 'down' || s === 'right') return s } catch { /* ignore */ }
+    return window.innerHeight > window.innerWidth ? 'right' : 'down' // a screen held upright (phones, tablets in portrait) gets the tall shape
+  })
+  const turn = () => { const next: Orient = orient === 'down' ? 'right' : 'down'; setOrient(next); try { localStorage.setItem('sft-orient', next) } catch { /* ignore */ } }
 
   // Show the introduction automatically the first time this device opens the tree; the note on the map reopens it any time.
   useEffect(() => {
@@ -50,7 +56,7 @@ export default function ChartPage() {
   return (
     <div className="relative h-full overflow-hidden">
       <style>{`@keyframes riseIn { from { transform: translateY(12px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
-      <TreeCanvas graph={graph} treeId={treeId} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
+      <TreeCanvas graph={graph} treeId={treeId} orient={orient} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
 
       {/* Title block */}
       <div className="pointer-events-none absolute top-4 left-4 sm:top-6 sm:left-8 z-10 grid gap-0.5 max-w-[60%]">
@@ -79,6 +85,7 @@ export default function ChartPage() {
 
       {/* Zoom controls, above the minimap */}
       <div className={`absolute right-4 bottom-4 sm:right-8 sm:bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink ${selected ? "hidden sm:flex" : ""}`}>
+        <button className={`${ctl} border-r border-line`} title={orient === 'down' ? 'Turn the map: generations left to right' : 'Turn the map: generations top to bottom'} onClick={() => { select(null); turn() }}>{orient === 'down' ? <ArrowRightFromLine size={16} /> : <ArrowDownFromLine size={16} />}</button>
         {info.collapsed > 0
           ? <button className={`${ctl} border-r border-line`} title={`Unfold all branches (${info.collapsed} folded)`} onClick={() => { select(null); canvas.current?.expandAll() }}><ChevronsUpDown size={16} /></button>
           : <button className={`${ctl} border-r border-line`} title="Fold every branch below the first generation" onClick={() => { select(null); canvas.current?.collapseAll() }}><ChevronsDownUp size={16} /></button>}
