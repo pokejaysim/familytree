@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ADMIN_NAME, DONATE_URL } from '../config'
+import { DONATE_URL } from '../config'
 
 /** Coffee-cup-with-leaf line icon from Jason's coffee asset pack (currentColor). */
 export function CoffeeIcon({ className }: { className?: string }) {
@@ -22,7 +22,7 @@ export default function SupportLine({ variant = 'full' }: { variant?: 'full' | '
     return (
       <p className="mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-line pt-6 text-center text-[15px] italic text-ink-mute">
         <CoffeeIcon className="h-6 w-6 text-moss" />
-        <span>Help {ADMIN_NAME} cover hosting costs.</span>
+        <span>Optional donations help cover development and hosting.</span>
         <a href={DONATE_URL} target="_blank" rel="noreferrer" className="not-italic text-brass underline decoration-1 underline-offset-4 hover:text-moss">Donate via Buy Me a Coffee ↗</a>
       </p>
     )
@@ -31,7 +31,7 @@ export default function SupportLine({ variant = 'full' }: { variant?: 'full' | '
       <img src={`${art}-480.webp`} srcSet={`${art}-480.webp 480w, ${art}-960.webp 960w`} sizes="156px" width={156} height={117} alt="" className="shrink-0" />
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
         <h2 className="text-[22px] leading-tight text-ink">Help keep our family tree online.</h2>
-        <p className="mt-1 text-[15px] text-ink-mute">{ADMIN_NAME} keeps this site online. Optional donations help cover hosting.</p>
+        <p className="mt-1 text-[15px] text-ink-mute">Optional donations help cover development and hosting.</p>
         <Link to="/support" className="mt-2 inline-block text-[12px] uppercase tracking-[.12em] text-brass underline underline-offset-4 hover:text-moss">Where it goes</Link>
       </div>
       <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[44px] shrink-0 px-5">

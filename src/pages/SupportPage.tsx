@@ -18,8 +18,8 @@ export default function SupportPage() {
           <img src={`${art}-480.webp`} srcSet={`${art}-480.webp 480w, ${art}-960.webp 960w`} sizes="(min-width: 640px) 420px, 80vw" width={960} height={720} alt="" className="art-fade mx-auto -my-2 w-[420px] max-w-full" />
 
           <p className="text-center text-[17px] leading-relaxed text-ink-soft">
-            This site is free for every member of the family, and it always will be. It costs a little to keep running,
-            and {ADMIN_NAME} covers that. Optional donations through Buy Me a Coffee help share the cost.
+            This site is free for every member of the family, and it always will be. It takes time and a little money to
+            build and keep running. Optional donations through Buy Me a Coffee help cover development and hosting.
           </p>
 
           <section className="mt-10">
