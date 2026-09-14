@@ -52,7 +52,6 @@ export default function SupportPage() {
                 <CoffeeIcon className="h-5 w-5" /> Donate via Buy Me a Coffee
               </a>
             )}
-            <p className="max-w-md text-[14px] italic text-ink-mute">Donations are voluntary. Nothing on this site is behind a paywall, and no amount is expected.</p>
           </div>
 
           <p className="mt-12 text-center text-[17px] italic text-ink-soft">Thank you. Every bit of it goes back into keeping the family's story where everyone can find it.</p>
