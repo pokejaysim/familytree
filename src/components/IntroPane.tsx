@@ -58,6 +58,7 @@ export default function IntroPane({ tree, canEdit, onClose }: { tree: Tree; canE
           <button className="btn-primary" onClick={onClose}>Open the map</button>
           {canEdit && <Link to={`/trees/${tree.id}/about`} className="btn-ghost">Edit</Link>}
         </div>
+        <p className="mt-8 text-center text-[15px] text-ink-soft">Know a name, a date or a story? <Link to="/contribute" className="text-brass underline underline-offset-4 hover:text-moss" onClick={onClose}>Here's how to add it</Link>.</p>
         <SupportLine variant="compact" />
       </article>
     </div>

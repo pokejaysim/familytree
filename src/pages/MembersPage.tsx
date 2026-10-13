@@ -3,7 +3,7 @@ import AppHeader from '../components/AppHeader'
 import { useIsAdmin, useMembers, useReviewMember, type MemberRole, type Profile } from '../lib/profile'
 import { useAuth } from '../lib/auth'
 
-const ROLE_HELP: Record<MemberRole, string> = { viewer: 'Can browse everything', editor: 'Can add and change people, photos, sources', admin: 'Editor plus approving members' }
+const ROLE_HELP: Record<MemberRole, string> = { viewer: 'Can browse, but not suggest changes', editor: 'Can suggest changes; you approve them on the Review page', admin: 'Changes apply at once; approves members and suggestions' }
 
 export default function MembersPage() {
   const isAdmin = useIsAdmin()
@@ -28,18 +28,18 @@ export default function MembersPage() {
         </div>
         {m.status === 'pending' ? (
           <div className="flex flex-wrap gap-2">
-            <button className="btn-primary" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'viewer' })}><Check size={14} /> Approve as viewer</button>
-            <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}>Approve as editor</button>
+            <button className="btn-primary" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}><Check size={14} /> Approve</button>
+            <button className="btn-ghost" disabled={review.isPending} title="Can browse, but not suggest changes" onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'viewer' })}>View only</button>
             <button className="btn-danger" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'declined' })}><X size={14} /> Decline</button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <select className="input w-auto" value={m.role} disabled={me || review.isPending} title={ROLE_HELP[m.role]} onChange={(e) => review.mutate({ id: m.id, status: m.status, role: e.target.value as MemberRole })}>
-              <option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option>
+              <option value="viewer">View only</option><option value="editor">Contributor</option><option value="admin">Admin</option>
             </select>
             {!me && (m.status === 'approved'
               ? <button className="btn-danger" disabled={review.isPending} onClick={() => { if (confirm(`Remove ${m.name || m.email}'s access?`)) review.mutate({ id: m.id, status: 'declined' }) }}>Remove access</button>
-              : <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'viewer' })}>Re-approve</button>)}
+              : <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}>Re-approve</button>)}
           </div>
         )}
       </li>
@@ -60,7 +60,7 @@ export default function MembersPage() {
         <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
           <div>
             <h1 className="text-2xl">Members</h1>
-            <p className="text-sm text-ink-mute">New accounts wait here until you approve them. Viewers can browse; editors can also add and change things.</p>
+            <p className="text-sm text-ink-mute">New accounts wait here until you approve them. Approved members are contributors: they can suggest changes, which wait for you on the Review page. Choose View only for anyone who should just browse.</p>
           </div>
           {isLoading && <p className="text-ink-mute">Loading…</p>}
           {error && <p className="text-red-800">{error.message}</p>}

@@ -4,8 +4,8 @@ import type { PersonInput } from '../lib/queries'
 import { toSortDate } from '../lib/dates'
 
 export default function PersonForm({
-  initial, onSubmit, onCancel, submitting,
-}: { initial?: Partial<Person>; onSubmit: (p: PersonInput) => void; onCancel: () => void; submitting?: boolean }) {
+  initial, onSubmit, onCancel, submitting, submitLabel = 'Save',
+}: { initial?: Partial<Person>; onSubmit: (p: PersonInput) => void; onCancel: () => void; submitting?: boolean; submitLabel?: string }) {
   const [f, setF] = useState({
     given_names: initial?.given_names ?? '',
     surname: initial?.surname ?? '',
@@ -67,7 +67,7 @@ export default function PersonForm({
       <div><label className="label">Notes / biography</label><textarea className="input min-h-24" value={f.bio} onChange={set('bio')} /></div>
       <div className="flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Saving…' : 'Save'}</button>
+        <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Sending…' : submitLabel}</button>
       </div>
     </form>
   )

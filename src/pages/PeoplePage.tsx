@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { useCreatePerson, useTreeData } from '../lib/queries'
-import { useCanEdit } from '../lib/profile'
+import { useTreeData } from '../lib/queries'
+import { newId, useSubmit } from '../lib/changes'
+import { useCanEdit, useSaveLabel } from '../lib/profile'
 import { fullName, lifespan } from '../lib/dates'
 import Modal from '../components/Modal'
 import PersonForm from '../components/PersonForm'
@@ -14,7 +15,8 @@ export default function PeoplePage() {
   const { treeId = '' } = useParams()
   const nav = useNavigate()
   const { data, isLoading } = useTreeData(treeId)
-  const create = useCreatePerson(treeId)
+  const create = useSubmit(treeId)
+  const saveLabel = useSaveLabel()
   const canEdit = useCanEdit()
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
@@ -47,7 +49,12 @@ export default function PeoplePage() {
       <SupportLine />
       {adding && (
         <Modal title="Add person" onClose={() => setAdding(false)}>
-          <PersonForm submitting={create.isPending} onCancel={() => setAdding(false)} onSubmit={async (input) => { const p = await create.mutateAsync(input); setAdding(false); nav(`/trees/${treeId}/people/${(p as { id: string }).id}`) }} />
+          <PersonForm submitting={create.isPending} submitLabel={saveLabel} onCancel={() => setAdding(false)} onSubmit={async (input) => {
+            const id = newId()
+            const r = await create.mutateAsync({ summary: `Add ${[input.given_names, input.surname].filter(Boolean).join(' ')} to the tree`, subject: id, changes: [{ table: 'people', op: 'insert', data: { ...input, id } }] })
+            setAdding(false)
+            if (r.status === 'approved') nav(`/trees/${treeId}/people/${id}`)
+          }} />
         </Modal>
       )}
     </div>

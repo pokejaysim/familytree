@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { useSourceMutations, useSources } from '../lib/queries'
-import { useCanEdit } from '../lib/profile'
+import { useSources } from '../lib/queries'
+import { newId, useSubmit } from '../lib/changes'
+import { useCanEdit, useSaveLabel } from '../lib/profile'
 import Modal from '../components/Modal'
 import SourceForm from '../components/SourceForm'
 import EmptyState from '../components/EmptyState'
@@ -11,7 +12,8 @@ import SupportLine from '../components/SupportLine'
 export default function SourcesPage() {
   const { treeId = '' } = useParams()
   const { data: sources, isLoading } = useSources(treeId)
-  const { create } = useSourceMutations(treeId)
+  const create = useSubmit(treeId)
+  const saveLabel = useSaveLabel()
   const [adding, setAdding] = useState(false)
   const canEdit = useCanEdit()
   return (
@@ -38,7 +40,7 @@ export default function SourcesPage() {
       <SupportLine />
       {adding && (
         <Modal title="Add source" onClose={() => setAdding(false)}>
-          <SourceForm submitting={create.isPending} onCancel={() => setAdding(false)} onSubmit={async (s) => { await create.mutateAsync(s); setAdding(false) }} />
+          <SourceForm submitting={create.isPending} submitLabel={saveLabel} onCancel={() => setAdding(false)} onSubmit={async (s) => { await create.mutateAsync({ summary: `Add the source "${s.title}"`, changes: [{ table: 'sources', op: 'insert', data: { ...s, id: newId() } }] }); setAdding(false) }} />
         </Modal>
       )}
     </div>

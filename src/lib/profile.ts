@@ -13,6 +13,8 @@ export interface Profile {
   note: string | null
   created_at: string
   reviewed_at: string | null
+  person_id: string | null
+  person_status: 'pending' | 'approved' | null
 }
 
 /** The signed-in user's own membership record. */
@@ -32,6 +34,8 @@ export function useProfile() {
 }
 
 export const useIsAdmin = () => useProfile().data?.role === 'admin'
+/** What saving does for this account: admins' changes apply at once, editors' wait for review. */
+export const useSaveLabel = () => (useIsAdmin() ? 'Save' : 'Send for review')
 /** Editors and admins may change data; viewers only look. */
 export const useCanEdit = () => { const r = useProfile().data?.role; return r === 'admin' || r === 'editor' }
 

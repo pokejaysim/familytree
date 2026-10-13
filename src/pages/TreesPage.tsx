@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useCreateTree, useTrees } from '../lib/queries'
-import { useCanEdit } from '../lib/profile'
+import { useIsAdmin } from '../lib/profile'
 import AppHeader from '../components/AppHeader'
 import SupportLine from '../components/SupportLine'
 import Modal from '../components/Modal'
@@ -11,7 +11,7 @@ import Modal from '../components/Modal'
 export default function TreesPage() {
   const { data: trees, isLoading, error } = useTrees()
   const create = useCreateTree()
-  const canEdit = useCanEdit()
+  const canEdit = useIsAdmin()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
@@ -39,6 +39,7 @@ export default function TreesPage() {
           </li>
         ))}
       </ul>
+      <p className="mt-6 text-sm text-ink-mute">Know a name, a date or a story? <Link to="/contribute" className="text-brass underline underline-offset-2">Here's how to add it</Link>.</p>
       <SupportLine />
       {open && (
         <Modal title="New family tree" onClose={() => setOpen(false)}>

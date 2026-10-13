@@ -7,7 +7,7 @@ import TreeCanvas, { type LayoutInfo, type Orient, type TreeCanvasHandle } from 
 import PersonSpotlight from '../components/PersonSpotlight'
 import PersonPicker from '../components/PersonPicker'
 import Modal from '../components/Modal'
-import { useCanEdit } from '../lib/profile'
+import { useCanEdit, useIsAdmin } from '../lib/profile'
 import EmptyState from '../components/EmptyState'
 import IntroPane from '../components/IntroPane'
 
@@ -36,6 +36,7 @@ export default function ChartPage() {
   }, [tree?.intro, tree?.foreword, treeId])
   const selected = personId && graph ? graph.people.get(personId) ?? null : null
   const canEdit = useCanEdit()
+  const isAdmin = useIsAdmin()
 
   useEffect(() => { if (personId && graph) requestAnimationFrame(() => canvas.current?.zoomTo(personId)) }, [personId, graph])
   const select = (id: string | null) => nav(id ? `/trees/${treeId}/chart/${id}` : `/trees/${treeId}/chart`, { replace: true })
@@ -97,7 +98,7 @@ export default function ChartPage() {
       {selected && (
         <PersonSpotlight person={selected} graph={graph} treeId={treeId} onClose={() => select(null)} onJump={select} onAddRelative={canEdit ? () => nav(`/trees/${treeId}/people/${selected.id}`) : undefined} />
       )}
-      {introOpen && tree && <IntroPane tree={tree} canEdit={canEdit} onClose={() => setIntroOpen(false)} />}
+      {introOpen && tree && <IntroPane tree={tree} canEdit={isAdmin} onClose={() => setIntroOpen(false)} />}
       {picking && (
         <Modal title="Find a relative" onClose={() => setPicking(false)}>
           <PersonPicker people={data.people} onPick={(p) => { setPicking(false); select(p.id) }} />

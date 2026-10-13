@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { Source } from '../lib/types'
 
-export default function SourceForm({ initial, onSubmit, onCancel, submitting }: { initial?: Partial<Source>; onSubmit: (s: Partial<Source>) => void; onCancel: () => void; submitting?: boolean }) {
+export default function SourceForm({ initial, onSubmit, onCancel, submitting, submitLabel = 'Save' }: { initial?: Partial<Source>; onSubmit: (s: Partial<Source>) => void; onCancel: () => void; submitting?: boolean; submitLabel?: string }) {
   const [f, setF] = useState({
     title: initial?.title ?? '', author: initial?.author ?? '', publication: initial?.publication ?? '',
     repository: initial?.repository ?? '', url: initial?.url ?? '', notes: initial?.notes ?? '',
@@ -24,7 +24,7 @@ export default function SourceForm({ initial, onSubmit, onCancel, submitting }: 
       <div><label className="label">Notes</label><textarea className="input min-h-20" value={f.notes} onChange={set('notes')} /></div>
       <div className="flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
-        <button className="btn-primary" disabled={submitting}>{submitting ? 'Saving…' : 'Save'}</button>
+        <button className="btn-primary" disabled={submitting}>{submitting ? 'Sending…' : submitLabel}</button>
       </div>
     </form>
   )

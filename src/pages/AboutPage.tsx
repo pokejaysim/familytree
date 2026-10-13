@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { Pencil } from 'lucide-react'
 import { useTree, useUpdateTree } from '../lib/queries'
-import { useCanEdit } from '../lib/profile'
+import { useIsAdmin } from '../lib/profile'
 import divider from '../assets/branch-divider.svg'
 import { Letter } from '../components/IntroPane'
 
@@ -11,7 +11,7 @@ export default function AboutPage() {
   const { treeId = '' } = useParams()
   const { data: tree } = useTree(treeId)
   const update = useUpdateTree(treeId)
-  const canEdit = useCanEdit()
+  const canEdit = useIsAdmin()
   const [editing, setEditing] = useState(false)
   const [f, setF] = useState({ intro_title: '', intro: '', intro_byline: '', foreword_title: '', foreword: '', foreword_byline: '', description: '' })
 

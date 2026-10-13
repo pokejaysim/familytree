@@ -17,6 +17,9 @@ import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
 import AboutPage from './pages/AboutPage'
 import SupportPage from './pages/SupportPage'
+import ReviewPage from './pages/ReviewPage'
+import ContributePage from './pages/ContributePage'
+import { Toaster } from './lib/toast'
 
 /** True from the moment a password-recovery link lands until the user saves a new password. */
 function useIsPasswordRecovery() {
@@ -54,10 +57,14 @@ export default function App() {
   if (recovering) return <UpdatePasswordPage />
   if (profile.data?.status !== 'approved') return <PendingPage profile={profile.data ?? null} />
   return (
+    <>
+    <Toaster />
     <Routes>
       <Route path="/" element={<TreesPage />} />
       <Route path="/members" element={<MembersPage />} />
       <Route path="/support" element={<SupportPage />} />
+      <Route path="/review" element={<ReviewPage />} />
+      <Route path="/contribute" element={<ContributePage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />
@@ -70,5 +77,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
