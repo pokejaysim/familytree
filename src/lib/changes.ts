@@ -200,8 +200,8 @@ export function useClaimPerson() {
       refreshAll(qc)
       const me = pb.authStore.record ? await pb.collection('users').getOne(pb.authStore.record.id, { fields: 'person_status' }).catch(() => null) : null
       if (!id) toast('saved', 'Link removed')
-      else if (me?.person_status === 'approved') toast('saved', 'Linked to your account', 'Tap your initials at the top to come back to your profile.')
-      else toast('review', 'Profile link requested', `${ADMIN_NAME} will confirm it's you.`)
+      else if (me?.person_status === 'approved') toast('saved', 'Linked to your account', 'Your initials at the top (or Your profile in the Menu on a phone) bring you back to it.')
+      else toast('review', 'Profile link requested', `${ADMIN_NAME} will confirm it’s you.`)
     },
     onError: (e: Error) => toast('error', 'That did not work', e.message),
   })

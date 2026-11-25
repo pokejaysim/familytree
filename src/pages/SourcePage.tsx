@@ -62,7 +62,7 @@ export default function SourcePage() {
       {viewing !== null && pages?.[viewing] && <Lightbox items={pages} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
       <section className="card">
         <h3 className="mb-2 font-medium">Cited by</h3>
-        {cites?.length === 0 && <p className="text-sm text-ink-mute">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}
+        {cites?.length === 0 && <p className="text-sm text-ink-mute">No citations yet.{canEdit ? " Add citations from a person’s profile." : ''}</p>}
         <ul className="divide-y divide-line">
           {cites?.map((c) => (
             <li key={c.id} className="py-2.5 text-[16px]">

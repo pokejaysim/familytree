@@ -21,7 +21,7 @@ pb.autoCancellation(false)
 /** The words to show for a failed request (including PocketBase's per-field validation messages). */
 export function errorMessage(e: unknown): string {
   if (e instanceof ClientResponseError) {
-    if (e.status === 0) return "Couldn't reach the family tree server. Check your connection and try again."
+    if (e.status === 0) return "Couldn’t reach the family tree server. Check your connection and try again."
     const fields = Object.entries((e.response?.data ?? {}) as Record<string, { message?: string }>)
       .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v?.message ?? 'invalid'}`)
     const base = e.response?.message || e.message

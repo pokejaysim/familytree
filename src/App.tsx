@@ -39,8 +39,8 @@ function useEmailLinks() {
     handledConfirmations.add(confirmToken)
     const tell = (n: Notice) => { setNotice(n); toast(n.ok ? 'saved' : 'error', n.text) }
     pb.collection('users').confirmVerification(confirmToken)
-      .then(() => tell({ text: `Thanks, your email is confirmed. You can sign in now; you'll be able to browse once ${ADMIN_NAME} has approved your account.`, ok: true }))
-      .catch(() => tell({ text: "That confirmation link has expired or was already used. Try signing in, and ask for a new link if it's needed." }))
+      .then(() => tell({ text: `Thanks, your email is confirmed. You can sign in now, and you’ll be able to look around once ${ADMIN_NAME} has approved your account.`, ok: true }))
+      .catch(() => tell({ text: "That confirmation link has expired or was already used. Try signing in, and ask for a new link if you need one." }))
       .finally(() => setParams((p) => { p.delete('confirm'); return p }, { replace: true }))
   }, [confirmToken, setParams])
   const resetDone = (message: string) => {

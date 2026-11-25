@@ -48,7 +48,7 @@ export default function PeoplePage() {
         {canEdit && <button className="btn-primary shrink-0" onClick={() => setAdding(true)}><Plus size={16} /> <span className="hidden sm:inline">Add person</span><span className="sm:hidden">Add</span></button>}
       </div>
       {isLoading && <p className="text-ink-mute">Loading…</p>}
-      {data && data.people.length === 0 && <EmptyState art="first-branch" title="Begin with one connection." text={canEdit ? 'Add your first relative, then build out parents, partners and children from their profile.' : 'No people in this tree yet.'} action={canEdit ? { label: 'Add your first relative', onClick: () => setAdding(true) } : undefined} />}
+      {data && data.people.length === 0 && <EmptyState art="first-branch" title="No one in the tree yet." text={canEdit ? 'Add your first relative, then add their parents, partners and children from their profile.' : 'Nobody has been added yet.'} action={canEdit ? { label: 'Add your first relative', onClick: () => setAdding(true) } : undefined} />}
 
       {graph && matches && (
         <>

@@ -26,7 +26,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
       if (mode === 'signin') await users.authWithPassword(email, password)
       else if (mode === 'signup') {
         await users.create({ email, password, passwordConfirm: password, name, note })
-        setMsg({ text: `Almost there. Check your email for a confirmation link. Once ${ADMIN_NAME} approves your account you can sign in and browse.`, ok: true })
+        setMsg({ text: `Check your email for a confirmation link. Once you’ve confirmed it and ${ADMIN_NAME} has approved your account, you can sign in and look around.`, ok: true })
       } else {
         await users.requestPasswordReset(email)
         setMsg({ text: 'If that address has an account, a reset link is on its way.', ok: true })
@@ -34,7 +34,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
     } catch (err) {
       if (mode === 'signin') {
         // PocketBase doesn't say which part failed: a wrong password and an unconfirmed email look the same.
-        setMsg({ text: "That email and password didn't work. If you've just signed up, confirm your email first, using the link we sent you." })
+        setMsg({ text: "That email and password didn’t work. If you’ve just signed up, confirm your email first using the link we sent you." })
         setOfferResend(true)
       } else setMsg({ text: errorMessage(err) })
     } finally {
@@ -65,7 +65,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           <p className="text-sm text-ink-mute">{blurb}</p>
         </div>
         {mode === 'signup' && <div><label className="label">Your name</label><input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></div>}
-        {mode === 'signup' && <div><label className="label">How are you related?</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Eng Kiat's daughter" maxLength={140} /></div>}
+        {mode === 'signup' && <div><label className="label">How are you related?</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Eng Kiat’s daughter" maxLength={140} /></div>}
         <div><label className="label">Email</label><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         {mode !== 'reset' && (
           <div><label className="label">Password</label><input className="input" type="password" required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />

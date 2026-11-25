@@ -243,7 +243,7 @@ function HelpCard({ name, missing, canEdit, isAdmin }: { name: string; missing: 
   if (missing.length === 0 && isAdmin) return null
   return (
     <section className="rounded-md border border-line bg-paper p-4">
-      <p className="text-[17px] text-ink">{missing.length ? `Help complete ${name}'s profile` : `Know more about ${name}?`}</p>
+      <p className="text-[17px] text-ink">{missing.length ? `Help complete ${name}’s profile` : `Know more about ${name}?`}</p>
       <p className="mt-0.5 text-sm text-ink-mute">
         {missing.length ? 'Anything you know helps, even an approximate date.' : 'Add a story, a photo or a correction.'}
         {!isAdmin && ` ${ADMIN_NAME} checks each change before it appears.`} <Link to="/contribute" className="text-brass underline underline-offset-2">How to contribute</Link>
@@ -411,7 +411,7 @@ function Gallery({ treeId, person, canEdit, onOpen, send }: { treeId: string; pe
     setUploading((n) => n + 1)
     try {
       const path = await uploadToTree(treeId, file)
-      await send(`Add ${file.type.startsWith('image/') ? 'a photo' : 'a document'} to ${fullName(person)}'s gallery`, [
+      await send(`Add ${file.type.startsWith('image/') ? 'a photo' : 'a document'} to ${fullName(person)}’s gallery`, [
         { table: 'media', op: 'insert', data: { id: newId(), person_id: person.id, storage_path: path, mime_type: file.type, caption: file.name.replace(/\.[^.]+$/, '') } },
       ])
     } finally { setUploading((n) => n - 1) }
@@ -425,7 +425,7 @@ function Gallery({ treeId, person, canEdit, onOpen, send }: { treeId: string; pe
       </div>
       {media?.length === 0 && <p className="text-sm text-ink-mute">No photos or scans yet.{canEdit ? ' Upload old photos, certificates or letters. A phone photo of a print is fine.' : ''}</p>}
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-2">
-        {media?.map((m, i) => <MediaTile key={m.id} m={m} eager={i < 2} className="w-[44%] shrink-0 snap-start sm:w-auto" onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Remove this file?')) send(`Remove a photo from ${fullName(person)}'s gallery`, [{ table: 'media', op: 'delete', key: { id: m.id } }]) } : undefined} />)}
+        {media?.map((m, i) => <MediaTile key={m.id} m={m} eager={i < 2} className="w-[44%] shrink-0 snap-start sm:w-auto" onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Remove this file?')) send(`Remove a photo from ${fullName(person)}’s gallery`, [{ table: 'media', op: 'delete', key: { id: m.id } }]) } : undefined} />)}
       </div>
     </section>
   )

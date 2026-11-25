@@ -21,7 +21,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
         ) : (
           <>
             <h1 className="text-2xl">Thanks{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}. You’re on the list.</h1>
-            <p className="text-ink-soft">This tree holds details about living relatives, so every new account is checked by {ADMIN_NAME} before it can see anything. You’ll be able to sign in and browse once that’s done.</p>
+            <p className="text-ink-soft">This tree holds details about living relatives, so {ADMIN_NAME} checks every new account before it can see anything. You’ll be able to sign in and browse once that’s done.</p>
             <p className="text-sm text-ink-mute">Signed in as {profile?.email}</p>
           </>
         )}

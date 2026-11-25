@@ -19,7 +19,7 @@ export default function SourceForm({ initial, onSubmit, onCancel, submitting, su
         <div><label className="label">Author</label><input className="input" value={f.author} onChange={set('author')} /></div>
         <div><label className="label">Publication / date</label><input className="input" value={f.publication} onChange={set('publication')} /></div>
       </div>
-      <div><label className="label">Repository (where the original is)</label><input className="input" value={f.repository} onChange={set('repository')} placeholder="e.g. Grandpa's floppy disks, family archive box 2" /></div>
+      <div><label className="label">Repository (where the original is)</label><input className="input" value={f.repository} onChange={set('repository')} placeholder="e.g. Grandpa’s floppy disks, family archive box 2" /></div>
       <div><label className="label">URL</label><input className="input" value={f.url} onChange={set('url')} /></div>
       <div><label className="label">Notes</label><textarea className="input min-h-20" value={f.notes} onChange={set('notes')} /></div>
       <div className="flex justify-end gap-2">

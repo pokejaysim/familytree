@@ -25,8 +25,8 @@ export default function SupportPage() {
             <h2 className="text-[22px] text-ink">Where it goes</h2>
             <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-white">
               {[
-                ['The home server', `The site and every record in it run on a small server ${ADMIN_NAME} keeps at home, kept safe and shared with the whole family.`],
-                ['Storage and backups', 'Every portrait and every scanned page in the archive is stored on its drives and copied to a second drive every night. The archive grows with each section added.'],
+                ['The home server', `The site and every record in it run on a small computer ${ADMIN_NAME} keeps at home.`],
+                ['Storage and backups', 'Every portrait and scanned page is stored on its drives and copied to a second drive every night. The archive grows with each section of the book that’s added.'],
                 ['A proper address', 'A domain name of our own, so the link to the family tree never has to change.'],
               ].map(([title, text]) => (
                 <li key={title} className="px-5 py-4">
@@ -38,9 +38,9 @@ export default function SupportPage() {
           </section>
 
           <section className="mt-10">
-            <h2 className="text-[22px] text-ink">Just as valuable</h2>
+            <h2 className="text-[22px] text-ink">Other ways to help</h2>
             <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
-              Money is only one way to help. Photos, dates, stories and corrections are what this site is really for. If you spot a
+              Photos, dates, stories and corrections are what the site is for, so they help as much as money does. If you spot a
               mistake, or have a picture the rest of the family has never seen, add it to that person’s page or send it to {ADMIN_NAME}.
             </p>
           </section>
@@ -53,7 +53,7 @@ export default function SupportPage() {
             )}
           </div>
 
-          <p className="mt-12 text-center text-[17px] italic text-ink-soft">Thank you. Every bit of it goes back into keeping the family’s story where everyone can find it.</p>
+          <p className="mt-12 text-center text-[17px] italic text-ink-soft">Thank you. Every donation goes into keeping the site running.</p>
           <p className="mt-8 text-center">
             <Link to="/" className="text-[16px] text-brass underline underline-offset-4 hover:text-moss">Back to the family tree</Link>
           </p>

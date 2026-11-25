@@ -38,7 +38,7 @@ export default function MembersPage() {
               <option value="viewer">View only</option><option value="editor">Contributor</option><option value="admin">Admin</option>
             </select>
             {!me && (m.status === 'approved'
-              ? <button className="btn-danger" disabled={review.isPending} onClick={() => { if (confirm(`Remove ${m.name || m.email}'s access?`)) review.mutate({ id: m.id, status: 'declined' }) }}>Remove access</button>
+              ? <button className="btn-danger" disabled={review.isPending} onClick={() => { if (confirm(`Remove ${m.name || m.email}’s access?`)) review.mutate({ id: m.id, status: 'declined' }) }}>Remove access</button>
               : <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}>Re-approve</button>)}
           </div>
         )}

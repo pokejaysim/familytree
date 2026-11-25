@@ -36,7 +36,7 @@ export default function TreesPage() {
             {isLoading && <p className="text-ink-mute">Loading…</p>}
             {error && <p className="text-danger">{error.message}</p>}
             {trees?.length === 0 && (
-              <EmptyState art="first-branch" title="Begin with one connection." text={canEdit ? 'Every family tree starts with someone. Create a tree, then add your first relative.' : 'No trees have been shared with you yet.'} action={canEdit ? { label: 'Create a tree', onClick: () => setOpen(true) } : undefined} />
+              <EmptyState art="first-branch" title="No family trees yet." text={canEdit ? 'Create a tree, then add your first relative.' : 'No trees have been shared with you yet.'} action={canEdit ? { label: 'Create a tree', onClick: () => setOpen(true) } : undefined} />
             )}
             <ul className="grid gap-3 sm:grid-cols-2">
               {trees?.map((t) => (

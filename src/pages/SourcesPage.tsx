@@ -26,7 +26,7 @@ export default function SourcesPage() {
         {canEdit && <button className="btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Add source</button>}
       </div>
       {isLoading && <p className="text-ink-mute">Loading…</p>}
-      {sources?.length === 0 && <EmptyState art="family-archive" wide title="Keep the memories close." text="Give photographs, letters, and family records a place in the shared story." action={canEdit ? { label: 'Add a family source', onClick: () => setAdding(true) } : undefined} />}
+      {sources?.length === 0 && <EmptyState art="family-archive" wide title="No sources yet." text="Add the family book, a letter, a certificate or a recorded interview, then cite it on the profiles it backs up." action={canEdit ? { label: 'Add a source', onClick: () => setAdding(true) } : undefined} />}
       <ul className="divide-y divide-line rounded-lg border border-line bg-white">
         {sources?.map((s) => (
           <li key={s.id}>

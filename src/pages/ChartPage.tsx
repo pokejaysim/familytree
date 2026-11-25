@@ -49,7 +49,7 @@ export default function ChartPage() {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <EmptyState art="first-branch" title="Begin with one connection." text="The map fills in as people and their connections are added." action={canEdit ? { label: 'Add your first relative', onClick: () => nav(`/trees/${treeId}/people`) } : undefined} />
+          <EmptyState art="first-branch" title="No one on the map yet." text="Add the first person, and the map grows as you add their parents, partners and children." action={canEdit ? { label: 'Add your first relative', onClick: () => nav(`/trees/${treeId}/people`) } : undefined} />
         </div>
       </div>
     )
