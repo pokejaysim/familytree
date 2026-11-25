@@ -1,22 +1,25 @@
 name: Keep Supabase awake
 
 # Supabase pauses free projects after about a week without activity, which takes the live site's data offline.
-# A tiny read twice a week counts as activity. It uses only the public publishable key; row-level security
-# means the query returns nothing, but it still reaches the database.
+# Read-only pings were not enough (the project paused in October anyway), so this calls public.heartbeat(),
+# which writes one timestamp row. It runs daily and uses only the public publishable key.
 on:
   schedule:
-    - cron: '17 9 * * 1,4'   # Mondays and Thursdays, 09:17 UTC
+    - cron: '17 9 * * *'   # every day, 09:17 UTC
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Query the database
+      - name: Write a heartbeat
         env:
           URL: ${{ vars.VITE_SUPABASE_URL }}
           KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/rest/v1/trees?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "Supabase responded $code"
-          test "$code" = 200
+          code=$(curl -s -o /tmp/out -w '%{http_code}' -X POST "$URL/rest/v1/rpc/heartbeat" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}' || true)
+          echo "Supabase responded $code: $(cat /tmp/out 2>/dev/null)"
+          if [ "$code" != "200" ]; then
+            echo "::error::The database did not answer. It is probably paused: restore the familytree project in the Supabase dashboard."
+            exit 1
+          fi
