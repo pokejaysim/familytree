@@ -25,8 +25,8 @@ export default function SupportPage() {
             <h2 className="text-[22px] text-ink">Where it goes</h2>
             <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-white">
               {[
-                ['Hosting and the database', 'The site and every record in it live on a hosted database, kept safe and shared with the whole family.'],
-                ['Photo and document storage', 'Every portrait and every scanned page in the archive is stored here, and the archive grows with each section added.'],
+                ['The home server', `The site and every record in it run on a small server ${ADMIN_NAME} keeps at home, kept safe and shared with the whole family.`],
+                ['Storage and backups', 'Every portrait and every scanned page in the archive is stored on its drives and copied to a second drive every night. The archive grows with each section added.'],
                 ['A proper address', 'A domain name of our own, so the link to the family tree never has to change.'],
               ].map(([title, text]) => (
                 <li key={title} className="px-5 py-4">
