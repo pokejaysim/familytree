@@ -20,6 +20,9 @@ export SU_EMAIL="test-superuser@example.test" SU_PASSWORD=$(head -c 24 /dev/uran
 "$PB" serve --http=127.0.0.1:8099 --dir="$T/pb_data" --migrationsDir="$T/pb_migrations" --hooksDir="$T/pb_hooks" >"$T/serve.log" 2>&1 &
 PID=$!
 for _ in $(seq 1 30); do curl -sf http://127.0.0.1:8099/api/health >/dev/null && break; sleep 0.5; done
+# The real site limits sign-ins (2 every 3 seconds per visitor); the tests sign in several made-up accounts back to back.
+TOKEN=$(curl -sf -X POST -H 'Content-Type: application/json' -d "{\"identity\":\"$SU_EMAIL\",\"password\":\"$SU_PASSWORD\"}" http://127.0.0.1:8099/api/collections/_superusers/auth-with-password | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+curl -sf -X PATCH -H "Authorization: $TOKEN" -H 'Content-Type: application/json' -d '{"rateLimits":{"enabled":false}}' http://127.0.0.1:8099/api/settings >/dev/null || echo "couldn't turn off rate limits for the test server"
 
 python3 -I "$HERE/tools/test_review_system.py" http://127.0.0.1:8099
 STATUS=$?

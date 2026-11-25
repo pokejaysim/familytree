@@ -64,11 +64,11 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           <h1 className="text-2xl">{title}</h1>
           <p className="text-sm text-ink-mute">{blurb}</p>
         </div>
-        {mode === 'signup' && <div><label className="label">Your name</label><input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></div>}
-        {mode === 'signup' && <div><label className="label">How are you related?</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Eng Kiat’s daughter" maxLength={140} /></div>}
-        <div><label className="label">Email</label><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+        {mode === 'signup' && <label className="block"><span className="label">Your name</span><input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></label>}
+        {mode === 'signup' && <label className="block"><span className="label">How are you related?</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Eng Kiat’s daughter" maxLength={140} /></label>}
+        <label className="block"><span className="label">Email</span><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         {mode !== 'reset' && (
-          <div><label className="label">Password</label><input className="input" type="password" required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <div><label className="block"><span className="label">Password</span><input className="input" type="password" required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></label>
             {mode === 'signup' && <p className="mt-1 text-[13px] text-ink-mute">At least 8 characters.</p>}
           </div>
         )}

@@ -164,7 +164,7 @@ export const useRecentHistory = (enabled: boolean) =>
   useQuery({
     queryKey: ['requests', 'history'],
     enabled,
-    queryFn: requests({ filter: "status != 'pending'", sort: '-reviewed_at,-created_at' }, 60),
+    queryFn: requests({ filter: "status != 'pending'", sort: '-created_at' }, 60),
   })
 
 export const usePendingReviewCount = (enabled: boolean) =>

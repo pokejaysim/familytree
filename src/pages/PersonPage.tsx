@@ -81,7 +81,9 @@ export default function PersonPage() {
   const relation = relationTo(graph, meId, person)
   const hasDates = !!(person.birth_date || person.birth_place || (!person.is_living && (person.death_date || person.death_place)))
   const relTitle = rel ? { parent: 'Add parent', partner: 'Add partner / spouse', child: 'Add child', sibling: 'Add sibling' }[rel.kind] : ''
-  const relDefaults: Partial<Person> | undefined = rel?.kind === 'child' || rel?.kind === 'sibling' || rel?.kind === 'parent' ? { surname: person.surname } : undefined
+  const relDefaults: Partial<Person> | undefined = rel?.kind === 'parent' ? { surname: person.surname }
+    : rel?.kind === 'child' || rel?.kind === 'sibling' ? { surname: person.surname, is_living: person.is_living }
+    : rel?.kind === 'partner' ? { is_living: person.is_living } : undefined
 
   // What's missing from this profile: each becomes an invitation in the "Help complete" box.
   const missing: { label: string; act: () => void }[] = []
@@ -282,6 +284,19 @@ function Group({ title, people, treeId, onAdd, onRemove }: { title: string; peop
 
 type Send = (summary: string, changes: Change[]) => Promise<{ status: string }>
 
+/** When an inline form opens, bring it into view and put the cursor in its first box: on a phone it opens below a long list, out of sight. */
+function useRevealOnOpen(open: boolean, ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!open) return
+    requestAnimationFrame(() => {
+      const el = ref.current
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true })
+    })
+  }, [open, ref])
+}
+
 function useOpenOn(token: number, open: () => void, ref: React.RefObject<HTMLElement | null>) {
   useEffect(() => { if (token > 0) { open(); requestAnimationFrame(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })) } }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 }
@@ -302,6 +317,8 @@ function Timeline({ treeId, person, canEdit, openToken, send }: { treeId: string
   const [busy, setBusy] = useState(false)
   const ref = useRef<HTMLElement>(null)
   useOpenOn(openToken, () => setAdding(true), ref)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealOnOpen(adding, formRef)
   const [f, setF] = useState({ type: 'residence', date_text: '', place: '', description: '' })
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true)
@@ -324,11 +341,11 @@ function Timeline({ treeId, person, canEdit, openToken, send }: { treeId: string
         ))}
       </ul>
       {adding && (
-        <form onSubmit={submit} className="mt-3 grid grid-cols-1 gap-3 rounded-md border border-line bg-paper p-3 sm:grid-cols-2">
-          <div><label className="label">Type</label><select className="input capitalize" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
-          <div><label className="label">Date</label><input className="input" value={f.date_text} onChange={(e) => setF({ ...f, date_text: e.target.value })} placeholder="e.g. 1954, Jun 1954 or abt 1954" /></div>
-          <div><label className="label">Place</label><input className="input" value={f.place} onChange={(e) => setF({ ...f, place: e.target.value })} /></div>
-          <div><label className="label">Description</label><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
+        <form ref={formRef} onSubmit={submit} className="mt-3 grid grid-cols-1 gap-3 rounded-md border border-line bg-paper p-3 sm:grid-cols-2">
+          <label className="block"><span className="label">Type</span><select className="input capitalize" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+          <label className="block"><span className="label">Date</span><input className="input" value={f.date_text} onChange={(e) => setF({ ...f, date_text: e.target.value })} placeholder="e.g. 1954, Jun 1954 or abt 1954" /></label>
+          <label className="block"><span className="label">Place</span><input className="input" value={f.place} onChange={(e) => setF({ ...f, place: e.target.value })} /></label>
+          <label className="block"><span className="label">Description</span><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
           <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" disabled={busy}>{busy ? 'Sending…' : saveLabel}</button></div>
         </form>
       )}
@@ -346,6 +363,8 @@ function Citations({ treeId, person, canEdit, openToken, send }: { treeId: strin
   const [busy, setBusy] = useState(false)
   const ref = useRef<HTMLElement>(null)
   useOpenOn(openToken, () => setAdding(true), ref)
+  const formRef = useRef<HTMLFormElement>(null)
+  useRevealOnOpen(adding, formRef)
   const [f, setF] = useState({ source_id: '', page: '', quote: '', confidence: 2 })
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true)
@@ -375,22 +394,22 @@ function Citations({ treeId, person, canEdit, openToken, send }: { treeId: strin
         ))}
       </ul>
       {adding && (
-        <form onSubmit={submit} className="mt-3 space-y-3 rounded-md border border-line bg-paper p-3">
+        <form ref={formRef} onSubmit={submit} className="mt-3 space-y-3 rounded-md border border-line bg-paper p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="flex-1"><label className="label">Source</label>
+            <label className="block flex-1"><span className="label">Source</span>
               <select className="input" required value={f.source_id} onChange={(e) => setF({ ...f, source_id: e.target.value })}>
                 <option value="">Choose…</option>{options.map((s) => <option key={s.id} value={s.id}>{s.title}{s === draft ? ' (new)' : ''}</option>)}
               </select>
-            </div>
+            </label>
             <button type="button" className="btn-ghost" onClick={() => setNewSource(true)}>New source</button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div><label className="label">Page / record / location in source</label><input className="input" value={f.page} onChange={(e) => setF({ ...f, page: e.target.value })} /></div>
-            <div><label className="label">Confidence</label>
+            <label className="block"><span className="label">Page / record / location in source</span><input className="input" value={f.page} onChange={(e) => setF({ ...f, page: e.target.value })} /></label>
+            <label className="block"><span className="label">Confidence</span>
               <select className="input" value={f.confidence} onChange={(e) => setF({ ...f, confidence: +e.target.value })}>{CONFIDENCE_LABELS.map((l, i) => <option key={i} value={i}>{l}</option>)}</select>
-            </div>
+            </label>
           </div>
-          <div><label className="label">Quote / transcription</label><textarea className="input min-h-16" value={f.quote} onChange={(e) => setF({ ...f, quote: e.target.value })} /></div>
+          <label className="block"><span className="label">Quote / transcription</span><textarea className="input min-h-16" value={f.quote} onChange={(e) => setF({ ...f, quote: e.target.value })} /></label>
           <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn-primary" disabled={busy}>{busy ? 'Sending…' : saveLabel}</button></div>
         </form>
       )}
@@ -403,30 +422,62 @@ function Citations({ treeId, person, canEdit, openToken, send }: { treeId: strin
   )
 }
 
+type Picked = { file: File; preview: string | null; caption: string }
+
 function Gallery({ treeId, person, canEdit, onOpen, send }: { treeId: string; person: Person; canEdit: boolean; onOpen: (i: number) => void; send: Send }) {
   const { data: media } = usePersonMedia(person.id)
+  const saveLabel = useSaveLabel()
   const [uploading, setUploading] = useState(0)
+  const [picked, setPicked] = useState<Picked[] | null>(null) // chosen files waiting for their captions
   const ref = useRef<HTMLInputElement>(null)
-  const upload = async (file: File) => {
+  const name = person.given_names.split(' ')[0] || fullName(person)
+  const choose = (files: File[]) => { if (files.length) setPicked(files.map((file) => ({ file, preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null, caption: '' }))) }
+  const close = () => { picked?.forEach((p) => p.preview && URL.revokeObjectURL(p.preview)); setPicked(null) }
+  const upload = async ({ file, caption }: Picked) => {
     setUploading((n) => n + 1)
     try {
       const path = await uploadToTree(treeId, file)
       await send(`Add ${file.type.startsWith('image/') ? 'a photo' : 'a document'} to ${fullName(person)}’s gallery`, [
-        { table: 'media', op: 'insert', data: { id: newId(), person_id: person.id, storage_path: path, mime_type: file.type, caption: file.name.replace(/\.[^.]+$/, '') } },
+        { table: 'media', op: 'insert', data: { id: newId(), person_id: person.id, storage_path: path, mime_type: file.type, caption: caption.trim() || null } },
       ])
     } finally { setUploading((n) => n - 1) }
+  }
+  const sendAll = async (e: FormEvent) => {
+    e.preventDefault()
+    const list = picked ?? []
+    close()
+    for (const p of list) await upload(p)
   }
   return (
     <section className="card">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="font-serif text-[22px]">Photos & documents{media && media.length > 0 && <span className="ml-2 text-[16px] text-ink-mute">{media.length}</span>}</h2>
         {canEdit && <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={uploading > 0}><Plus size={14} /> {uploading > 0 ? 'Uploading…' : 'Upload'}</button>}
-        <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; files.forEach(upload) }} />
+        <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; choose(files) }} />
       </div>
       {media?.length === 0 && <p className="text-sm text-ink-mute">No photos or scans yet.{canEdit ? ' Upload old photos, certificates or letters. A phone photo of a print is fine.' : ''}</p>}
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-2">
         {media?.map((m, i) => <MediaTile key={m.id} m={m} eager={i < 2} className="w-[44%] shrink-0 snap-start sm:w-auto" onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Remove this file?')) send(`Remove a photo from ${fullName(person)}’s gallery`, [{ table: 'media', op: 'delete', key: { id: m.id } }]) } : undefined} />)}
       </div>
+      {picked && (
+        <Modal title={picked.length === 1 ? `Add to ${name}’s photos` : `Add ${picked.length} files to ${name}’s photos`} onClose={close}>
+          <form onSubmit={sendAll} className="space-y-4">
+            <p className="text-[15px] text-ink-soft">A line about each one helps the whole family: who is in it, where it was taken, and roughly when. You can leave it blank.</p>
+            {picked.map((p, k) => (
+              <div key={k} className="flex gap-3">
+                {p.preview
+                  ? <img src={p.preview} alt="" className="h-20 w-20 shrink-0 rounded-md border border-line object-cover" />
+                  : <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-line bg-paper px-1 text-center text-[13px] text-ink-mute">{p.file.name}</span>}
+                <label className="block min-w-0 flex-1"><span className="label">What’s in it?</span>
+                  <textarea className="input min-h-20" value={p.caption} autoFocus={k === 0} placeholder="e.g. Grandma and Uncle Ray at Kuala Belait, about 1965"
+                    onChange={(e) => setPicked((cur) => cur && cur.map((q, n) => (n === k ? { ...q, caption: e.target.value } : q)))} />
+                </label>
+              </div>
+            ))}
+            <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={close}>Cancel</button><button className="btn-primary">{saveLabel}</button></div>
+          </form>
+        </Modal>
+      )}
     </section>
   )
 }

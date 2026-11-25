@@ -10,7 +10,7 @@ export default function PersonPicker({
   const results = useMemo(() => {
     const ex = new Set(exclude)
     const t = q.toLowerCase().trim()
-    return people.filter((p) => !ex.has(p.id) && (!t || fullName(p).toLowerCase().includes(t))).slice(0, 12)
+    return people.filter((p) => !ex.has(p.id) && (!t || fullName(p).toLowerCase().includes(t))).sort((a, b) => fullName(a).localeCompare(fullName(b))).slice(0, 12)
   }, [people, q, exclude])
   return (
     <div className="space-y-2">

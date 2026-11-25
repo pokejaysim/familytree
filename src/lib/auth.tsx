@@ -28,7 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     ;(async () => {
       // A saved sign-in from an earlier visit: refresh it (this also checks the account still exists).
-      if (pb.authStore.isValid) await pb.collection('users').authRefresh().catch(() => pb.authStore.clear())
+      // Only a rejected sign-in ends the session. A patchy connection, a busy server or the server restarting
+      // keeps the saved sign-in, so relatives aren't sent back to the password screen for nothing.
+      if (pb.authStore.isValid) await pb.collection('users').authRefresh().catch((e: { status?: number }) => { if (e?.status === 401 || e?.status === 403 || e?.status === 404) pb.authStore.clear() })
       if (!pb.authStore.isValid && DEV_EMAIL && DEV_PASSWORD) {
         await pb.collection('users').authWithPassword(DEV_EMAIL, DEV_PASSWORD).catch((e) => console.warn('Dev auto-login failed:', e?.message))
       }

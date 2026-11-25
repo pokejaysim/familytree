@@ -27,19 +27,19 @@ export default function AboutPage() {
   if (editing)
     return (
       <form onSubmit={save} className="mx-auto max-w-2xl space-y-4 p-4 sm:p-6">
-        <div><label className="label">About this tree (one line)</label><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
+        <label className="block"><span className="label">About this tree (one line)</span><input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></label>
         <h2 className="pt-2 text-xl">Foreword</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div><label className="label">Foreword title</label><input className="input" value={f.foreword_title} onChange={(e) => setF({ ...f, foreword_title: e.target.value })} placeholder="e.g. A note from Jason" /></div>
-          <div><label className="label">Signed</label><input className="input" value={f.foreword_byline} onChange={(e) => setF({ ...f, foreword_byline: e.target.value })} placeholder="e.g. Jason Sim, September 2026" /></div>
+          <label className="block"><span className="label">Foreword title</span><input className="input" value={f.foreword_title} onChange={(e) => setF({ ...f, foreword_title: e.target.value })} placeholder="e.g. A note from Jason" /></label>
+          <label className="block"><span className="label">Signed</span><input className="input" value={f.foreword_byline} onChange={(e) => setF({ ...f, foreword_byline: e.target.value })} placeholder="e.g. Jason Sim, September 2026" /></label>
         </div>
-        <div><label className="label">Foreword text</label><textarea className="input min-h-[30vh] leading-relaxed" value={f.foreword} onChange={(e) => setF({ ...f, foreword: e.target.value })} /></div>
+        <label className="block"><span className="label">Foreword text</span><textarea className="input min-h-[30vh] leading-relaxed" value={f.foreword} onChange={(e) => setF({ ...f, foreword: e.target.value })} /></label>
         <h2 className="pt-2 text-xl">Introduction</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div><label className="label">Introduction title</label><input className="input" value={f.intro_title} onChange={(e) => setF({ ...f, intro_title: e.target.value })} placeholder="e.g. Preface" /></div>
-          <div><label className="label">Signed</label><input className="input" value={f.intro_byline} onChange={(e) => setF({ ...f, intro_byline: e.target.value })} placeholder="e.g. B.M. Sim, June 2007" /></div>
+          <label className="block"><span className="label">Introduction title</span><input className="input" value={f.intro_title} onChange={(e) => setF({ ...f, intro_title: e.target.value })} placeholder="e.g. Preface" /></label>
+          <label className="block"><span className="label">Signed</span><input className="input" value={f.intro_byline} onChange={(e) => setF({ ...f, intro_byline: e.target.value })} placeholder="e.g. B.M. Sim, June 2007" /></label>
         </div>
-        <div><label className="label">Introduction text</label><textarea className="input min-h-[40vh] leading-relaxed" value={f.intro} onChange={(e) => setF({ ...f, intro: e.target.value })} /></div>
+        <label className="block"><span className="label">Introduction text</span><textarea className="input min-h-[40vh] leading-relaxed" value={f.intro} onChange={(e) => setF({ ...f, intro: e.target.value })} /></label>
         {update.error && <p className="text-sm text-danger">{update.error.message}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button><button className="btn-primary" disabled={update.isPending}>Save</button></div>
       </form>

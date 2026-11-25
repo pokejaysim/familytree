@@ -44,27 +44,27 @@ export default function PersonForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div><label className="label">Given names</label><input className="input" value={f.given_names} onChange={set('given_names')} autoFocus /></div>
-        <div><label className="label">Surname</label><input className="input" value={f.surname} onChange={set('surname')} /></div>
-        <div><label className="label">Maiden name</label><input className="input" value={f.maiden_name} onChange={set('maiden_name')} /></div>
-        <div><label className="label">Nickname</label><input className="input" value={f.nickname} onChange={set('nickname')} /></div>
-        <div>
-          <label className="label">Sex</label>
+        <label className="block"><span className="label">Given names</span><input className="input" required value={f.given_names} onChange={set('given_names')} autoFocus /></label>
+        <label className="block"><span className="label">Surname</span><input className="input" value={f.surname} onChange={set('surname')} /></label>
+        <label className="block"><span className="label">Maiden name</span><input className="input" value={f.maiden_name} onChange={set('maiden_name')} /></label>
+        <label className="block"><span className="label">Nickname</span><input className="input" value={f.nickname} onChange={set('nickname')} /></label>
+        <label className="block">
+          <span className="label">Sex</span>
           <select className="input" value={f.sex} onChange={set('sex')}>
             <option value="U">Unknown</option><option value="M">Male</option><option value="F">Female</option><option value="X">Other</option>
           </select>
-        </div>
+        </label>
         <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.is_living} onChange={(e) => setF({ ...f, is_living: e.target.checked })} /> Living</label>
+          <label className="flex min-h-11 items-center gap-2 text-[16px]"><input type="checkbox" className="h-5 w-5 accent-moss" checked={f.is_living} onChange={(e) => setF({ ...f, is_living: e.target.checked })} /> Still living</label>
         </div>
-        <div><label className="label">Birth date</label><input className="input" placeholder="e.g. 12 Mar 1921 or abt 1921" value={f.birth_date} onChange={set('birth_date')} /></div>
-        <div><label className="label">Birth place</label><input className="input" value={f.birth_place} onChange={set('birth_place')} /></div>
+        <label className="block"><span className="label">Birth date</span><input className="input" placeholder="e.g. 12 Mar 1921 or abt 1921" value={f.birth_date} onChange={set('birth_date')} /></label>
+        <label className="block"><span className="label">Birth place</span><input className="input" value={f.birth_place} onChange={set('birth_place')} /></label>
         {!f.is_living && (<>
-          <div><label className="label">Death date</label><input className="input" value={f.death_date} onChange={set('death_date')} /></div>
-          <div><label className="label">Death place</label><input className="input" value={f.death_place} onChange={set('death_place')} /></div>
+          <label className="block"><span className="label">Death date</span><input className="input" value={f.death_date} onChange={set('death_date')} /></label>
+          <label className="block"><span className="label">Death place</span><input className="input" value={f.death_place} onChange={set('death_place')} /></label>
         </>)}
       </div>
-      <div><label className="label">Notes / biography</label><textarea className="input min-h-24" value={f.bio} onChange={set('bio')} /></div>
+      <label className="block"><span className="label">Notes / biography</span><textarea className="input min-h-24" value={f.bio} onChange={set('bio')} /></label>
       <div className="flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
         <button type="submit" className="btn-primary" disabled={submitting}>{submitting ? 'Sending…' : submitLabel}</button>

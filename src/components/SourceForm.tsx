@@ -14,14 +14,14 @@ export default function SourceForm({ initial, onSubmit, onCancel, submitting, su
   }
   return (
     <form onSubmit={submit} className="space-y-3">
-      <div><label className="label">Title</label><input className="input" required value={f.title} onChange={set('title')} placeholder="e.g. Letter from Grandpa to LKC, 1 Oct 2002" autoFocus /></div>
+      <label className="block"><span className="label">Title</span><input className="input" required value={f.title} onChange={set('title')} placeholder="e.g. Letter from Grandpa to LKC, 1 Oct 2002" autoFocus /></label>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div><label className="label">Author</label><input className="input" value={f.author} onChange={set('author')} /></div>
-        <div><label className="label">Publication / date</label><input className="input" value={f.publication} onChange={set('publication')} /></div>
+        <label className="block"><span className="label">Author</span><input className="input" value={f.author} onChange={set('author')} /></label>
+        <label className="block"><span className="label">Publication / date</span><input className="input" value={f.publication} onChange={set('publication')} /></label>
       </div>
-      <div><label className="label">Repository (where the original is)</label><input className="input" value={f.repository} onChange={set('repository')} placeholder="e.g. Grandpa’s floppy disks, family archive box 2" /></div>
-      <div><label className="label">URL</label><input className="input" value={f.url} onChange={set('url')} /></div>
-      <div><label className="label">Notes</label><textarea className="input min-h-20" value={f.notes} onChange={set('notes')} /></div>
+      <label className="block"><span className="label">Repository (where the original is)</span><input className="input" value={f.repository} onChange={set('repository')} placeholder="e.g. Grandpa’s floppy disks, family archive box 2" /></label>
+      <label className="block"><span className="label">URL</span><input className="input" value={f.url} onChange={set('url')} /></label>
+      <label className="block"><span className="label">Notes</span><textarea className="input min-h-20" value={f.notes} onChange={set('notes')} /></label>
       <div className="flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button>
         <button className="btn-primary" disabled={submitting}>{submitting ? 'Sending…' : submitLabel}</button>

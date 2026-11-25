@@ -71,6 +71,8 @@ export default function App() {
   if (links.resetToken) return <UpdatePasswordPage token={links.resetToken} onDone={links.resetDone} />
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
   if (!session) return <LoginPage notice={links.notice} />
+  // Couldn't load the account (no connection, or the server is restarting): say so, rather than showing the "waiting for approval" page.
+  if (!profile.data && profile.isError) return <CantConnect onRetry={() => profile.refetch()} busy={profile.isFetching} />
   if (profile.data?.status !== 'approved') return <PendingPage profile={profile.data ?? null} />
   return (
     <>
@@ -94,5 +96,22 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>
+  )
+}
+
+/** Shown when the site can't reach the family tree server. Tries again by itself when the device comes back online. */
+function CantConnect({ onRetry, busy }: { onRetry: () => void; busy: boolean }) {
+  useEffect(() => {
+    window.addEventListener('online', onRetry)
+    return () => window.removeEventListener('online', onRetry)
+  }, [onRetry])
+  return (
+    <div className="flex h-full items-center justify-center bg-paper p-4">
+      <div role="alert" className="card w-full max-w-md space-y-4 text-center">
+        <h1 className="text-2xl">Can’t reach the family tree right now</h1>
+        <p className="text-ink-soft">Check your internet connection and try again. If it still doesn’t load, the site may be restarting; give it a minute.</p>
+        <button className="btn-primary mx-auto" disabled={busy} onClick={onRetry}>{busy ? 'Trying…' : 'Try again'}</button>
+      </div>
+    </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import type { Tree } from '../lib/types'
@@ -25,6 +26,11 @@ export function Letter({ text }: { text: string }) {
 
 /** Reading pane for the tree's introduction (for the Sim family, Bernard's preface), opened from the map. */
 export default function IntroPane({ tree, canEdit, onClose, onOpenMap }: { tree: Tree; canEdit: boolean; onClose: () => void; onOpenMap?: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-6" onClick={onClose}>
       <article
