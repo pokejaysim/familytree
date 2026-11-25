@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Nightly local snapshot of PocketBase, written to the second drive.
 
-PocketBase's own nightly backups go off-site (Cloudflare R2), so this keeps a local copy
-too, without depending on them. Each snapshot is a zip in PocketBase's backup layout
+PocketBase's own nightly backups sit on the same drive as the live data. This copies
+everything to the second drive, independently of them. Each snapshot is a zip in PocketBase's backup layout
 (data.db, auxiliary.db, storage/...), so it can be restored from the dashboard with
 "Upload backup". Database copies use SQLite's online backup, so they are consistent even
 while PocketBase is running. Thumbnails are skipped; PocketBase recreates them.

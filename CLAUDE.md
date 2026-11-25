@@ -26,7 +26,8 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 
 ## Moving to PocketBase (in progress, see `pocketbase/README.md`)
 - The live app still runs on Supabase. A self-hosted PocketBase on Jason's Raspberry Pi holds an imported, verified copy of the family data (phase 1 done 2026-11-25).
-- Next phases: review-system hooks, accounts and email (2); app data layer (3); public address, off-site backup and cutover (4).
+- The review system has been ported to `pocketbase/pb_hooks` and is live on the Pi, with 65 end-to-end checks in `tools/test_review_system.py` (phase 2 done 2026-11-25).
+- Next phases: app data layer (3); public address and cutover (4). Backups stay local by Jason's choice; there is no off-site copy.
 - Schema-as-code lives in `pocketbase/pb_migrations`, with the same names as Supabase minus `_id` (`people.tree`). Supabase UUIDs are kept as record IDs. `people.photo` links to a `media` record. Profiles became fields on `users`.
 - Until cutover, Supabase is the source of truth. Re-import with `import-supabase … replace` rather than editing PocketBase by hand.
 
