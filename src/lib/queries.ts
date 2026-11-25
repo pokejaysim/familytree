@@ -1,39 +1,38 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from './supabase'
+import { call, fileRef, pb, pbFilter, toApp } from './pb'
+import { useAuth } from './auth'
 import type { Citation, Event, Family, FamilyChild, Media, Person, Source, Tree, TreeRole } from './types'
 
-async function unwrap<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
-  const { data, error } = await p
-  if (error) throw new Error(error.message)
-  return data as T
-}
+type Row = Record<string, unknown>
+const all = async <T>(table: string, options: Record<string, unknown>) =>
+  (await call(pb.collection(table).getFullList(options))).map((r) => toApp<T>(table, r as Row))
+const one = async <T>(table: string, id: string, options: Record<string, unknown> = {}) =>
+  toApp<T>(table, (await call(pb.collection(table).getOne(id, options))) as Row)
 
 // Trees ---------------------------------------------------------------------
 export const useTrees = () =>
-  useQuery({ queryKey: ['trees'], queryFn: () => unwrap<Tree[]>(supabase.from('trees').select('*').order('created_at')) })
+  useQuery({ queryKey: ['trees'], queryFn: () => all<Tree>('trees', { sort: 'created_at' }) })
 
 export const useTree = (treeId: string) =>
-  useQuery({ queryKey: ['tree', treeId], queryFn: () => unwrap<Tree>(supabase.from('trees').select('*').eq('id', treeId).single()) })
+  useQuery({ queryKey: ['tree', treeId], queryFn: () => one<Tree>('trees', treeId) })
 
-export const useMyRole = (treeId: string) =>
-  useQuery({
+export const useMyRole = (treeId: string) => {
+  const { session } = useAuth()
+  return useQuery({
     queryKey: ['role', treeId],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser()
-      const row = await unwrap<{ role: TreeRole }>(
-        supabase.from('tree_members').select('role').eq('tree_id', treeId).eq('user_id', u.user!.id).single(),
-      )
-      return row.role
+      const row = await call(pb.collection('tree_members').getFirstListItem(pbFilter('tree = {:t} && user = {:u}', { t: treeId, u: session?.user.id ?? '' })))
+      return row.role as TreeRole
     },
   })
+}
 
 export function useCreateTree() {
   const qc = useQueryClient()
+  const { session } = useAuth()
   return useMutation({
-    mutationFn: async (input: { name: string; description?: string }) => {
-      const { data: u } = await supabase.auth.getUser()
-      return unwrap<Tree>(supabase.from('trees').insert({ ...input, owner_id: u.user?.id ?? null }).select().single())
-    },
+    mutationFn: async (input: { name: string; description?: string }) =>
+      toApp<Tree>('trees', (await call(pb.collection('trees').create({ ...input, owner: session?.user.id ?? '' }))) as Row),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['trees'] }),
   })
 }
@@ -41,8 +40,8 @@ export function useCreateTree() {
 export function useUpdateTree(treeId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: Partial<Pick<Tree, 'name' | 'description' | 'intro_title' | 'intro' | 'intro_byline' | 'foreword_title' | 'foreword' | 'foreword_byline'>>) =>
-      unwrap<Tree>(supabase.from('trees').update(input).eq('id', treeId).select().single()),
+    mutationFn: async (input: Partial<Pick<Tree, 'name' | 'description' | 'intro_title' | 'intro' | 'intro_byline' | 'foreword_title' | 'foreword' | 'foreword_byline'>>) =>
+      toApp<Tree>('trees', (await call(pb.collection('trees').update(treeId, input))) as Row),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tree', treeId] }); qc.invalidateQueries({ queryKey: ['trees'] }) },
   })
 }
@@ -57,85 +56,106 @@ export const useTreeData = (treeId: string) =>
   useQuery({
     queryKey: ['treeData', treeId],
     queryFn: async (): Promise<TreeData> => {
-      const [people, families] = await Promise.all([
-        unwrap<Person[]>(supabase.from('people').select('*').eq('tree_id', treeId).order('surname').order('given_names')),
-        unwrap<Family[]>(supabase.from('families').select('*').eq('tree_id', treeId)),
+      const inTree = pbFilter('tree = {:t}', { t: treeId })
+      const [people, families, children] = await Promise.all([
+        all<Person>('people', { filter: inTree, sort: 'surname,given_names', expand: 'photo' }),
+        all<Family>('families', { filter: inTree }),
+        all<FamilyChild>('family_children', { filter: pbFilter('family.tree = {:t}', { t: treeId }), sort: 'sort_order' }),
       ])
-      const famIds = families.map((f) => f.id)
-      const children = famIds.length
-        ? await unwrap<FamilyChild[]>(supabase.from('family_children').select('*').in('family_id', famIds).order('sort_order'))
-        : []
       return { people, families, children }
     },
   })
 
 // People --------------------------------------------------------------------
 export const usePerson = (personId: string) =>
-  useQuery({ queryKey: ['person', personId], queryFn: () => unwrap<Person>(supabase.from('people').select('*').eq('id', personId).single()) })
+  useQuery({ queryKey: ['person', personId], queryFn: () => one<Person>('people', personId, { expand: 'photo' }) })
 
 export type PersonInput = Partial<Omit<Person, 'id' | 'tree_id' | 'created_at' | 'updated_at'>>
-
-// Families ------------------------------------------------------------------
 
 // Events --------------------------------------------------------------------
 export const usePersonEvents = (personId: string) =>
   useQuery({
     queryKey: ['events', personId],
-    queryFn: () => unwrap<Event[]>(supabase.from('events').select('*').eq('person_id', personId).order('date_sort', { nullsFirst: false })),
+    queryFn: async () => {
+      const events = await all<Event>('events', { filter: pbFilter('person = {:p}', { p: personId }) })
+      // By date, undated ones last (as Supabase's "nulls last" did).
+      return events.sort((a, b) => (a.date_sort ? (b.date_sort ? a.date_sort.localeCompare(b.date_sort) : -1) : b.date_sort ? 1 : 0))
+    },
   })
 
 // Sources & citations -------------------------------------------------------
 export const useSources = (treeId: string) =>
-  useQuery({ queryKey: ['sources', treeId], queryFn: () => unwrap<Source[]>(supabase.from('sources').select('*').eq('tree_id', treeId).order('title')) })
+  useQuery({ queryKey: ['sources', treeId], queryFn: () => all<Source>('sources', { filter: pbFilter('tree = {:t}', { t: treeId }), sort: 'title' }) })
 
 export const useSource = (sourceId: string) =>
-  useQuery({ queryKey: ['source', sourceId], queryFn: () => unwrap<Source>(supabase.from('sources').select('*').eq('id', sourceId).single()) })
+  useQuery({ queryKey: ['source', sourceId], queryFn: () => one<Source>('sources', sourceId) })
 
 export type CitationWithSource = Citation & { source: Source }
 
 export const usePersonCitations = (personId: string) =>
   useQuery({
     queryKey: ['citations', 'person', personId],
-    queryFn: () => unwrap<CitationWithSource[]>(supabase.from('citations').select('*, source:sources(*)').eq('person_id', personId).order('created_at')),
+    queryFn: async () => {
+      const rows = await call(pb.collection('citations').getFullList({ filter: pbFilter('person = {:p}', { p: personId }), sort: 'created_at', expand: 'source' }))
+      return rows.map((r) => ({ ...toApp<Citation>('citations', r as Row), source: toApp<Source>('sources', (r.expand?.source ?? {}) as Row) }))
+    },
   })
 
 export const useSourceCitations = (sourceId: string) =>
   useQuery({
     queryKey: ['citations', 'source', sourceId],
-    queryFn: () => unwrap<(Citation & { person: Person | null })[]>(supabase.from('citations').select('*, person:people(*)').eq('source_id', sourceId).order('created_at')),
-  })
-
-// Media / storage -----------------------------------------------------------
-export const usePersonMedia = (personId: string) =>
-  useQuery({ queryKey: ['media', personId], queryFn: () => unwrap<Media[]>(supabase.from('media').select('*').eq('person_id', personId).order('created_at')) })
-
-export const useSourceMedia = (sourceId: string) =>
-  useQuery({ queryKey: ['media', 'source', sourceId], queryFn: () => unwrap<Media[]>(supabase.from('media').select('*').eq('source_id', sourceId).order('caption').order('created_at')) })
-
-export async function uploadToTree(treeId: string, file: File): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
-  const path = `${treeId}/${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('media').upload(path, file, { contentType: file.type })
-  if (error) throw new Error(error.message)
-  return path
-}
-
-export function useSignedUrl(path: string | null | undefined) {
-  return useQuery({
-    queryKey: ['signedUrl', path],
-    enabled: !!path,
-    staleTime: 50 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase.storage.from('media').createSignedUrl(path!, 60 * 60)
-      if (error) throw new Error(error.message)
-      return data.signedUrl
+      const rows = await call(pb.collection('citations').getFullList({ filter: pbFilter('source = {:s}', { s: sourceId }), sort: 'created_at', expand: 'person.photo' }))
+      return rows.map((r) => ({ ...toApp<Citation>('citations', r as Row), person: r.expand?.person ? toApp<Person>('people', r.expand.person as Row) : null }))
     },
   })
+
+// Media / files -------------------------------------------------------------
+export const usePersonMedia = (personId: string) =>
+  useQuery({ queryKey: ['media', personId], queryFn: () => all<Media>('media', { filter: pbFilter('person = {:p}', { p: personId }), sort: 'created_at' }) })
+
+export const useSourceMedia = (sourceId: string) =>
+  useQuery({ queryKey: ['media', 'source', sourceId], queryFn: () => all<Media>('media', { filter: pbFilter('source = {:s}', { s: sourceId }), sort: 'caption,created_at' }) })
+
+/**
+ * Put a file in the waiting area and return its reference. A media "insert" change with that
+ * reference as `storage_path` turns it into a photo in the tree (straight away for an admin,
+ * after review for everyone else).
+ */
+export async function uploadToTree(treeId: string, file: File): Promise<string> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('tree', treeId)
+  const r = await call(pb.collection('uploads').create(form))
+  return fileRef('uploads', r.id, r.file)!
+}
+
+/** One file token (valid an hour) covers every photo, so photos don't each need signing. */
+const useFileToken = () => {
+  const { session } = useAuth()
+  return useQuery({
+    queryKey: ['fileToken', session?.user.id],
+    enabled: !!session,
+    staleTime: 50 * 60 * 1000,
+    refetchInterval: 50 * 60 * 1000,
+    queryFn: () => call(pb.files.getToken()),
+  })
+}
+
+/** Thumbnail sizes PocketBase makes (see the media field in pocketbase/pb_migrations). */
+export type Thumb = '160x160' | '480x0' | '1200x0'
+
+/** A viewable URL for a file reference ("media/<id>/<file>" or "uploads/<id>/<file>"), optionally a smaller copy. */
+export function useSignedUrl(ref: string | null | undefined, thumb?: Thumb) {
+  const { data: token } = useFileToken()
+  if (!ref || !token) return { data: undefined }
+  const path = ref.split('/').map(encodeURIComponent).join('/')
+  return { data: `${pb.baseURL}/api/files/${path}?token=${encodeURIComponent(token)}${thumb ? `&thumb=${thumb}` : ''}` }
 }
 
 // Members -------------------------------------------------------------------
 export const useMembers = (treeId: string) =>
   useQuery({
     queryKey: ['members', treeId],
-    queryFn: () => unwrap<{ user_id: string; role: TreeRole }[]>(supabase.from('tree_members').select('user_id, role').eq('tree_id', treeId)),
+    queryFn: async () => (await call(pb.collection('tree_members').getFullList({ filter: pbFilter('tree = {:t}', { t: treeId }) }))).map((r) => ({ user_id: r.user as string, role: r.role as TreeRole })),
   })

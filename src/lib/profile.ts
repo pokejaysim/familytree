@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from './supabase'
+import type { RecordModel } from 'pocketbase'
+import { call, pb } from './pb'
 import { useAuth } from './auth'
 
 export type MemberStatus = 'pending' | 'approved' | 'declined'
@@ -17,6 +18,20 @@ export interface Profile {
   person_status: 'pending' | 'approved' | null
 }
 
+/** A PocketBase user account as the app's member profile (Supabase kept these in a separate "profiles" table). */
+const toProfile = (r: RecordModel): Profile => ({
+  id: r.id,
+  email: String(r.email ?? ''),
+  name: r.name || null,
+  status: (r.status || 'pending') as MemberStatus,
+  role: (r.role || 'viewer') as MemberRole,
+  note: r.note || null,
+  created_at: String(r.created ?? '').replace(' ', 'T'),
+  reviewed_at: r.reviewed_at ? String(r.reviewed_at).replace(' ', 'T') : null,
+  person_id: r.person || null,
+  person_status: r.person_status || null,
+})
+
 /** The signed-in user's own membership record. */
 export function useProfile() {
   const { session } = useAuth()
@@ -25,11 +40,7 @@ export function useProfile() {
     queryKey: ['profile', uid],
     enabled: !!uid,
     staleTime: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', uid!).maybeSingle()
-      if (error) throw new Error(error.message)
-      return (data as Profile | null) ?? null
-    },
+    queryFn: async () => toProfile(await call(pb.collection('users').getOne(uid!))),
   })
 }
 
@@ -44,28 +55,23 @@ export const usePendingCount = (enabled: boolean) =>
     queryKey: ['pendingCount'],
     enabled,
     refetchInterval: 60_000,
-    queryFn: async () => { const { data, error } = await supabase.rpc('pending_member_count'); if (error) throw new Error(error.message); return (data as number) ?? 0 },
+    queryFn: async () => (await call(pb.send<{ members: number }>('/api/sft/counts', {}))).members ?? 0,
   })
 
 export const useMembers = () =>
   useQuery({
     queryKey: ['members'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('status').order('created_at', { ascending: false })
-      if (error) throw new Error(error.message)
-      return data as Profile[]
-    },
+    queryFn: async () => (await call(pb.collection('users').getFullList({ sort: 'status,-created' }))).map(toProfile),
   })
 
 export function useReviewMember() {
   const qc = useQueryClient()
+  const { session } = useAuth()
   return useMutation({
     mutationFn: async ({ id, status, role }: { id: string; status: MemberStatus; role?: MemberRole }) => {
-      const { data: u } = await supabase.auth.getUser()
-      const patch: Partial<Profile> & { reviewed_by?: string | null } = { status, reviewed_at: new Date().toISOString(), reviewed_by: u.user?.id ?? null }
+      const patch: Record<string, unknown> = { status, reviewed_at: new Date().toISOString(), reviewed_by: session?.user.id ?? '' }
       if (role) patch.role = role
-      const { error } = await supabase.from('profiles').update(patch).eq('id', id)
-      if (error) throw new Error(error.message)
+      await call(pb.collection('users').update(id, patch))
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); qc.invalidateQueries({ queryKey: ['pendingCount'] }) },
   })

@@ -27,7 +27,16 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 ## Moving to PocketBase (in progress, see `pocketbase/README.md`)
 - The live app still runs on Supabase. A self-hosted PocketBase on Jason's Raspberry Pi holds an imported, verified copy of the family data (phase 1 done 2026-11-25).
 - The review system has been ported to `pocketbase/pb_hooks` and is live on the Pi, with 65 end-to-end checks in `tools/test_review_system.py` (phase 2 done 2026-11-25).
-- Next phases: app data layer (3); public address and cutover (4). Backups stay local by Jason's choice; there is no off-site copy.
+- Phase 3 (2026-11-25) is on branch `pocketbase-app` and isn't merged until the phase 4 cutover, because GitHub Pages deploys `main`. That branch's app talks only to PocketBase:
+  - **The adapter:** `src/lib/pb.ts` holds the client and the adapter. Pages keep the Supabase-era shapes (`person_id`, `photo_path`, `storage_path`), and `toApp`/`toPbFields` translate.
+  - **Files:** passed around as refs `"media/<id>/<file>"` or `"uploads/<id>/<file>"`. `useSignedUrl(ref, thumb?)` builds URLs from one shared file token (1 h); the thumbnails are `160x160` for the map and avatars, `480x0` for galleries.
+  - **Uploads:** `uploadToTree` puts a file in `uploads`. `changes.ts` turns a media insert's upload ref into `data.upload`, and `photo_path` into the `photo` link; `hydrate()` maps stored requests back for the Review page.
+  - **Accounts:** `profile.ts` reads users as profiles. Members' emails show because users `manageRule` = admin.
+  - **Email links:** `App.tsx` handles `?confirm=<token>` and `?reset=<token>`.
+  - **Env:** `VITE_PB_URL`; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`, a made-up test admin.
+  - **Testing:** develop against the test copy on the Pi (`pocketbase-dev`, 127.0.0.1:8091, `/srv/pocketbase/dev`, reached through an SSH tunnel; made-up accounts only), never the real one on 8090.
+- Next: phase 4 is the public address, the switchover, and pre-making thumbnails. The first view of 95 scans made the Pi generate thumbs for ~20 s.
+- Backups stay local by Jason's choice; there is no off-site copy.
 - Schema-as-code lives in `pocketbase/pb_migrations`, with the same names as Supabase minus `_id` (`people.tree`). Supabase UUIDs are kept as record IDs. `people.photo` links to a `media` record. Profiles became fields on `users`.
 - Until cutover, Supabase is the source of truth. Re-import with `import-supabase … replace` rather than editing PocketBase by hand.
 
@@ -51,7 +60,7 @@ From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.sv
 npm run dev      # http://localhost:5173
 npm run build    # tsc + vite build
 ```
-Env: `.env.local` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`).
+Env: `.env.local` with `VITE_PB_URL` (see `.env.example`). On `main`, until cutover: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ## Conventions
 - Every DB write goes through a hook in `src/lib/queries.ts` that invalidates `['treeData', treeId]`

@@ -1,19 +1,23 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { errorMessage, pb } from '../lib/pb'
 import BrandPanel from '../components/BrandPanel'
 
-/** Shown after a password-reset link is followed (Supabase signs the user in with a recovery session). */
-export default function UpdatePasswordPage() {
-  const nav = useNavigate()
+/** Opened from the password-reset email (…/?reset=<token>). On success it hands back to the sign-in page. */
+export default function UpdatePasswordPage({ token, onDone }: { token: string; onDone: (notice: string) => void }) {
   const [password, setPassword] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true); setMsg(null)
-    const { error } = await supabase.auth.updateUser({ password })
-    setBusy(false)
-    if (error) setMsg(error.message); else nav('/', { replace: true })
+    try {
+      await pb.collection('users').confirmPasswordReset(token, password, password)
+      pb.authStore.clear() // a new password signs every device out
+      onDone('Your password has been changed. Sign in with the new one.')
+    } catch (err) {
+      setMsg(/token/i.test(errorMessage(err)) ? 'That reset link has expired or was already used. Ask for a new one from the sign-in page.' : errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
   }
   return (
     <div className="flex h-full items-center justify-center bg-paper p-4">
@@ -24,6 +28,7 @@ export default function UpdatePasswordPage() {
         <div><label className="label">New password</label><input className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></div>
         {msg && <p className="text-sm text-red-800">{msg}</p>}
         <button className="btn-primary w-full justify-center" disabled={busy}>Save password</button>
+        <button type="button" className="w-full text-sm text-ink-mute hover:underline" onClick={() => onDone('')}>Cancel</button>
       </form>
       </div>
     </div>

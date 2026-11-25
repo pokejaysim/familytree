@@ -536,7 +536,7 @@ function FoldToggle({ orient, kids, hidden, dots, onToggle }: { orient: Orient; 
 
 /** One person's card, drawn relative to the couple's centre (dx/dy = offset of the card's centre). */
 function PersonCard({ person: p, dx, dy, depth, dots, selected, onSelect }: { person: Person; dx: number; dy: number; depth: number; dots: boolean; selected: boolean; onSelect: (id: string) => void }) {
-  const { data: photo } = useSignedUrl(p.photo_path)
+  const { data: photo } = useSignedUrl(p.photo_path, '160x160')
   const tint = TINTS[((depth % TINTS.length) + TINTS.length) % TINTS.length] // ancestors above the founders have negative depths
   const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(p.id) }
@@ -563,7 +563,7 @@ function PersonCard({ person: p, dx, dy, depth, dots, selected, onSelect }: { pe
 
 /** A further spouse (e.g. an earlier marriage), stacked beneath the person's own card. Drawn relative to the couple's centre. */
 function MiniCard({ person: p, dx, dy, selected, onSelect }: { person: Person; dx: number; dy: number; selected: boolean; onSelect: (id: string) => void }) {
-  const { data: photo } = useSignedUrl(p.photo_path)
+  const { data: photo } = useSignedUrl(p.photo_path, '160x160')
   const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
   const first = p.nickname ? p.nickname : p.given_names.split(' ')[0] || p.surname || '?'
   const left = dx - MINI_W / 2, top = dy - MINI_H / 2

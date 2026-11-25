@@ -417,12 +417,12 @@ function Gallery({ treeId, person, canEdit, onOpen, send }: { treeId: string; pe
 }
 
 export function MediaTile({ m, onDelete, onOpen }: { m: Media; onDelete?: () => void; onOpen?: () => void }) {
-  const { data: url } = useSignedUrl(m.storage_path)
   const isImg = m.mime_type?.startsWith('image/')
+  const { data: url } = useSignedUrl(m.storage_path, isImg ? '480x0' : undefined) // documents open as the original file
   return (
     <div className="group relative aspect-square overflow-hidden rounded-md border border-line bg-paper">
       {url && (isImg
-        ? <img src={url} alt={m.caption ?? ''} className={`h-full w-full object-cover ${onOpen ? 'cursor-zoom-in' : ''}`} onClick={onOpen} />
+        ? <img src={url} alt={m.caption ?? ''} loading="lazy" decoding="async" className={`h-full w-full object-cover ${onOpen ? 'cursor-zoom-in' : ''}`} onClick={onOpen} />
         : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-sm text-moss underline">Open document</a>)}
       {onDelete && <button className="absolute top-1 right-1 hidden rounded bg-white/90 p-1 text-red-700 group-hover:block" onClick={onDelete}><Trash2 size={14} /></button>}
       {m.caption && <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-ink/60 px-2 py-1 text-xs text-white">{m.caption}</div>}

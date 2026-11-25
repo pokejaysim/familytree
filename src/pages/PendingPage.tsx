@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { signOut } from '../lib/auth'
 import type { Profile } from '../lib/profile'
 import { ADMIN_NAME } from '../config'
 import treeMark from '../assets/tree-mark.svg'
@@ -25,7 +25,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
             <p className="text-sm text-ink-mute">Signed in as {profile?.email}</p>
           </>
         )}
-        <button className="btn-ghost mx-auto" onClick={() => supabase.auth.signOut()}>Sign out</button>
+        <button className="btn-ghost mx-auto" onClick={signOut}>Sign out</button>
       </div>
     </div>
   )

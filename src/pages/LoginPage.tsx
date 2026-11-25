@@ -1,36 +1,56 @@
-import { useState, type FormEvent } from 'react'
-import { supabase } from '../lib/supabase'
+import { useEffect, useState, type FormEvent } from 'react'
+import { errorMessage, pb } from '../lib/pb'
+import { ADMIN_NAME } from '../config'
 import BrandPanel from '../components/BrandPanel'
 
 type Mode = 'signin' | 'signup' | 'reset'
+export type Notice = { text: string; ok?: boolean }
 
-export default function LoginPage() {
+/** `notice`: news from an email link (email confirmed, password changed), shown above the form. */
+export default function LoginPage({ notice }: { notice?: Notice }) {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [note, setNote] = useState('')
-  const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null)
+  const [msg, setMsg] = useState<Notice | null>(notice ?? null)
+  const [offerResend, setOfferResend] = useState(false)
   const [busy, setBusy] = useState(false)
+  useEffect(() => { if (notice) setMsg(notice) }, [notice])
 
+  const users = pb.collection('users')
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true); setMsg(null)
-    const redirectTo = window.location.origin + import.meta.env.BASE_URL
-    let error: { message: string } | null = null
-    if (mode === 'signin') ({ error } = await supabase.auth.signInWithPassword({ email, password }))
-    else if (mode === 'signup') ({ error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, data: { name, note } } }))
-    else ({ error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo }))
-    setBusy(false)
-    if (error) setMsg({ text: error.message })
-    else if (mode === 'signup') setMsg({ text: 'Almost there. Check your email for a confirmation link. Once Jason approves your account you can sign in and browse.', ok: true })
-    else if (mode === 'reset') setMsg({ text: 'If that address has an account, a reset link is on its way.', ok: true })
+    setBusy(true); setMsg(null); setOfferResend(false)
+    try {
+      if (mode === 'signin') await users.authWithPassword(email, password)
+      else if (mode === 'signup') {
+        await users.create({ email, password, passwordConfirm: password, name, note })
+        setMsg({ text: `Almost there. Check your email for a confirmation link. Once ${ADMIN_NAME} approves your account you can sign in and browse.`, ok: true })
+      } else {
+        await users.requestPasswordReset(email)
+        setMsg({ text: 'If that address has an account, a reset link is on its way.', ok: true })
+      }
+    } catch (err) {
+      if (mode === 'signin') {
+        // PocketBase doesn't say which part failed: a wrong password and an unconfirmed email look the same.
+        setMsg({ text: "That email and password didn't work. If you've just signed up, confirm your email first, using the link we sent you." })
+        setOfferResend(true)
+      } else setMsg({ text: errorMessage(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+  const resend = async () => {
+    setOfferResend(false)
+    await users.requestVerification(email).catch(() => undefined)
+    setMsg({ text: 'If that address is waiting to be confirmed, a new link is on its way.', ok: true })
   }
 
   const title = { signin: 'Sign in', signup: 'Create your account', reset: 'Reset your password' }[mode]
   const blurb = {
     signin: 'Welcome back to the family.',
-    signup: 'Family members can request an account here. Jason approves each one before it can see the tree.',
+    signup: `Family members can request an account here. ${ADMIN_NAME} approves each one before it can see the tree.`,
     reset: 'Enter your email and we’ll send a link to choose a new password.',
   }[mode]
 
@@ -53,12 +73,13 @@ export default function LoginPage() {
           </div>
         )}
         {msg && <p className={`text-sm ${msg.ok ? 'text-moss' : 'text-red-800'}`}>{msg.text}</p>}
+        {offerResend && email && <button type="button" className="text-sm text-brass underline underline-offset-2 hover:text-moss" onClick={resend}>Send me a new confirmation link</button>}
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? 'One moment…' : { signin: 'Sign in', signup: 'Create account', reset: 'Send reset link' }[mode]}</button>
         <div className="flex justify-between text-sm text-ink-mute">
           {mode === 'signin' ? (
             <>
-              <button type="button" className="hover:underline" onClick={() => { setMode('signup'); setMsg(null) }}>New here? Create an account</button>
-              <button type="button" className="hover:underline" onClick={() => { setMode('reset'); setMsg(null) }}>Forgot password?</button>
+              <button type="button" className="hover:underline" onClick={() => { setMode('signup'); setMsg(null); setOfferResend(false) }}>New here? Create an account</button>
+              <button type="button" className="hover:underline" onClick={() => { setMode('reset'); setMsg(null); setOfferResend(false) }}>Forgot password?</button>
             </>
           ) : (
             <button type="button" className="hover:underline" onClick={() => { setMode('signin'); setMsg(null) }}>← Back to sign in</button>

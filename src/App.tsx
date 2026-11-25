@@ -1,9 +1,10 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
 import { useAuth } from './lib/auth'
-import LoginPage from './pages/LoginPage'
+import LoginPage, { type Notice } from './pages/LoginPage'
+import { pb } from './lib/pb'
+import { ADMIN_NAME } from './config'
 import UpdatePasswordPage from './pages/UpdatePasswordPage'
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
 import { useProfile } from './lib/profile'
 import PendingPage from './pages/PendingPage'
 import MembersPage from './pages/MembersPage'
@@ -19,19 +20,34 @@ import AboutPage from './pages/AboutPage'
 import SupportPage from './pages/SupportPage'
 import ReviewPage from './pages/ReviewPage'
 import ContributePage from './pages/ContributePage'
-import { Toaster } from './lib/toast'
+import { Toaster, toast } from './lib/toast'
 
-/** True from the moment a password-recovery link lands until the user saves a new password. */
-function useIsPasswordRecovery() {
-  const [recovering, setRecovering] = useState(() => window.location.hash.includes('type=recovery'))
+/**
+ * Links from PocketBase's emails:
+ * - …/?reset=<token> (forgot password) shows the new-password page until it's saved or cancelled;
+ * - …/?confirm=<token> (confirm your email) is confirmed straight away, whoever is signed in.
+ * Either way the outcome becomes a notice on the sign-in page (and a toast for anyone already in).
+ */
+const handledConfirmations = new Set<string>() // React's dev double-run must not use a token twice
+function useEmailLinks() {
+  const [params, setParams] = useSearchParams()
+  const [notice, setNotice] = useState<Notice | undefined>()
+  const resetToken = params.get('reset')
+  const confirmToken = params.get('confirm')
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
-      if (event === 'USER_UPDATED' || event === 'SIGNED_OUT') setRecovering(false)
-    })
-    return () => data.subscription.unsubscribe()
-  }, [])
-  return recovering
+    if (!confirmToken || handledConfirmations.has(confirmToken)) return
+    handledConfirmations.add(confirmToken)
+    const tell = (n: Notice) => { setNotice(n); toast(n.ok ? 'saved' : 'error', n.text) }
+    pb.collection('users').confirmVerification(confirmToken)
+      .then(() => tell({ text: `Thanks, your email is confirmed. You can sign in now; you'll be able to browse once ${ADMIN_NAME} has approved your account.`, ok: true }))
+      .catch(() => tell({ text: "That confirmation link has expired or was already used. Try signing in, and ask for a new link if it's needed." }))
+      .finally(() => setParams((p) => { p.delete('confirm'); return p }, { replace: true }))
+  }, [confirmToken, setParams])
+  const resetDone = (message: string) => {
+    setParams((p) => { p.delete('reset'); return p }, { replace: true })
+    setNotice(message ? { text: message, ok: true } : undefined)
+  }
+  return { resetToken, resetDone, notice }
 }
 
 /** Plays the two-second splash each time an approved member arrives in the app: on sign-in, and on opening the site already signed in. */
@@ -48,13 +64,13 @@ function useLoginSplash(ready: boolean) {
 export default function App() {
   // Login is required. On this dev machine, VITE_DEV_EMAIL/PASSWORD in .env.local sign in automatically (see lib/auth.tsx).
   const { session, loading } = useAuth()
-  const recovering = useIsPasswordRecovery()
+  const links = useEmailLinks()
   const profile = useProfile()
-  const approved = !!session && !recovering && profile.data?.status === 'approved'
+  const approved = !!session && !links.resetToken && profile.data?.status === 'approved'
   useLoginSplash(approved)
+  if (links.resetToken) return <UpdatePasswordPage token={links.resetToken} onDone={links.resetDone} />
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
-  if (!session) return <LoginPage />
-  if (recovering) return <UpdatePasswordPage />
+  if (!session) return <LoginPage notice={links.notice} />
   if (profile.data?.status !== 'approved') return <PendingPage profile={profile.data ?? null} />
   return (
     <>

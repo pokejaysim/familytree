@@ -1,33 +1,46 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { useQueryClient } from '@tanstack/react-query'
+import { pb } from './pb'
 
+export interface Session { user: { id: string; email: string } }
 interface AuthState { session: Session | null; loading: boolean }
 const AuthCtx = createContext<AuthState>({ session: null, loading: true })
 
 /**
- * Local development convenience: when running `npm run dev` with VITE_DEV_EMAIL / VITE_DEV_PASSWORD
- * in .env.local (git-ignored), sign in automatically so the login screen never shows on this machine.
- * Production builds ignore these variables entirely.
+ * Local development convenience: when running `npm run dev` with VITE_PB_DEV_EMAIL / VITE_PB_DEV_PASSWORD
+ * in .env.local (git-ignored; a made-up account on the PocketBase test copy), sign in automatically so the
+ * login screen never shows on this machine. Production builds ignore these variables entirely.
  */
-const DEV_EMAIL = import.meta.env.DEV ? (import.meta.env.VITE_DEV_EMAIL as string | undefined) : undefined
-const DEV_PASSWORD = import.meta.env.DEV ? (import.meta.env.VITE_DEV_PASSWORD as string | undefined) : undefined
+const DEV_EMAIL = import.meta.env.DEV ? (import.meta.env.VITE_PB_DEV_EMAIL as string | undefined) : undefined
+const DEV_PASSWORD = import.meta.env.DEV ? (import.meta.env.VITE_PB_DEV_PASSWORD as string | undefined) : undefined
+
+const current = (): Session | null => {
+  const r = pb.authStore.record
+  return pb.authStore.isValid && r && r.collectionName === 'users' ? { user: { id: r.id, email: String(r.email ?? '') } } : null
+}
+
+export const signOut = () => pb.authStore.clear()
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ session: null, loading: true })
+  const qc = useQueryClient()
+  const [state, setState] = useState<AuthState>({ session: current(), loading: true })
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session && DEV_EMAIL && DEV_PASSWORD) {
-        const { data: d, error } = await supabase.auth.signInWithPassword({ email: DEV_EMAIL, password: DEV_PASSWORD })
-        if (error) console.warn('Dev auto-login failed:', error.message)
-        setState({ session: d.session ?? null, loading: false })
-        return
+    let cancelled = false
+    ;(async () => {
+      // A saved sign-in from an earlier visit: refresh it (this also checks the account still exists).
+      if (pb.authStore.isValid) await pb.collection('users').authRefresh().catch(() => pb.authStore.clear())
+      if (!pb.authStore.isValid && DEV_EMAIL && DEV_PASSWORD) {
+        await pb.collection('users').authWithPassword(DEV_EMAIL, DEV_PASSWORD).catch((e) => console.warn('Dev auto-login failed:', e?.message))
       }
-      setState({ session: data.session, loading: false })
+      if (!cancelled) setState({ session: current(), loading: false })
+    })()
+    const stop = pb.authStore.onChange(() => {
+      const session = current()
+      if (!session) qc.clear() // signed out: forget everything the last account loaded
+      setState((s) => (s.session?.user.id === session?.user.id && !s.loading ? s : { session, loading: s.loading }))
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setState((s) => ({ session, loading: s.loading && !session ? s.loading : false })))
-    return () => sub.subscription.unsubscribe()
-  }, [])
+    return () => { cancelled = true; stop() }
+  }, [qc])
   return <AuthCtx.Provider value={state}>{children}</AuthCtx.Provider>
 }
 

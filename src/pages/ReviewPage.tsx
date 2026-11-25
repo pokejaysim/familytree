@@ -149,8 +149,9 @@ function ChangeLine({ c, nameOf, familyOf }: { c: Change; nameOf: (id: unknown) 
 }
 
 function Thumb({ path }: { path: string }) {
-  const { data: url } = useSignedUrl(path)
-  return url ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="" className="mt-1 h-28 w-28 rounded border border-line object-cover" /></a> : null
+  const { data: small } = useSignedUrl(path, '480x0')
+  const { data: full } = useSignedUrl(path)
+  return small && full ? <a href={full} target="_blank" rel="noreferrer"><img src={small} alt="" loading="lazy" className="mt-1 h-28 w-28 rounded border border-line object-cover" /></a> : null
 }
 
 function ClaimCard({ profileId, who, note, personId }: { profileId: string; who: string; note: string | null; personId: string }) {

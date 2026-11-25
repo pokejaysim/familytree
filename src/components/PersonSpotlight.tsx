@@ -9,7 +9,7 @@ import { useSignedUrl } from '../lib/queries'
 export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJump, onAddRelative }: {
   person: Person; graph: Graph; treeId: string; onClose: () => void; onJump: (id: string) => void; onAddRelative?: () => void
 }) {
-  const { data: photo } = useSignedUrl(p.photo_path)
+  const { data: photo } = useSignedUrl(p.photo_path, '480x0')
   const parents = graph.parentsOf(p.id)
   const partners = (graph.familiesOfParent.get(p.id) ?? []).map((f) => graph.partnerOf(f, p.id)).filter((q): q is Person => !!q)
   const children = graph.childrenOf(p.id)

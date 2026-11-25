@@ -1,8 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { ClipboardCheck, LogOut, PenLine, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../lib/auth'
+import { signOut, useAuth } from '../lib/auth'
 import { useIsAdmin, usePendingCount, useProfile } from '../lib/profile'
 import { usePendingReviewCount } from '../lib/changes'
 import { usePerson } from '../lib/queries'
@@ -44,7 +43,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
         {session && (me
           ? <Link to={`/trees/${me.tree_id}/people/${me.id}`} className="flex h-[30px] w-[30px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-brass text-[12px] sm:text-[13px] text-cream ring-cream/0 hover:ring-2 hover:ring-cream/60" title={`${label}: open your profile`}>{initials}</Link>
           : <span className="flex h-[30px] w-[30px] sm:h-[34px] sm:w-[34px] items-center justify-center rounded-full bg-brass text-[12px] sm:text-[13px] text-cream" title={`${label} · ${profile?.role ?? ''}`}>{initials}</span>)}
-        {session && <button className="text-sage hover:text-cream" title="Sign out" onClick={() => supabase.auth.signOut()}><LogOut size={16} /></button>}
+        {session && <button className="text-sage hover:text-cream" title="Sign out" onClick={signOut}><LogOut size={16} /></button>}
       </div>
     </header>
   )
