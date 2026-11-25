@@ -14,7 +14,8 @@ export default function UpdatePasswordPage({ token, onDone }: { token: string; o
       pb.authStore.clear() // a new password signs every device out
       onDone('Your password has been changed. Sign in with the new one.')
     } catch (err) {
-      setMsg(/token/i.test(errorMessage(err)) ? 'That reset link has expired or was already used. Ask for a new one from the sign-in page.' : errorMessage(err))
+      const status = (err as { status?: number })?.status
+      setMsg(status === 400 || /token/i.test(errorMessage(err)) ? 'That reset link has expired (they last 30 minutes) or was already used. Ask for a new one from the sign-in page.' : errorMessage(err))
     } finally {
       setBusy(false)
     }

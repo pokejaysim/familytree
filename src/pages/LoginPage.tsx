@@ -32,9 +32,12 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
         setMsg({ text: 'If that address has an account, a reset link is on its way.', ok: true })
       }
     } catch (err) {
-      if (mode === 'signin') {
+      const status = (err as { status?: number })?.status
+      if (status === 429) setMsg({ text: 'Too many tries in a row. Wait a few seconds, then try again.' })
+      else if (status === 0) setMsg({ text: errorMessage(err) }) // couldn't reach the server
+      else if (mode === 'signin') {
         // PocketBase doesn't say which part failed: a wrong password and an unconfirmed email look the same.
-        setMsg({ text: "That email and password didn’t work. If you’ve just signed up, confirm your email first using the link we sent you." })
+        setMsg({ text: "That email and password didn’t work. Check the email is the one you signed up with here, or use Forgot password. If you’ve just signed up, confirm your email first using the link we sent you." })
         setOfferResend(true)
       } else setMsg({ text: errorMessage(err) })
     } finally {
