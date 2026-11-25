@@ -13,7 +13,8 @@ import SourceForm from '../components/SourceForm'
 import Avatar from '../components/Avatar'
 import Lightbox from '../components/Lightbox'
 import { useAuth } from '../lib/auth'
-import { useCanEdit, useIsAdmin, useProfile, useSaveLabel } from '../lib/profile'
+import { useCanEdit, useIsAdmin, useMeId, useProfile, useSaveLabel } from '../lib/profile'
+import { relationTo } from '../lib/kin'
 import { ADMIN_NAME } from '../config'
 
 type RelAction = { kind: 'parent' } | { kind: 'partner' } | { kind: 'child'; family: Family } | { kind: 'sibling' }
@@ -35,9 +36,10 @@ export default function PersonPage() {
   const [viewing, setViewing] = useState<number | null>(null)
   const [openCite, setOpenCite] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const meId = useMeId()
 
-  if (!data || !graph) return <p className="p-6 text-ink/50">Loading…</p>
-  if (!person) return <p className="p-6 text-ink/50">Person not found.</p>
+  if (!data || !graph) return <p className="p-6 text-ink-mute">Loading…</p>
+  if (!person) return <p className="p-6 text-ink-mute">Person not found.</p>
 
   const name = fullName(person)
   const parentFamilies = graph.familiesOfChild.get(personId) ?? []
@@ -76,6 +78,8 @@ export default function PersonPage() {
     ])
   }
 
+  const relation = relationTo(graph, meId, person)
+  const hasDates = !!(person.birth_date || person.birth_place || (!person.is_living && (person.death_date || person.death_place)))
   const relTitle = rel ? { parent: 'Add parent', partner: 'Add partner / spouse', child: 'Add child', sibling: 'Add sibling' }[rel.kind] : ''
   const relDefaults: Partial<Person> | undefined = rel?.kind === 'child' || rel?.kind === 'sibling' || rel?.kind === 'parent' ? { surname: person.surname } : undefined
 
@@ -90,7 +94,7 @@ export default function PersonPage() {
   if (cites && cites.length === 0) missing.push({ label: 'Say where the information came from', act: () => setOpenCite((n) => n + 1) })
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:space-y-5 sm:p-6">
+    <div className="mx-auto max-w-6xl space-y-4 p-4 sm:space-y-5 sm:p-6">
       {/* Header */}
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative self-start">
@@ -99,12 +103,15 @@ export default function PersonPage() {
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPhoto(f) }} />
         </div>
         <div className="flex-1">
-          <h2 className="font-serif text-2xl sm:text-3xl">{displayName(person)}</h2>
-          <p className="text-ink/60">{lifespan(person)}</p>
-          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-sm">
-            {person.birth_date || person.birth_place ? (<><dt className="text-ink/50">Born</dt><dd>{[person.birth_date, person.birth_place].filter(Boolean).join(', ')}</dd></>) : null}
-            {!person.is_living && (person.death_date || person.death_place) ? (<><dt className="text-ink/50">Died</dt><dd>{[person.death_date, person.death_place].filter(Boolean).join(', ')}</dd></>) : null}
-          </dl>
+          <h1 className="font-serif text-[28px] leading-tight sm:text-[34px]">{displayName(person)}</h1>
+          {relation && <p className="mt-0.5 text-[17px] italic text-brass">{relation.replace(/^your /, 'Your ')}</p>}
+          {!hasDates && lifespan(person) && <p className="text-[16px] text-ink-mute">{lifespan(person)}</p>}
+          {hasDates && (
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[16px]">
+              {person.birth_date || person.birth_place ? (<><dt className="text-ink-mute">Born</dt><dd>{[person.birth_date, person.birth_place].filter(Boolean).join(', ')}</dd></>) : null}
+              {!person.is_living && (person.death_date || person.death_place) ? (<><dt className="text-ink-mute">Died</dt><dd>{[person.death_date, person.death_place].filter(Boolean).join(', ')}</dd></>) : null}
+            </dl>
+          )}
           <ThisIsMe person={person} />
         </div>
         <div className="flex flex-wrap gap-1">
@@ -119,13 +126,20 @@ export default function PersonPage() {
       </div>
 
       <PendingNotice personId={personId} />
+
+      {/* Two columns on a laptop: the record on the left, the pictures beside it. On a phone the pictures come first, as a strip you swipe. */}
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+      <div className={`min-w-0 lg:col-start-2 lg:row-start-1 ${media.length ? '' : 'order-last lg:order-none'}`}>
+        <Gallery treeId={treeId} person={person} canEdit={canEdit} onOpen={setViewing} send={send} />
+      </div>
+      <div className="min-w-0 space-y-4 sm:space-y-5 lg:col-start-1 lg:row-start-1">
       <HelpCard name={person.given_names.split(' ')[0] || name} missing={missing} canEdit={canEdit} isAdmin={isAdmin} />
 
-      {person.bio && <p className="card whitespace-pre-wrap text-sm">{person.bio}</p>}
+      {person.bio && <p className="card whitespace-pre-wrap text-[16px] leading-relaxed">{person.bio}</p>}
 
       {/* Family */}
       <section className="card space-y-4">
-        <div className="flex items-center justify-between"><h3 className="font-serif text-xl">Family</h3></div>
+        <div className="flex items-center justify-between"><h2 className="font-serif text-[22px]">Family</h2></div>
         <Group title="Parents" people={parents} treeId={treeId} onAdd={canEdit && parents.length < 2 ? () => setRel({ kind: 'parent' }) : undefined} />
         <Group title="Siblings" people={siblings} treeId={treeId} onAdd={canEdit ? () => setRel({ kind: 'sibling' }) : undefined} />
         {ownFamilies.map((f) => {
@@ -135,9 +149,9 @@ export default function PersonPage() {
             <div key={f.id} className="rounded-md border border-line p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span>
-                  <span className="text-ink/50">{f.union_type === 'marriage' ? 'Married to ' : 'Partner: '}</span>
-                  {partner ? <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/people/${partner.id}`}>{fullName(partner)}</Link> : <span className="text-ink/50">unknown</span>}
-                  {f.start_date && <span className="text-ink/50"> · {f.start_date}{f.start_place ? `, ${f.start_place}` : ''}</span>}
+                  <span className="text-ink-mute">{f.union_type === 'marriage' ? 'Married to ' : 'Partner: '}</span>
+                  {partner ? <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/people/${partner.id}`}>{fullName(partner)}</Link> : <span className="text-ink-mute">unknown</span>}
+                  {f.start_date && <span className="text-ink-mute">, {f.start_date}{f.start_place ? `, ${f.start_place}` : ''}</span>}
                 </span>
               </div>
               <Group title="Children" people={kids} treeId={treeId} onAdd={canEdit ? () => setRel({ kind: 'child', family: f }) : undefined}
@@ -150,7 +164,8 @@ export default function PersonPage() {
 
       <Timeline treeId={treeId} person={person} canEdit={canEdit} openToken={0} send={send} />
       <Citations treeId={treeId} person={person} canEdit={canEdit} openToken={openCite} send={send} />
-      <Gallery treeId={treeId} person={person} canEdit={canEdit} onOpen={setViewing} send={send} />
+      </div>
+      </div>
       {viewing !== null && media[viewing] && <Lightbox items={media} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
 
       {editing && (
@@ -201,19 +216,19 @@ function PendingNotice({ personId }: { personId: string }) {
   const withdraw = useWithdrawRequest()
   if (pending.length === 0) return null
   return (
-    <section className="rounded-md border border-brass-light/60 bg-[#FBF5E6] p-4">
+    <section className="rounded-md border border-brass-light/60 bg-note p-4">
       <p className="flex items-center gap-2 text-[15px] text-ink"><Clock3 size={16} className="text-brass" />
-        {pending.length === 1 ? 'One change to this profile is' : `${pending.length} changes to this profile are`} waiting for {ADMIN_NAME}'s review
+        {pending.length === 1 ? 'One change to this profile is' : `${pending.length} changes to this profile are`} waiting for {ADMIN_NAME}’s review
       </p>
-      <ul className="mt-2 space-y-1 text-sm text-ink-soft">
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px] text-ink-soft marker:text-brass-light">
         {pending.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center gap-2">
-            <span>· {r.summary}</span>
+            <span>{r.summary}</span>
             {r.author_id === session?.user.id && !isAdmin && <button className="text-brass underline underline-offset-2 hover:text-moss" onClick={() => withdraw.mutate(r.id)}>Withdraw</button>}
           </li>
         ))}
       </ul>
-      {isAdmin && <Link to="/review" className="mt-2 inline-block text-[12px] uppercase tracking-[.12em] text-brass underline underline-offset-4 hover:text-moss">Review now</Link>}
+      {isAdmin && <Link to="/review" className="mt-2 inline-block text-[15px] text-brass underline underline-offset-4 hover:text-moss">Review now</Link>}
     </section>
   )
 }
@@ -249,14 +264,14 @@ function Group({ title, people, treeId, onAdd, onRemove }: { title: string; peop
         <span className="label mb-0">{title}</span>
         {onAdd && <button className="rounded p-0.5 text-moss hover:bg-moss-light" title={`Add ${title.toLowerCase()}`} onClick={onAdd}><Plus size={14} /></button>}
       </div>
-      {people.length === 0 ? <p className="text-sm text-ink/40">None recorded</p> : (
+      {people.length === 0 ? <p className="text-sm text-ink-mute">None recorded</p> : (
         <ul className="flex flex-wrap gap-2">
           {people.map((p) => (
             <li key={p.id} className="group flex items-center gap-2 rounded-full border border-line bg-paper py-1 pr-3 pl-1 text-sm">
               <Avatar person={p} size={24} />
               <Link className="hover:underline" to={`/trees/${treeId}/people/${p.id}`}>{fullName(p)}</Link>
-              <span className="text-ink/40">{lifespan(p)}</span>
-              {onRemove && <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" title="Remove from family" onClick={() => onRemove(p)}>×</button>}
+              <span className="text-ink-mute">{lifespan(p)}</span>
+              {onRemove && <button className="text-ink-mute opacity-0 transition-opacity hover:text-danger group-hover:opacity-100 focus-visible:opacity-100" title="Remove from family" onClick={() => onRemove(p)}>×</button>}
             </li>
           ))}
         </ul>
@@ -274,7 +289,7 @@ function useOpenOn(token: number, open: () => void, ref: React.RefObject<HTMLEle
 function Section({ title, action, children, innerRef }: { title: string; action?: ReactNode; children: ReactNode; innerRef?: React.RefObject<HTMLElement | null> }) {
   return (
     <section ref={innerRef as React.RefObject<HTMLElement>} className="card">
-      <div className="mb-2 flex items-center justify-between"><h3 className="font-serif text-xl">{title}</h3>{action}</div>
+      <div className="mb-2 flex items-center justify-between"><h2 className="font-serif text-[22px]">{title}</h2>{action}</div>
       {children}
     </section>
   )
@@ -298,13 +313,13 @@ function Timeline({ treeId, person, canEdit, openToken, send }: { treeId: string
   void treeId
   return (
     <Section title="Life events" innerRef={ref} action={canEdit && <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Add event</button>}>
-      {events?.length === 0 && !adding && <p className="text-sm text-ink/40">No events yet.{canEdit ? ' Birth and death are shown above; add schooling, work, moves, baptisms and more here.' : ''}</p>}
+      {events?.length === 0 && !adding && <p className="text-sm text-ink-mute">No events yet.{canEdit ? ' Birth and death are shown above; add schooling, work, moves, baptisms and more here.' : ''}</p>}
       <ul className="divide-y divide-line">
         {events?.map((ev) => (
-          <li key={ev.id} className="group flex items-start gap-3 py-2 text-sm">
-            <span className="w-28 shrink-0 text-ink/50">{ev.date_text ?? '—'}</span>
-            <span className="flex-1"><span className="font-medium capitalize">{ev.type}</span>{ev.place && <span className="text-ink/70"> · {ev.place}</span>}{ev.description && <div className="text-ink/70">{ev.description}</div>}</span>
-            {canEdit && <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" title="Remove event" onClick={() => { if (confirm('Remove this event?')) send(`Remove a life event (${ev.type}) from ${fullName(person)}`, [{ table: 'events', op: 'delete', key: { id: ev.id } }]) }}><Trash2 size={14} /></button>}
+          <li key={ev.id} className="group flex items-start gap-3 py-2.5 text-[16px]">
+            <span className="w-28 shrink-0 text-ink-mute">{ev.date_text ?? 'Undated'}</span>
+            <span className="flex-1"><span className="font-medium capitalize">{ev.type}</span>{ev.place && <span className="block text-ink-soft">{ev.place}</span>}{ev.description && <span className="block text-ink-soft">{ev.description}</span>}</span>
+            {canEdit && <button className="text-ink-mute opacity-0 transition-opacity hover:text-danger group-hover:opacity-100 focus-visible:opacity-100" title="Remove event" onClick={() => { if (confirm('Remove this event?')) send(`Remove a life event (${ev.type}) from ${fullName(person)}`, [{ table: 'events', op: 'delete', key: { id: ev.id } }]) }}><Trash2 size={14} /></button>}
           </li>
         ))}
       </ul>
@@ -345,15 +360,15 @@ function Citations({ treeId, person, canEdit, openToken, send }: { treeId: strin
   const options = draft ? [...sources, draft] : sources
   return (
     <Section title="Sources" innerRef={ref} action={canEdit && <button className="btn-ghost" onClick={() => setAdding(true)}><Plus size={14} /> Cite a source</button>}>
-      {cites?.length === 0 && !adding && <p className="text-sm text-ink/40">No sources cited yet.{canEdit ? ' Record where each fact came from: the book, a letter, a certificate, or what a relative told you.' : ''}</p>}
+      {cites?.length === 0 && !adding && <p className="text-sm text-ink-mute">No sources cited yet.{canEdit ? ' Record where each fact came from: the book, a letter, a certificate, or what a relative told you.' : ''}</p>}
       <ul className="divide-y divide-line">
         {cites?.map((c) => (
-          <li key={c.id} className="group py-2 text-sm">
+          <li key={c.id} className="group py-2.5 text-[16px]">
             <div className="flex items-center gap-2">
               <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/sources/${c.source_id}`}>{c.source.title}</Link>
-              {c.page && <span className="text-ink/60">· {c.page}</span>}
-              <span className="ml-auto text-xs text-ink/50">{CONFIDENCE_LABELS[c.confidence]}</span>
-              {canEdit && <button className="hidden text-ink/40 hover:text-red-700 group-hover:inline" title="Remove citation" onClick={() => { if (confirm('Remove this citation?')) send(`Remove a citation from ${fullName(person)}`, [{ table: 'citations', op: 'delete', key: { id: c.id } }]) }}><Trash2 size={14} /></button>}
+              {c.page && <span className="text-ink-mute">{c.page}</span>}
+              <span className="ml-auto text-[13px] text-ink-mute">{CONFIDENCE_LABELS[c.confidence]}</span>
+              {canEdit && <button className="text-ink-mute opacity-0 transition-opacity hover:text-danger group-hover:opacity-100 focus-visible:opacity-100" title="Remove citation" onClick={() => { if (confirm('Remove this citation?')) send(`Remove a citation from ${fullName(person)}`, [{ table: 'citations', op: 'delete', key: { id: c.id } }]) }}><Trash2 size={14} /></button>}
             </div>
             {c.quote && <blockquote className="mt-1 border-l-2 border-line pl-2 italic text-ink/70">{c.quote}</blockquote>}
           </li>
@@ -404,28 +419,33 @@ function Gallery({ treeId, person, canEdit, onOpen, send }: { treeId: string; pe
   return (
     <section className="card">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-serif text-xl">Photos & documents</h3>
+        <h2 className="font-serif text-[22px]">Photos & documents{media && media.length > 0 && <span className="ml-2 text-[16px] text-ink-mute">{media.length}</span>}</h2>
         {canEdit && <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={uploading > 0}><Plus size={14} /> {uploading > 0 ? 'Uploading…' : 'Upload'}</button>}
         <input ref={ref} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; files.forEach(upload) }} />
       </div>
-      {media?.length === 0 && <p className="text-sm text-ink/40">No photos or scans yet.{canEdit ? ' Upload old photos, certificates or letters. A phone photo of a print is fine.' : ''}</p>}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {media?.map((m, i) => <MediaTile key={m.id} m={m} onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Remove this file?')) send(`Remove a photo from ${fullName(person)}'s gallery`, [{ table: 'media', op: 'delete', key: { id: m.id } }]) } : undefined} />)}
+      {media?.length === 0 && <p className="text-sm text-ink-mute">No photos or scans yet.{canEdit ? ' Upload old photos, certificates or letters. A phone photo of a print is fine.' : ''}</p>}
+      <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-2">
+        {media?.map((m, i) => <MediaTile key={m.id} m={m} eager={i < 2} className="w-[44%] shrink-0 snap-start sm:w-auto" onOpen={() => onOpen(i)} onDelete={canEdit ? () => { if (confirm('Remove this file?')) send(`Remove a photo from ${fullName(person)}'s gallery`, [{ table: 'media', op: 'delete', key: { id: m.id } }]) } : undefined} />)}
       </div>
     </section>
   )
 }
 
-export function MediaTile({ m, onDelete, onOpen }: { m: Media; onDelete?: () => void; onOpen?: () => void }) {
+/** A photo or document with its full caption underneath (captions are family knowledge, so they are never cut off). */
+export function MediaTile({ m, onDelete, onOpen, eager = false, className = '' }: { m: Media; onDelete?: () => void; onOpen?: () => void; eager?: boolean; className?: string }) {
   const isImg = m.mime_type?.startsWith('image/')
   const { data: url } = useSignedUrl(m.storage_path, isImg ? '480x0' : undefined) // documents open as the original file
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-md border border-line bg-paper">
-      {url && (isImg
-        ? <img src={url} alt={m.caption ?? ''} loading="lazy" decoding="async" className={`h-full w-full object-cover ${onOpen ? 'cursor-zoom-in' : ''}`} onClick={onOpen} />
-        : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-sm text-moss underline">Open document</a>)}
-      {onDelete && <button className="absolute top-1 right-1 hidden rounded bg-white/90 p-1 text-red-700 group-hover:block" onClick={onDelete}><Trash2 size={14} /></button>}
-      {m.caption && <div className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-ink/60 px-2 py-1 text-xs text-white">{m.caption}</div>}
-    </div>
+    <figure className={`group relative min-w-0 ${className}`}>
+      <div className="relative aspect-square overflow-hidden rounded-md border border-line bg-moss-light/50">
+        {url && (isImg
+          ? <button type="button" className={`block h-full w-full ${onOpen ? 'cursor-zoom-in' : 'cursor-default'}`} onClick={onOpen} aria-label={m.caption ? `Open photo: ${m.caption}` : 'Open photo'}>
+              <img src={url} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" className="h-full w-full object-cover" />
+            </button>
+          : <a href={url} target="_blank" rel="noreferrer" className="flex h-full items-center justify-center text-[15px] text-moss underline">Open document</a>)}
+        {onDelete && <button className="absolute top-1.5 right-1.5 rounded bg-white/90 p-1.5 text-danger opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" title="Remove this file" aria-label="Remove this file" onClick={onDelete}><Trash2 size={14} /></button>}
+      </div>
+      {m.caption && <figcaption className="mt-1.5 text-[14px] leading-snug text-ink-soft">{m.caption}</figcaption>}
+    </figure>
   )
 }

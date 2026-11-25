@@ -23,7 +23,7 @@ export default function SupportLine({ variant = 'full' }: { variant?: 'full' | '
       <p className="mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-line pt-6 text-center text-[15px] italic text-ink-mute">
         <CoffeeIcon className="h-6 w-6 text-moss" />
         <span>Optional donations help cover development and hosting.</span>
-        <a href={DONATE_URL} target="_blank" rel="noreferrer" className="not-italic text-brass underline decoration-1 underline-offset-4 hover:text-moss">Donate via Buy Me a Coffee ↗</a>
+        <a href={DONATE_URL} target="_blank" rel="noreferrer" className="not-italic text-brass underline decoration-1 underline-offset-4 hover:text-moss">Donate via Buy Me a Coffee</a>
       </p>
     )
   return (
@@ -32,9 +32,9 @@ export default function SupportLine({ variant = 'full' }: { variant?: 'full' | '
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
         <h2 className="text-[22px] leading-tight text-ink">Help keep our family tree online.</h2>
         <p className="mt-1 text-[15px] text-ink-mute">Optional donations help cover development and hosting.</p>
-        <Link to="/support" className="mt-2 inline-block text-[12px] uppercase tracking-[.12em] text-brass underline underline-offset-4 hover:text-moss">Where it goes</Link>
+        <Link to="/support" className="mt-2 inline-block text-[15px] text-brass underline underline-offset-4 hover:text-moss">Where the money goes</Link>
       </div>
-      <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[44px] shrink-0 px-5">
+      <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[44px] shrink-0 whitespace-nowrap px-5">
         <CoffeeIcon className="h-5 w-5" /> Donate via Buy Me a Coffee
       </a>
     </aside>

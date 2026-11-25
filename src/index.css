@@ -1,3 +1,9 @@
+/* Hallmark · checked: 2026-11-25 · genre: editorial (inferred) · scope: app
+ * floor: fixed 67 (spaced capitals), 40 (faint text), 26a (focus), 63 (dot strings), 54 (eyebrows), 48 (literal colours), 33, F1, F23
+ * kept: the Kinfolk palette, EB Garamond, the map's drawing colours (SVG attributes in TreeCanvas)
+ * built: the project · redesign: polish + screen changes (map opening, profile, people list, home, phone menu) · v2.0.0 */
+/* Hallmark · waive 26b · no form control and no aria-disabled in the header · the header links and the phone Menu button are never disabled by the app */
+/* Hallmark · dismissed 49 · the donate buttons and sign-in links already carry whitespace-nowrap and fit at 320px */
 @import "tailwindcss";
 
 /* "Kinfolk" palette — from the chosen design (option 7a): warm paper, moss header, brass accent,
@@ -8,12 +14,12 @@
   --color-paper: #FAF8F3;
   --color-ink: #2A2A26;
   --color-ink-soft: #4C4A44;
-  --color-ink-mute: #8A8578;
+  --color-ink-mute: #6F6A5E; /* 5:1 on paper: dates, notes and labels stay readable */
   --color-line: #E2DDD2;
   --color-moss: #2E4A38;
   --color-moss-light: #DCE8DD;
   --color-sage: #B9C7B9;
-  --color-brass: #A8843A;
+  --color-brass: #86672A; /* 5:1 on paper, for gold text and links */
   --color-brass-light: #D9B25C;
   --color-cream: #FAF8F3;
   --color-honey: #F6E7C6;
@@ -22,17 +28,34 @@
   --color-clay-ink: #7A4A32;
   --color-sky: #DCE6EC;
   --color-sky-ink: #2F4A5C;
+  --color-note: #FBF5E6; /* waiting-for-review notices */
+  --color-field: #8F8A7E; /* text-box edges, 3.4:1 on white */
+  --color-danger: #9B2C2C;
+  --shadow-float: 0 2px 6px rgb(42 42 38 / .06);
+  --shadow-sheet: 0 -8px 24px rgb(42 42 38 / .10);
+  --shadow-card: 0 8px 24px rgb(42 42 38 / .08);
 }
 
+:root { --mask-ink: #000; } /* mask opacity only, never painted */
 html, body, #root { height: 100%; }
+html, body { overflow-x: clip; }
+::selection { background: var(--color-moss-light); color: var(--color-ink); }
+body { caret-color: var(--color-moss); }
+
+/* Keyboard focus: one clear ring, shown at once (no fade). Light ring on the moss header. */
+:focus-visible { outline: 2px solid var(--color-moss); outline-offset: 2px; }
+header :focus-visible { outline-color: var(--color-cream); }
 
 /* Illustrations from the asset pack carry an opaque ivory rectangle; fade the edges so it never shows. */
-.art-fade { -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 55%, transparent 85%); mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 55%, transparent 85%); }
+.art-fade { -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, var(--mask-ink) 55%, transparent 85%); mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, var(--mask-ink) 55%, transparent 85%); }
 body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); font-size: 16px; }
 
-.btn-primary { @apply inline-flex items-center gap-1.5 rounded px-3.5 py-1.5 text-[13px] font-medium uppercase tracking-[.12em] transition bg-moss text-cream hover:bg-moss/90 disabled:opacity-50; }
-.btn-ghost { @apply inline-flex items-center gap-1.5 rounded px-3.5 py-1.5 text-[13px] font-medium uppercase tracking-[.12em] transition border border-line bg-white text-ink hover:bg-moss-light; }
-.btn-danger { @apply inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[13px] font-medium transition text-red-800 hover:bg-red-50; }
-.input { @apply w-full rounded border border-line bg-white px-3 py-1.5 text-[15px] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15; }
-.label { @apply mb-1 block text-[11px] font-medium uppercase tracking-[.12em] text-ink-mute; }
-.card { @apply rounded-md border border-line bg-white p-5; }
+/* Component recipes live in the components layer, so a utility on the element (pl-9, px-5, mb-0) can still adjust them. */
+@layer components {
+  .btn-primary { @apply inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded px-3.5 py-1.5 text-[15px] font-medium transition-colors bg-moss text-cream hover:bg-moss/90 active:bg-moss/80 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-ghost { @apply inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded px-3.5 py-1.5 text-[15px] font-medium transition-colors border border-line bg-white text-ink hover:bg-moss-light active:bg-moss-light/70 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-danger { @apply inline-flex min-h-9 items-center gap-1.5 rounded px-3 py-1.5 text-[15px] font-medium transition-colors text-danger hover:bg-clay/50 disabled:cursor-not-allowed disabled:opacity-50; }
+  .input { @apply w-full rounded border border-field bg-white px-3 py-1.5 text-[16px] focus-visible:border-moss focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:bg-paper disabled:opacity-60; }
+  .label { @apply mb-1 block text-[14px] font-medium text-ink-soft; }
+  .card { @apply rounded-md border border-line bg-white p-5; }
+}

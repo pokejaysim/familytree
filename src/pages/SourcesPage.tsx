@@ -21,18 +21,18 @@ export default function SourcesPage() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl">Sources</h2>
-          <p className="text-sm text-ink/60">Letters, certificates, photos, interviews, books: anything a fact came from.</p>
+          <p className="text-sm text-ink-mute">Letters, certificates, photos, interviews, books: anything a fact came from.</p>
         </div>
         {canEdit && <button className="btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Add source</button>}
       </div>
-      {isLoading && <p className="text-ink/50">Loading…</p>}
+      {isLoading && <p className="text-ink-mute">Loading…</p>}
       {sources?.length === 0 && <EmptyState art="family-archive" wide title="Keep the memories close." text="Give photographs, letters, and family records a place in the shared story." action={canEdit ? { label: 'Add a family source', onClick: () => setAdding(true) } : undefined} />}
       <ul className="divide-y divide-line rounded-lg border border-line bg-white">
         {sources?.map((s) => (
           <li key={s.id}>
             <Link to={s.id} className="block px-4 py-2.5 hover:bg-moss-light/50">
               <div className="font-medium">{s.title}</div>
-              <div className="text-sm text-ink/50">{[s.author, s.publication, s.repository].filter(Boolean).join(' · ')}</div>
+              <div className="text-sm text-ink-mute">{[s.author, s.publication, s.repository].filter(Boolean).join(', ')}</div>
             </Link>
           </li>
         ))}

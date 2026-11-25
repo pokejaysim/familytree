@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowDownFromLine, ArrowRightFromLine, BookOpen, ChevronsDownUp, ChevronsUpDown, Minus, Plus, Search, User } from 'lucide-react'
+import { ArrowDownFromLine, ArrowRightFromLine, BookOpen, ArrowUpToLine, ChevronsDownUp, ChevronsUpDown, Minus, Plus, Search, UserRound } from 'lucide-react'
 import { useTree, useTreeData } from '../lib/queries'
 import { buildGraph } from '../lib/graph'
 import TreeCanvas, { type LayoutInfo, type Orient, type TreeCanvasHandle } from '../components/TreeCanvas'
 import PersonSpotlight from '../components/PersonSpotlight'
 import PersonPicker from '../components/PersonPicker'
 import Modal from '../components/Modal'
-import { useCanEdit, useIsAdmin } from '../lib/profile'
+import { useCanEdit, useIsAdmin, useMeId } from '../lib/profile'
 import EmptyState from '../components/EmptyState'
 import IntroPane from '../components/IntroPane'
 
@@ -37,8 +37,11 @@ export default function ChartPage() {
   const selected = personId && graph ? graph.people.get(personId) ?? null : null
   const canEdit = useCanEdit()
   const isAdmin = useIsAdmin()
+  const myId = useMeId()
+  const meId = myId && graph?.people.has(myId) ? myId : null
 
   useEffect(() => { if (personId && graph) requestAnimationFrame(() => canvas.current?.zoomTo(personId)) }, [personId, graph])
+
   const select = (id: string | null) => nav(id ? `/trees/${treeId}/chart/${id}` : `/trees/${treeId}/chart`, { replace: true })
 
   if (!data || !graph) return <p className="p-6 text-ink-mute">Loading…</p>
@@ -57,23 +60,23 @@ export default function ChartPage() {
   return (
     <div className="relative h-full overflow-hidden">
       <style>{`@keyframes riseIn { from { transform: translateY(12px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
-      <TreeCanvas graph={graph} treeId={treeId} orient={orient} selectedId={selected?.id ?? null} onSelect={select} handleRef={canvas} onLayout={setInfo} />
+      <TreeCanvas graph={graph} treeId={treeId} orient={orient} selectedId={selected?.id ?? null} meId={meId} startId={personId ? null : meId} onSelect={select} handleRef={canvas} onLayout={setInfo} />
 
-      {/* Title block */}
-      <div className="pointer-events-none absolute top-4 left-4 sm:top-6 sm:left-8 z-10 grid gap-0.5 max-w-[60%]">
-        <span className="truncate text-[19px] sm:text-[24px] leading-tight text-ink">{tree?.name ?? ''}</span>
-        <span className="text-[11px] sm:text-[12px] uppercase tracking-[.08em] text-brass">{words[info.generations] ?? info.generations} generation{info.generations === 1 ? '' : 's'} · {info.people} {info.people === 1 ? 'person' : 'people'}</span>
+      {/* Title block, on its own paper so connectors never run behind the words */}
+      <div className="pointer-events-none absolute top-3 left-3 z-10 grid max-w-[60%] gap-0.5 rounded-md bg-paper/95 px-2 py-1 sm:top-5 sm:left-6">
+        <h1 className="truncate text-[20px] leading-tight text-ink sm:text-[24px]">{tree?.name ?? ''}</h1>
+        <p className="text-[14px] text-ink-mute sm:text-[15px]">{info.people} {info.people === 1 ? 'person' : 'people'} across {(words[info.generations] ?? String(info.generations)).toLowerCase()} generation{info.generations === 1 ? '' : 's'}</p>
       </div>
 
       {/* Preface note */}
       {(tree?.intro || tree?.foreword) && (
-        <button onClick={() => setIntroOpen(true)} className="absolute top-[68px] left-4 z-10 flex items-center gap-2.5 rounded border border-line bg-white px-3 py-2 text-left shadow-[0_2px_6px_rgba(42,42,38,.06)] hover:border-moss sm:top-[92px] sm:left-8 sm:px-4 sm:py-3">
+        <button onClick={() => setIntroOpen(true)} className="absolute top-[72px] left-4 z-10 flex items-center gap-2.5 rounded border border-line bg-white px-3 py-2 text-left shadow-float transition-colors hover:border-moss sm:top-[96px] sm:left-8 sm:px-4 sm:py-3">
           <BookOpen size={18} className="shrink-0 text-moss" />
-          <span className="grid leading-tight">
-            <span className="text-[15px]">{tree.foreword && tree.intro ? 'Foreword & Preface' : tree.foreword ? (tree.foreword_title || 'Foreword') : (tree.intro_title || 'Introduction')}</span>
-            <span className="hidden text-[12px] italic text-ink-mute sm:block">{[tree.foreword_byline, tree.intro_byline].filter(Boolean).join(' · ')}</span>
+          <span className="grid gap-0.5 leading-tight">
+            <span className="text-[16px]">{tree.foreword && tree.intro ? 'Foreword & Preface' : tree.foreword ? (tree.foreword_title || 'Foreword') : (tree.intro_title || 'Introduction')}</span>
+            {[tree.foreword_byline, tree.intro_byline].filter(Boolean).map((b) => <span key={b} className="hidden text-[14px] italic text-ink-mute sm:block">{b}</span>)}
           </span>
-          <span className="ml-1 hidden text-[11px] uppercase tracking-[.12em] text-brass sm:inline">Read</span>
+          <span className="ml-2 hidden text-[15px] text-brass sm:inline">Read</span>
         </button>
       )}
 
@@ -82,7 +85,7 @@ export default function ChartPage() {
         <Search size={15} /> <span className="hidden sm:inline">Find a relative</span>
       </button>
 
-      <p className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 text-[13px] italic text-ink-mute sm:block">Drag to explore · Scroll to zoom · Fold a branch with the − under a couple</p>
+      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-paper/95 px-2 py-0.5 text-[14px] italic text-ink-mute sm:block">Drag to explore, scroll to zoom, and fold a branch with the − under a couple.</p>
 
       {/* Zoom controls, above the minimap */}
       <div className={`absolute right-4 bottom-4 sm:right-8 sm:bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink ${selected ? "hidden sm:flex" : ""}`}>
@@ -90,7 +93,8 @@ export default function ChartPage() {
         {info.collapsed > 0
           ? <button className={`${ctl} border-r border-line`} title={`Unfold all branches (${info.collapsed} folded)`} onClick={() => { select(null); canvas.current?.expandAll() }}><ChevronsUpDown size={16} /></button>
           : <button className={`${ctl} border-r border-line`} title="Fold every branch below the first generation" onClick={() => { select(null); canvas.current?.collapseAll() }}><ChevronsDownUp size={16} /></button>}
-        <button className={`${ctl} border-r border-line`} title="Fit whole family" onClick={() => { select(null); canvas.current?.fit() }}><User size={16} className="text-moss" /></button>
+        {meId && <button className={`${ctl} border-r border-line`} title="Show me on the map" aria-label="Show me on the map" onClick={() => { select(null); if (orient === 'down') canvas.current?.zoomTo(meId, window.innerWidth < 640 ? 0.8 : 0.85, 0.62); else canvas.current?.zoomTo(meId, 0.8, 0.4, undefined, Math.max(0.5, 1 - 80 / window.innerWidth)) }}><UserRound size={16} className="text-brass" /></button>}
+        <button className={`${ctl} border-r border-line`} title="Go to the top of the tree" aria-label="Go to the top of the tree" onClick={() => { select(null); canvas.current?.fit() }}><ArrowUpToLine size={16} className="text-moss" /></button>
         <button className={`${ctl} border-r border-line`} title="Zoom out" onClick={() => canvas.current?.zoomBy(1 / 1.4)}><Minus size={16} /></button>
         <button className={ctl} title="Zoom in" onClick={() => canvas.current?.zoomBy(1.4)}><Plus size={16} /></button>
       </div>

@@ -25,7 +25,7 @@ export default function SourcePage() {
   const { data: pages } = useSourceMedia(sourceId)
   const fileRef = useRef<HTMLInputElement>(null)
   const [viewing, setViewing] = useState<number | null>(null)
-  if (!s) return <p className="p-6 text-ink/50">Loading…</p>
+  if (!s) return <p className="p-6 text-ink-mute">Loading…</p>
   const addPage = async (file: File) => {
     setUploading((n) => n + 1)
     try {
@@ -38,8 +38,8 @@ export default function SourcePage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-serif text-2xl">{s.title}</h2>
-          <p className="text-sm text-ink/60">{[s.author, s.publication].filter(Boolean).join(' · ')}</p>
-          {s.repository && <p className="text-sm text-ink/60">Repository: {s.repository}</p>}
+          <p className="text-sm text-ink-mute">{[s.author, s.publication].filter(Boolean).join(', ')}</p>
+          {s.repository && <p className="text-sm text-ink-mute">Repository: {s.repository}</p>}
           {s.url && <a className="text-sm text-moss underline" href={s.url} target="_blank" rel="noreferrer">{s.url}</a>}
         </div>
         {canEdit && <div className="flex gap-1">
@@ -54,7 +54,7 @@ export default function SourcePage() {
           {canEdit && <button className="btn-ghost" onClick={() => fileRef.current?.click()} disabled={uploading > 0}><Plus size={14} /> {uploading > 0 ? 'Uploading…' : 'Add pages'}</button>}
           <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden multiple onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ''; files.forEach(addPage) }} />
         </div>
-        {pages?.length === 0 && <p className="text-sm text-ink/50">No pages scanned yet.</p>}
+        {pages?.length === 0 && <p className="text-sm text-ink-mute">No pages scanned yet.</p>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {pages?.map((m, i) => <MediaTile key={m.id} m={m} onOpen={() => setViewing(i)} onDelete={canEdit ? () => { if (confirm('Remove this page?')) submit.mutate({ summary: `Remove a scanned page from "${s.title}"`, changes: [{ table: 'media', op: 'delete', key: { id: m.id } }] }) } : undefined} />)}
         </div>
@@ -62,13 +62,15 @@ export default function SourcePage() {
       {viewing !== null && pages?.[viewing] && <Lightbox items={pages} index={viewing} onIndex={setViewing} onClose={() => setViewing(null)} />}
       <section className="card">
         <h3 className="mb-2 font-medium">Cited by</h3>
-        {cites?.length === 0 && <p className="text-sm text-ink/50">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}
+        {cites?.length === 0 && <p className="text-sm text-ink-mute">No citations yet.{canEdit ? " Add citations from a person's profile." : ''}</p>}
         <ul className="divide-y divide-line">
           {cites?.map((c) => (
-            <li key={c.id} className="py-2 text-sm">
-              {c.person && <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/people/${c.person.id}`}>{fullName(c.person)}</Link>}
-              {c.page && <span className="text-ink/60"> · {c.page}</span>}
-              <span className="text-ink/50"> · {CONFIDENCE_LABELS[c.confidence]}</span>
+            <li key={c.id} className="py-2.5 text-[16px]">
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                {c.person && <Link className="font-medium text-moss hover:underline" to={`/trees/${treeId}/people/${c.person.id}`}>{fullName(c.person)}</Link>}
+                {c.page && <span className="text-ink-mute">{c.page}</span>}
+                <span className="ml-auto text-[14px] text-ink-mute">{CONFIDENCE_LABELS[c.confidence]}</span>
+              </div>
               {c.quote && <blockquote className="mt-1 border-l-2 border-line pl-2 italic text-ink/70">{c.quote}</blockquote>}
             </li>
           ))}

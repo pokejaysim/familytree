@@ -19,11 +19,11 @@ export default function PersonPicker({
         {results.map((p) => (
           <li key={p.id}>
             <button type="button" className="flex w-full justify-between px-3 py-2 text-left text-sm hover:bg-moss-light" onClick={() => onPick(p)}>
-              <span>{fullName(p)}</span><span className="text-ink/50">{lifespan(p)}</span>
+              <span>{fullName(p)}</span><span className="text-ink-mute">{lifespan(p)}</span>
             </button>
           </li>
         ))}
-        {results.length === 0 && <li className="px-3 py-2 text-sm text-ink/50">No matches</li>}
+        {results.length === 0 && <li className="px-3 py-2 text-sm text-ink-mute">No matches</li>}
       </ul>
       {onCreateNew && <button type="button" className="btn-ghost w-full justify-center" onClick={onCreateNew}>+ Create new person</button>}
     </div>

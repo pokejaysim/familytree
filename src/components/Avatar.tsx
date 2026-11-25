@@ -4,7 +4,7 @@ import type { Person } from '../lib/types'
 export default function Avatar({ person, size = 40 }: { person: Pick<Person, 'photo_path' | 'given_names' | 'surname' | 'sex'>; size?: number }) {
   const { data: url } = useSignedUrl(person.photo_path, size > 80 ? '480x0' : '160x160')
   const initials = `${person.given_names[0] ?? ''}${person.surname[0] ?? ''}`.toUpperCase() || '?'
-  const tone = person.sex === 'F' ? 'bg-rose-100 text-rose-800' : person.sex === 'M' ? 'bg-sky-100 text-sky-800' : 'bg-line text-ink/60'
+  const tone = person.sex === 'F' ? 'bg-clay text-clay-ink' : person.sex === 'M' ? 'bg-sky text-sky-ink' : 'bg-line text-ink-soft'
   return url ? (
     <img src={url} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
   ) : (

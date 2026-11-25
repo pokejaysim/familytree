@@ -26,7 +26,7 @@ export default function UpdatePasswordPage({ token, onDone }: { token: string; o
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4">
         <div><div className="mb-3 text-[22px] font-medium text-moss lg:hidden">Sim Family Tree</div><h1 className="text-2xl">Choose a new password</h1></div>
         <div><label className="label">New password</label><input className="input" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></div>
-        {msg && <p className="text-sm text-red-800">{msg}</p>}
+        {msg && <p className="text-sm text-danger">{msg}</p>}
         <button className="btn-primary w-full justify-center" disabled={busy}>Save password</button>
         <button type="button" className="w-full text-sm text-ink-mute hover:underline" onClick={() => onDone('')}>Cancel</button>
       </form>

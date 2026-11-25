@@ -40,7 +40,7 @@ export default function AboutPage() {
           <div><label className="label">Signed</label><input className="input" value={f.intro_byline} onChange={(e) => setF({ ...f, intro_byline: e.target.value })} placeholder="e.g. B.M. Sim, June 2007" /></div>
         </div>
         <div><label className="label">Introduction text</label><textarea className="input min-h-[40vh] leading-relaxed" value={f.intro} onChange={(e) => setF({ ...f, intro: e.target.value })} /></div>
-        {update.error && <p className="text-sm text-red-800">{update.error.message}</p>}
+        {update.error && <p className="text-sm text-danger">{update.error.message}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button><button className="btn-primary" disabled={update.isPending}>Save</button></div>
       </form>
     )
@@ -48,7 +48,7 @@ export default function AboutPage() {
   return (
     <article className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
       <header className="mb-8 text-center">
-        <p className="text-[12px] uppercase tracking-[.12em] text-brass">{tree.name}</p>
+        <p className="text-[22px] text-ink">{tree.name}</p>
         {tree.description && <p className="mt-2 text-ink-mute">{tree.description}</p>}
       </header>
       {tree.foreword && (

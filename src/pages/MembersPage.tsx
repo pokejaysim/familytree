@@ -22,7 +22,7 @@ export default function MembersPage() {
     return (
       <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2"><span className="truncate text-[17px]">{m.name || m.email}</span>{me && <span className="text-xs text-ink-mute">(you)</span>}</div>
+          <div className="flex items-center gap-2"><span className="truncate text-[17px]">{m.name || m.email}</span>{me && <span className="text-[13px] text-ink-mute">(you)</span>}</div>
           <div className="truncate text-sm text-ink-mute">{m.email} · signed up {when(m.created_at)}</div>
           {m.note && <div className="mt-1 text-sm italic text-ink-soft">“{m.note}”</div>}
         </div>
@@ -63,8 +63,8 @@ export default function MembersPage() {
             <p className="text-sm text-ink-mute">New accounts wait here until you approve them. Approved members are contributors: they can suggest changes, which wait for you on the Review page. Choose View only for anyone who should just browse.</p>
           </div>
           {isLoading && <p className="text-ink-mute">Loading…</p>}
-          {error && <p className="text-red-800">{error.message}</p>}
-          {review.error && <p className="text-red-800">{review.error.message}</p>}
+          {error && <p className="text-danger">{error.message}</p>}
+          {review.error && <p className="text-danger">{review.error.message}</p>}
           <Section title="Waiting for approval" items={pending} empty="Nobody is waiting." />
           <Section title="Approved" items={approved} empty="No approved members yet." />
           {declined.length > 0 && <Section title="Declined" items={declined} empty="" />}

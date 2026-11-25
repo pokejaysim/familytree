@@ -76,3 +76,9 @@ export function useReviewMember() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); qc.invalidateQueries({ queryKey: ['pendingCount'] }) },
   })
 }
+
+/** The visitor's own person in the tree, once an admin has confirmed "This is me"; otherwise null. */
+export function useMeId(): string | null {
+  const { data: profile } = useProfile()
+  return profile?.person_status === 'approved' ? profile.person_id : null
+}

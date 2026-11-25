@@ -69,20 +69,20 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
         <div><label className="label">Email</label><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         {mode !== 'reset' && (
           <div><label className="label">Password</label><input className="input" type="password" required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
-            {mode === 'signup' && <p className="mt-1 text-xs text-ink-mute">At least 8 characters.</p>}
+            {mode === 'signup' && <p className="mt-1 text-[13px] text-ink-mute">At least 8 characters.</p>}
           </div>
         )}
-        {msg && <p className={`text-sm ${msg.ok ? 'text-moss' : 'text-red-800'}`}>{msg.text}</p>}
-        {offerResend && email && <button type="button" className="text-sm text-brass underline underline-offset-2 hover:text-moss" onClick={resend}>Send me a new confirmation link</button>}
+        {msg && <p role="status" className={`text-[15px] ${msg.ok ? 'text-moss' : 'text-danger'}`}>{msg.text}</p>}
+        {offerResend && email && <button type="button" className="whitespace-nowrap text-[15px] text-brass underline underline-offset-2 hover:text-moss" onClick={resend}>Send me a new confirmation link</button>}
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? 'One moment…' : { signin: 'Sign in', signup: 'Create account', reset: 'Send reset link' }[mode]}</button>
-        <div className="flex justify-between text-sm text-ink-mute">
+        <div className="flex flex-wrap justify-between gap-x-4 gap-y-2 text-[15px] text-brass">
           {mode === 'signin' ? (
             <>
-              <button type="button" className="hover:underline" onClick={() => { setMode('signup'); setMsg(null); setOfferResend(false) }}>New here? Create an account</button>
-              <button type="button" className="hover:underline" onClick={() => { setMode('reset'); setMsg(null); setOfferResend(false) }}>Forgot password?</button>
+              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('signup'); setMsg(null); setOfferResend(false) }}>New here? Create an account</button>
+              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('reset'); setMsg(null); setOfferResend(false) }}>Forgot password?</button>
             </>
           ) : (
-            <button type="button" className="hover:underline" onClick={() => { setMode('signin'); setMsg(null) }}>← Back to sign in</button>
+            <button type="button" className="hover:underline" onClick={() => { setMode('signin'); setMsg(null) }}>Back to sign in</button>
           )}
         </div>
       </form>

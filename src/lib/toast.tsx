@@ -22,7 +22,7 @@ export function Toaster() {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex justify-center px-4 sm:bottom-8" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div key={t.id} role="status" className={`pointer-events-auto flex max-w-md items-start gap-3 rounded-md border px-4 py-3 shadow-lg ${t.tone === 'error' ? 'border-red-200 bg-red-50 text-red-900' : 'border-line bg-white text-ink'}`} style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)' }}>
-        <Icon size={18} className={`mt-0.5 shrink-0 ${t.tone === 'review' ? 'text-brass' : t.tone === 'error' ? 'text-red-700' : 'text-moss'}`} />
+        <Icon size={18} className={`mt-0.5 shrink-0 ${t.tone === 'review' ? 'text-brass' : t.tone === 'error' ? 'text-danger' : 'text-moss'}`} />
         <div className="min-w-0">
           <p className="text-[15px]">{t.title}</p>
           {t.body && <p className="mt-0.5 text-[13px] text-ink-mute">{t.body}</p>}

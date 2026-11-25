@@ -4,12 +4,16 @@ import type { Graph } from '../lib/graph'
 import type { Person } from '../lib/types'
 import { fullName } from '../lib/dates'
 import { useSignedUrl } from '../lib/queries'
+import { useMeId } from '../lib/profile'
+import { relationTo } from '../lib/kin'
 
 /** Bottom-left spotlight card from the Kinfolk design: disc, name, born line, one-paragraph summary, brass/moss actions. */
 export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJump, onAddRelative }: {
   person: Person; graph: Graph; treeId: string; onClose: () => void; onJump: (id: string) => void; onAddRelative?: () => void
 }) {
   const { data: photo } = useSignedUrl(p.photo_path, '480x0')
+  const meId = useMeId()
+  const relation = p.id === meId ? 'This is you' : relationTo(graph, meId, p)
   const parents = graph.parentsOf(p.id)
   const partners = (graph.familiesOfParent.get(p.id) ?? []).map((f) => graph.partnerOf(f, p.id)).filter((q): q is Person => !!q)
   const children = graph.childrenOf(p.id)
@@ -33,7 +37,7 @@ export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJ
   )
 
   return (
-    <aside className="absolute inset-x-0 bottom-0 z-20 max-h-[62%] overflow-y-auto rounded-t-xl border border-line bg-white p-5 shadow-[0_-8px_24px_rgba(42,42,38,.10)] sm:inset-x-auto sm:bottom-7 sm:left-8 sm:max-h-none sm:w-[300px] sm:rounded-md sm:shadow-[0_8px_24px_rgba(42,42,38,.08)]" style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)', paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
+    <aside className="absolute inset-x-0 bottom-0 z-20 max-h-[62%] overflow-y-auto rounded-t-xl border border-line bg-white p-5 shadow-sheet sm:inset-x-auto sm:bottom-7 sm:left-8 sm:max-h-none sm:w-[300px] sm:rounded-md sm:shadow-card" style={{ animation: 'riseIn .3s cubic-bezier(.2,.8,.2,1)', paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
       <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line sm:hidden" />
       <button onClick={onClose} className="absolute top-3 right-3 rounded-full p-1 text-ink-mute hover:bg-paper" aria-label="Close"><X size={14} /></button>
       <div className="flex items-center gap-3">
@@ -42,16 +46,17 @@ export default function PersonSpotlight({ person: p, graph, treeId, onClose, onJ
         </span>
         <span className="grid gap-px">
           <span className="text-[18px] leading-tight text-ink">{fullName(p)}</span>
-          <span className="text-[13px] italic text-ink-mute">{born || died || (p.is_living ? 'Living' : 'Dates unknown')}</span>
+          {relation && <span className="text-[14px] italic text-brass">{relation.replace(/^your /, 'Your ')}</span>}
+          <span className="text-[14px] italic text-ink-mute">{born || died || (p.is_living ? 'Living' : 'Dates unknown')}</span>
         </span>
       </div>
-      {died && born && <p className="mt-1 text-[13px] italic text-ink-mute">{died}</p>}
+      {died && born && <p className="mt-1 text-[14px] italic text-ink-mute">{died}</p>}
       {summary && <p className="mt-3 line-clamp-5 text-[14px] leading-relaxed text-ink-soft">{summary}</p>}
       {(parents.length + partners.length + children.length + siblings.length) > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">{[...parents, ...partners, ...siblings, ...children].map(chip)}</div>
       )}
-      <div className="mt-3.5 flex justify-between border-t border-line pt-3 text-[12px] uppercase tracking-[.12em]">
-        <Link to={`/trees/${treeId}/people/${p.id}`} className="text-brass hover:underline">Open profile</Link>
+      <div className="mt-3.5 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line pt-3 text-[15px]">
+        <Link to={`/trees/${treeId}/people/${p.id}`} className="text-brass underline-offset-4 hover:underline">Open profile</Link>
         {onAddRelative && <button className="text-moss hover:underline" onClick={onAddRelative}>Add or correct details</button>}
       </div>
     </aside>

@@ -48,7 +48,7 @@ export const TINTS = [
   { bg: '#DCE6EC', ink: '#2F4A5C' },
 ]
 
-export interface TreeCanvasHandle { zoomTo: (personId: string) => void; fit: (animate?: boolean) => void; zoomBy: (k: number) => void; expandAll: () => void; collapseAll: () => void }
+export interface TreeCanvasHandle { zoomTo: (personId: string, k?: number, yFrac?: number, ms?: number, xFrac?: number) => void; fit: (animate?: boolean) => void; zoomBy: (k: number) => void; expandAll: () => void; collapseAll: () => void }
 export interface LayoutInfo { generations: number; people: number; collapsed: number }
 
 const countPeople = (n: CoupleNode): number => (n.a ? 1 : 0) + (n.b ? 1 : 0) + (n.others?.length ?? 0) + (n.children ?? []).reduce((s, c) => s + countPeople(c), 0)
@@ -70,12 +70,16 @@ function geometry(orient: Orient) {
 }
 
 export default function TreeCanvas({
-  graph, treeId, orient = 'down', selectedId, onSelect, handleRef, onLayout,
+  graph, treeId, orient = 'down', selectedId, meId = null, startId = null, onSelect, handleRef, onLayout,
 }: {
   graph: Graph
   treeId?: string
   orient?: Orient
   selectedId: string | null
+  /** The signed-in visitor's own person: their card says "You" and their line back to the founders is drawn in brass. */
+  meId?: string | null
+  /** Open the map on this person (low on the screen, so their line up to the founders shows), unless the visitor has already moved it. */
+  startId?: string | null
   onSelect: (id: string | null) => void
   handleRef: React.MutableRefObject<TreeCanvasHandle | null>
   onLayout?: (info: LayoutInfo) => void
@@ -87,10 +91,12 @@ export default function TreeCanvas({
   const [size, setSize] = useState({ w: 1, h: 1 })
   const fittedRef = useRef(false)
   const fitRef = useRef<((animate?: boolean) => void) | null>(null)
-  const zoomToRef = useRef<((personId: string) => void) | null>(null)
+  const zoomToRef = useRef<((personId: string, k?: number, yFrac?: number, ms?: number, xFrac?: number) => void) | null>(null)
   const anchorRef = useRef<{ id: string; x: number; y: number } | null>(null) // couple to keep still on screen across a fold/unfold
-  const pendingZoomRef = useRef<string | null>(null) // person to zoom to once their branch has unfolded
+  const pendingZoomRef = useRef<{ id: string; k?: number; yFrac?: number; ms?: number; xFrac?: number } | null>(null) // person to zoom to once their branch has unfolded
   const fitAfterRef = useRef(false) // fit the whole map once the next layout lands (fold all / unfold all / orientation change)
+  const movedRef = useRef(false) // the visitor has dragged or zoomed the map themselves
+  const startedRef = useRef(false) // the opening view on `startId` has been shown
 
   // ---- Folded branches, remembered per device ----
   const storageKey = treeId ? `sft-collapsed:${treeId}` : null
@@ -293,7 +299,7 @@ export default function TreeCanvas({
   useLayoutEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.08, 3]).on('zoom', (ev) => { tRef.current = ev.transform; setT(ev.transform) })
+    const z = zoom<SVGSVGElement, unknown>().scaleExtent([0.08, 3]).on('zoom', (ev) => { tRef.current = ev.transform; setT(ev.transform); if (ev.sourceEvent) movedRef.current = true })
     zoomRef.current = z
     select(svg).call(z).on('dblclick.zoom', null)
     const firstFit = () => {
@@ -323,19 +329,19 @@ export default function TreeCanvas({
     // leave headroom for the title block (top) and spotlight card (bottom-left)
     const phone = width < 640
     const fitK = 0.78 * Math.min(width / (maxX - minX + 120), (height - 120) / (maxY - minY + 80))
-    const minK = phone ? 0.5 : 0.3 // never open so far out that cards turn into dots; show the founding couple readably instead
+    const minK = phone ? 0.5 : 0.65 // never open so far out that names can't be read (0.65 keeps them near 10px); show the founding couple instead
     const k = Math.min(1, Math.max(fitK, minK))
     if (fitK >= minK) animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, 90 + (height - 120) / 2 - ((minY + maxY) / 2) * k).scale(k), ms)
-    else if (layout.orient === 'down') animateTo(zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, (phone ? 150 : 110) - minY * k).scale(k), ms)
+    else if (layout.orient === 'down') animateTo(zoomIdentity.translate(width / 2 - layout.focus.x * k, (phone ? 150 : 130) - minY * k).scale(k), ms) // founding couple centred, at the top
     else animateTo(zoomIdentity.translate(24 - (layout.focus.x - CARD_W / 2) * k, height * (phone ? 0.42 : 0.5) - layout.focus.y * k).scale(k), ms) // founding couple at the left edge, mid-height
   }, [layout, animateTo])
   fitRef.current = fit
 
-  const zoomTo = useCallback((personId: string) => {
+  const zoomTo = useCallback((personId: string, scale?: number, yFrac?: number, ms?: number, xFrac?: number) => {
     // Inside a folded branch? Unfold the way down first; the layout effect finishes the zoom.
     const need = (forest.chain.get(personId) ?? []).filter((id) => collapsed.has(id))
     if (need.length) {
-      pendingZoomRef.current = personId
+      pendingZoomRef.current = { id: personId, k: scale, yFrac, ms, xFrac }
       const next = new Set(collapsed); need.forEach((id) => next.delete(id)); updateCollapsed(next)
       return
     }
@@ -344,9 +350,9 @@ export default function TreeCanvas({
     if (!svg || !pos) return
     const { width, height } = svg.getBoundingClientRect()
     const phone = width < 640
-    const k = phone ? 1.2 : 1.4
+    const k = scale ?? (phone ? 1.2 : 1.4)
     fittedRef.current = true // the map now has a deliberate view; a late first-fit (e.g. the canvas measuring after this) must not replace it
-    animateTo(zoomIdentity.translate(width / 2 - pos.x * k, height * (phone ? 0.22 : 0.42) - pos.y * k).scale(k))
+    animateTo(zoomIdentity.translate(width * (xFrac ?? 0.5) - pos.x * k, height * (yFrac ?? (phone ? 0.22 : 0.42)) - pos.y * k).scale(k), ms)
   }, [layout, forest, collapsed, updateCollapsed, animateTo])
   zoomToRef.current = zoomTo
 
@@ -377,6 +383,15 @@ export default function TreeCanvas({
   }, [forest, updateCollapsed])
 
   useEffect(() => { handleRef.current = { zoomTo, fit, zoomBy, expandAll, collapseAll } }, [handleRef, zoomTo, fit, zoomBy, expandAll, collapseAll])
+
+  // The opening view: jump (no glide) to the start person as soon as both they and the canvas are ready.
+  useLayoutEffect(() => {
+    if (!startId || startedRef.current || movedRef.current || size.w <= 1 || !layout.cardPos.has(startId) && !forest.chain.has(startId)) return
+    startedRef.current = true
+    // Generations run down the screen ('down') or across it ('right'): either way, leave room on the ancestors' side.
+    if (layout.orient === 'down') zoomTo(startId, size.w < 640 ? 0.8 : 0.85, 0.62, 0)
+    else zoomTo(startId, 0.8, 0.4, 0, Math.max(0.5, 1 - (CARD_W * 0.8 / 2 + 16) / size.w))
+  }, [startId, size.w, layout, forest, zoomTo])
 
   // Re-fit when people are added or removed (not on every refetch, and not on folds).
   const peopleCountRef = useRef(graph.people.size)
@@ -416,7 +431,7 @@ export default function TreeCanvas({
 
   // After a fold/unfold the layout shifts; keep the toggled couple where it was on screen, or finish a pending zoom/fit.
   useLayoutEffect(() => {
-    if (pendingZoomRef.current) { const id = pendingZoomRef.current; pendingZoomRef.current = null; anchorRef.current = null; zoomToRef.current?.(id); return }
+    if (pendingZoomRef.current) { const { id, k, yFrac, ms, xFrac } = pendingZoomRef.current; pendingZoomRef.current = null; anchorRef.current = null; zoomToRef.current?.(id, k, yFrac, ms, xFrac); return }
     if (fitAfterRef.current) { fitAfterRef.current = false; anchorRef.current = null; fitRef.current?.(); return }
     const a = anchorRef.current
     anchorRef.current = null
@@ -431,6 +446,15 @@ export default function TreeCanvas({
   const G = geometry(layout.orient)
   const dots = t.k < 0.22
   const selectedEdge = selectedId ? layout.edges.find((e) => e.childIds.includes(selectedId))?.id : null
+  // The visitor's own line: every connector that leads down to them or to one of their ancestors.
+  const myLine = useMemo(() => {
+    const ids = new Set<string>()
+    if (!meId || !graph.people.has(meId)) return ids
+    const walk = (id: string) => { if (ids.has(id)) return; ids.add(id); graph.parentsOf(id).forEach((p) => walk(p.id)) }
+    walk(meId)
+    return ids
+  }, [meId, graph])
+  const onMyLine = (e: Edge) => myLine.size > 0 && e.childIds.some((id) => myLine.has(id))
 
   // Cards to draw: the layout's, with arrivals parked at their origin until settled, plus departures gliding to their gathering point.
   const arriving = settled !== layout
@@ -455,11 +479,11 @@ export default function TreeCanvas({
   return (
     <div className="relative h-full w-full">
       <style>{`@keyframes sft-pop { from { transform: scale(.3); opacity: 0 } 65% { transform: scale(1.12); opacity: 1 } to { transform: scale(1); opacity: 1 } }`}</style>
-      <svg ref={svgRef} className="h-full w-full cursor-grab touch-none select-none active:cursor-grabbing" style={{ background: '#FAF8F3' }} onClick={() => onSelect(null)}>
+      <svg ref={svgRef} role="group" aria-label="Family tree map: drag to move around, scroll or pinch to zoom, select a card to see that person" className="h-full w-full cursor-grab touch-none select-none bg-paper active:cursor-grabbing" onClick={() => onSelect(null)}>
         <defs><clipPath id="disc"><circle cx={0} cy={0} r={17} /></clipPath><clipPath id="disc-sm"><circle cx={0} cy={0} r={12} /></clipPath></defs>
         <g transform={t.toString()}>
           {edgesShown.map((e) => (
-            <path key={e.id} data-edge={e.id} pathLength={1} d={e.d} fill="none" stroke={e.id === selectedEdge ? '#A8843A' : '#B9C7B9'} strokeWidth={dots ? 4 : e.id === selectedEdge ? 1.5 : 1}
+            <path key={e.id} data-edge={e.id} pathLength={1} d={e.d} fill="none" stroke={e.id === selectedEdge || onMyLine(e) ? '#86672A' : '#B9C7B9'} strokeWidth={dots ? 4 : e.id === selectedEdge || onMyLine(e) ? 1.75 : 1}
               style={{ opacity: e.leaving || edgesHidden ? 0 : 1, transition: 'opacity 280ms ease' }} />
           ))}
           {shown.map((n) => {
@@ -477,8 +501,8 @@ export default function TreeCanvas({
                 {b && (G.down
                   ? <line x1={-G.coupleGap / 2 - 2} y1={0} x2={G.coupleGap / 2 + 2} y2={0} stroke="#B9C7B9" strokeWidth={dots ? 4 : 1} />
                   : <line x1={0} y1={-G.coupleGap / 2 - 2} x2={0} y2={G.coupleGap / 2 + 2} stroke="#B9C7B9" strokeWidth={dots ? 4 : 1} />)}
-                <PersonCard person={n.a!} dx={a.x} dy={a.y} depth={n.depth} dots={dots} selected={selectedId === n.a!.id} onSelect={onSelect} />
-                {n.b && b && <PersonCard person={n.b} dx={b.x} dy={b.y} depth={n.depth} dots={dots} selected={selectedId === n.b.id} onSelect={onSelect} />}
+                <PersonCard person={n.a!} dx={a.x} dy={a.y} depth={n.depth} dots={dots} selected={selectedId === n.a!.id} me={meId === n.a!.id} onSelect={onSelect} />
+                {n.b && b && <PersonCard person={n.b} dx={b.x} dy={b.y} depth={n.depth} dots={dots} selected={selectedId === n.b.id} me={meId === n.b.id} onSelect={onSelect} />}
                 {!dots && minis.map(({ q, dx, dy }) => <MiniCard key={q.id} person={q} dx={dx} dy={dy} selected={selectedId === q.id} onSelect={onSelect} />)}
                 {n.kids > 0 && !n.leaving && <FoldToggle orient={layout.orient} kids={n.kids} hidden={n.hidden} dots={dots} onToggle={() => toggle(n)} />}
               </g>
@@ -488,7 +512,7 @@ export default function TreeCanvas({
       </svg>
 
       {/* Minimap (bottom-right, below the zoom controls the page renders) */}
-      <svg width={MM_W} height={MM_H} className="absolute right-8 bottom-7 hidden rounded border border-line bg-white sm:block" style={{ pointerEvents: 'none' }}>
+      <svg width={MM_W} height={MM_H} aria-hidden="true" className="absolute right-8 bottom-7 hidden rounded border border-line bg-white sm:block" style={{ pointerEvents: 'none' }}>
         {mmOk && layout.placed.map((n) => (
           <rect key={n.id} x={mmX(n.x - nodeW(n) / 2)} y={mmY(n.y - nodeH(n) / 2)} width={Math.max(2, nodeW(n) * mmK)} height={Math.max(2, nodeH(n) * mmK)} rx={1} fill={n.a!.id === selectedId || n.b?.id === selectedId ? '#2E4A38' : '#D6D0C2'} />
         ))}
@@ -535,7 +559,7 @@ function FoldToggle({ orient, kids, hidden, dots, onToggle }: { orient: Orient; 
 }
 
 /** One person's card, drawn relative to the couple's centre (dx/dy = offset of the card's centre). */
-function PersonCard({ person: p, dx, dy, depth, dots, selected, onSelect }: { person: Person; dx: number; dy: number; depth: number; dots: boolean; selected: boolean; onSelect: (id: string) => void }) {
+function PersonCard({ person: p, dx, dy, depth, dots, selected, me, onSelect }: { person: Person; dx: number; dy: number; depth: number; dots: boolean; selected: boolean; me: boolean; onSelect: (id: string) => void }) {
   const { data: photo } = useSignedUrl(p.photo_path, '160x160')
   const tint = TINTS[((depth % TINTS.length) + TINTS.length) % TINTS.length] // ancestors above the founders have negative depths
   const initials = `${p.given_names[0] ?? ''}${p.surname[0] ?? ''}`.toUpperCase() || '?'
@@ -548,7 +572,13 @@ function PersonCard({ person: p, dx, dy, depth, dots, selected, onSelect }: { pe
   const first = p.nickname ? p.nickname : p.given_names.split(' ')[0] || p.surname || '?'
   return (
     <g transform={`translate(${left},${top})`} className="cursor-pointer" onClick={stop}>
-      <rect width={CARD_W} height={CARD_H} rx={6} fill={selected ? '#2E4A38' : '#fff'} stroke={selected ? '#2E4A38' : '#E2DDD2'} strokeWidth={1} />
+      <rect width={CARD_W} height={CARD_H} rx={6} fill={selected ? '#2E4A38' : '#fff'} stroke={selected ? '#2E4A38' : me ? '#86672A' : '#E2DDD2'} strokeWidth={me && !selected ? 1.75 : 1} />
+      {me && (
+        <g transform={`translate(${CARD_W - 44},-10)`} aria-label="You">
+          <rect width={36} height={20} rx={10} fill="#86672A" />
+          <text x={18} y={10} textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={500} fill="#FAF8F3">You</text>
+        </g>
+      )}
       <g transform={`translate(${10 + 17},${CARD_H / 2})`}>
         <circle r={17} fill={selected ? '#FAF8F3' : tint.bg} />
         {photo
@@ -556,7 +586,7 @@ function PersonCard({ person: p, dx, dy, depth, dots, selected, onSelect }: { pe
           : <text textAnchor="middle" dominantBaseline="central" fontSize={13} fill={selected ? '#2E4A38' : tint.ink}>{initials}</text>}
       </g>
       <text x={54} y={24} fontSize={15} fontWeight={selected ? 500 : 400} fill={selected ? '#FAF8F3' : '#2A2A26'}>{trunc(first, 12)}</text>
-      <text x={54} y={41} fontSize={11} letterSpacing=".04em" fill={selected ? '#D6CFBF' : '#8A8578'}>{lifespan(p) || '—'}</text>
+      <text x={54} y={41} fontSize={12} fill={selected ? '#D6CFBF' : '#6F6A5E'}>{lifespan(p) || '—'}</text>
     </g>
   )
 }
@@ -577,7 +607,7 @@ function MiniCard({ person: p, dx, dy, selected, onSelect }: { person: Person; d
           : <text textAnchor="middle" dominantBaseline="central" fontSize={10} fill="#6B5D4D">{initials}</text>}
       </g>
       <text x={left + 36} y={dy - 2} fontSize={12} fill={selected ? '#FAF8F3' : '#2A2A26'}>{trunc(first, 14)}</text>
-      <text x={left + 36} y={dy + 11} fontSize={9.5} letterSpacing=".04em" fill={selected ? '#D6CFBF' : '#8A8578'}>{lifespan(p) || 'm.'}</text>
+      <text x={left + 36} y={dy + 11} fontSize={10.5} fill={selected ? '#D6CFBF' : '#6F6A5E'}>{lifespan(p) || 'm.'}</text>
     </g>
   )
 }

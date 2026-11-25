@@ -36,7 +36,7 @@ export default function ReviewPage() {
 
           {claims.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xl">"This is me" requests <span className="text-ink-mute">{claims.length}</span></h2>
+              <h2 className="text-xl">“This is me” requests <span className="text-ink-mute">{claims.length}</span></h2>
               {claims.map((m) => <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} note={m.note} personId={m.person_id!} />)}
             </section>
           )}
@@ -188,11 +188,11 @@ function HistoryRow({ r, author, reviewer }: { r: ChangeRequest; author: string;
       <div className="min-w-0 flex-1">
         <p className="text-[15px] text-ink">{r.summary}</p>
         <p className="text-[13px] text-ink-mute">
-          {byYou ? `By ${author}` : `Suggested by ${author}${reviewer ? ` · ${r.status === 'rejected' ? 'declined' : r.status === 'reverted' ? 'undone' : 'approved'} by ${reviewer}` : ''}`} · {when(r.reviewed_at ?? r.created_at)}
-          {r.review_note && <> · “{r.review_note}”</>}
+          {byYou ? `By ${author}` : `Suggested by ${author}${reviewer ? `, ${r.status === 'rejected' ? 'declined' : r.status === 'reverted' ? 'undone' : 'approved'} by ${reviewer}` : ''}`}, {when(r.reviewed_at ?? r.created_at)}
+          {r.review_note && <span className="block italic">“{r.review_note}”</span>}
         </p>
       </div>
-      <span className={`self-start rounded-full px-2.5 py-0.5 text-[12px] sm:self-center ${s.cls}`}>{s.label}</span>
+      <span className={`self-start rounded-full px-2.5 py-0.5 text-[13px] sm:self-center ${s.cls}`}>{s.label}</span>
       {r.status === 'approved' && (
         <button className="btn-ghost self-start sm:self-center" disabled={busy || revert.isPending} title="Put everything this change touched back the way it was"
           onClick={async () => { if (!confirm(`Undo “${r.summary}”? Everything it changed goes back to how it was before.`)) return; setBusy(true); try { await revert.mutateAsync(r.id) } finally { setBusy(false) } }}>

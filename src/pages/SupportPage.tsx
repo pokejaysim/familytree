@@ -12,8 +12,7 @@ export default function SupportPage() {
       <AppHeader />
       <div className="flex-1 overflow-auto">
         <article className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
-          <p className="text-center text-[12px] uppercase tracking-[.12em] text-brass">Support this site</p>
-          <h1 className="mt-2 text-center text-3xl leading-tight sm:text-4xl">Help keep our family tree online.</h1>
+          <h1 className="text-center text-3xl leading-tight sm:text-4xl">Help keep our family tree online.</h1>
           <img src={divider} alt="" width={200} height={20} className="mx-auto mt-4 opacity-90" />
           <img src={`${art}-480.webp`} srcSet={`${art}-480.webp 480w, ${art}-960.webp 960w`} sizes="(min-width: 640px) 420px, 80vw" width={960} height={720} alt="" className="art-fade mx-auto -my-2 w-[420px] max-w-full" />
 
@@ -23,7 +22,7 @@ export default function SupportPage() {
           </p>
 
           <section className="mt-10">
-            <h2 className="text-[12px] uppercase tracking-[.12em] text-brass">Where it goes</h2>
+            <h2 className="text-[22px] text-ink">Where it goes</h2>
             <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-white">
               {[
                 ['Hosting and the database', 'The site and every record in it live on a hosted database, kept safe and shared with the whole family.'],
@@ -39,24 +38,24 @@ export default function SupportPage() {
           </section>
 
           <section className="mt-10">
-            <h2 className="text-[12px] uppercase tracking-[.12em] text-brass">Just as valuable</h2>
+            <h2 className="text-[22px] text-ink">Just as valuable</h2>
             <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
               Money is only one way to help. Photos, dates, stories and corrections are what this site is really for. If you spot a
-              mistake, or have a picture the rest of the family has never seen, add it to that person's page or send it to {ADMIN_NAME}.
+              mistake, or have a picture the rest of the family has never seen, add it to that person’s page or send it to {ADMIN_NAME}.
             </p>
           </section>
 
           <div className="mt-12 flex flex-col items-center gap-4 text-center">
             {DONATE_URL && (
-              <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[46px] px-6">
+              <a href={DONATE_URL} target="_blank" rel="noreferrer" className="btn-primary min-h-[46px] whitespace-nowrap px-6">
                 <CoffeeIcon className="h-5 w-5" /> Donate via Buy Me a Coffee
               </a>
             )}
           </div>
 
-          <p className="mt-12 text-center text-[17px] italic text-ink-soft">Thank you. Every bit of it goes back into keeping the family's story where everyone can find it.</p>
+          <p className="mt-12 text-center text-[17px] italic text-ink-soft">Thank you. Every bit of it goes back into keeping the family’s story where everyone can find it.</p>
           <p className="mt-8 text-center">
-            <Link to="/" className="text-[12px] uppercase tracking-[.12em] text-brass underline underline-offset-4 hover:text-moss">Back to the family trees</Link>
+            <Link to="/" className="text-[16px] text-brass underline underline-offset-4 hover:text-moss">Back to the family tree</Link>
           </p>
         </article>
       </div>

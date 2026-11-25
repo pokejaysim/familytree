@@ -55,7 +55,7 @@ export function fullName(p: { given_names: string; surname: string; maiden_name?
 
 export function displayName(p: { given_names: string; surname: string; maiden_name?: string | null; nickname?: string | null }) {
   let n = fullName(p)
-  if (p.nickname) n = `${p.given_names} "${p.nickname}" ${p.surname}`.trim()
+  if (p.nickname) n = `${p.given_names} “${p.nickname}” ${p.surname}`.trim()
   if (p.maiden_name) n += ` (née ${p.maiden_name})`
   return n
 }

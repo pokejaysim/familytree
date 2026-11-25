@@ -11,7 +11,7 @@ export function Letter({ text }: { text: string }) {
       {text.split(/\n\s*\n/).map((para, i) => {
         let t = para.trim()
         // Light markup: **date line**, *italic quote*, or a paragraph wrapped in quotation marks → block quote
-        if (/^\*\*.+\*\*$/s.test(t)) return <p key={i} className="text-[12px] uppercase tracking-[.12em] text-brass">{t.slice(2, -2)}</p>
+        if (/^\*\*.+\*\*$/s.test(t)) return <p key={i} className="text-[16px] font-medium text-brass">{t.slice(2, -2)}</p>
         const starred = /^\*[^*].*\*$/s.test(t)
         if (starred) t = t.slice(1, -1)
         const quoted = starred || /^["“].*["”]$/s.test(t)
@@ -24,7 +24,7 @@ export function Letter({ text }: { text: string }) {
 }
 
 /** Reading pane for the tree's introduction (for the Sim family, Bernard's preface), opened from the map. */
-export default function IntroPane({ tree, canEdit, onClose }: { tree: Tree; canEdit: boolean; onClose: () => void }) {
+export default function IntroPane({ tree, canEdit, onClose, onOpenMap }: { tree: Tree; canEdit: boolean; onClose: () => void; onOpenMap?: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-6" onClick={onClose}>
       <article
@@ -33,7 +33,6 @@ export default function IntroPane({ tree, canEdit, onClose }: { tree: Tree; canE
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-3 right-3 rounded-full p-1.5 text-ink-mute hover:bg-white" aria-label="Close"><X size={16} /></button>
-        <p className="text-center text-[12px] uppercase tracking-[.12em] text-brass">{tree.name}</p>
         {tree.foreword && (
           <section className="mb-12">
             <header className="mb-6 text-center">
@@ -55,10 +54,10 @@ export default function IntroPane({ tree, canEdit, onClose }: { tree: Tree; canE
           </section>
         )}
         <div className="mt-10 flex justify-center gap-3">
-          <button className="btn-primary" onClick={onClose}>Open the map</button>
+          <button className="btn-primary" onClick={onOpenMap ?? onClose}>Open the map</button>
           {canEdit && <Link to={`/trees/${tree.id}/about`} className="btn-ghost">Edit</Link>}
         </div>
-        <p className="mt-8 text-center text-[15px] text-ink-soft">Know a name, a date or a story? <Link to="/contribute" className="text-brass underline underline-offset-4 hover:text-moss" onClick={onClose}>Here's how to add it</Link>.</p>
+        <p className="mt-8 text-center text-[15px] text-ink-soft">Know a name, a date or a story? <Link to="/contribute" className="text-brass underline underline-offset-4 hover:text-moss" onClick={onClose}>Here’s how to add it</Link>.</p>
         <SupportLine variant="compact" />
       </article>
     </div>
