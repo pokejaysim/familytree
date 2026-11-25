@@ -1,0 +1,17 @@
+[Unit]
+Description=Nightly local snapshot of PocketBase to PiDrive1
+RequiresMountsFor=/srv/pocketbase /mnt/PiDrive1
+
+[Service]
+Type=oneshot
+User=pocketbase
+Group=pocketbase
+ExecStart=/usr/bin/python3 -I /usr/local/bin/pocketbase-snapshot
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# pb_data: SQLite's live-backup needs its shared-memory lock file next to the database.
+ReadWritePaths=/mnt/PiDrive1/_pocketbase-backups /srv/pocketbase/pb_data

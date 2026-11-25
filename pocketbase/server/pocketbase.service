@@ -1,0 +1,34 @@
+[Unit]
+Description=PocketBase (family tree backend)
+Documentation=https://pocketbase.io/docs/
+After=network-online.target
+Wants=network-online.target
+# Only run when the virtual disk on PiDrive2 is mounted, never against the bare SD card.
+RequiresMountsFor=/srv/pocketbase
+ConditionPathIsMountPoint=/srv/pocketbase
+
+[Service]
+Type=simple
+User=pocketbase
+Group=pocketbase
+WorkingDirectory=/srv/pocketbase
+ExecStart=/opt/pocketbase/pocketbase serve --http=127.0.0.1:8090 \
+  --dir=/srv/pocketbase/pb_data \
+  --migrationsDir=/srv/pocketbase/pb_migrations \
+  --hooksDir=/srv/pocketbase/pb_hooks \
+  --publicDir=/srv/pocketbase/pb_public
+Restart=always
+RestartSec=5
+# Keep Go's memory use modest on this 1 GB Pi.
+Environment=GOMEMLIMIT=150MiB
+LimitNOFILE=4096
+# Can't touch anything outside its own folder.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/srv/pocketbase
+
+[Install]
+WantedBy=multi-user.target

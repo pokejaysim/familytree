@@ -26,3 +26,8 @@ dist-ssr
 # local
 .env.local
 docs/grandpa-text/
+
+# PocketBase: local data and binaries never go in the repo
+pocketbase/pb_data/
+pocketbase/bin/
+pocketbase/pocketbase

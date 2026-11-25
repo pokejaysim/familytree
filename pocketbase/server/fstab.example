@@ -1,0 +1,3 @@
+# /etc/fstab line on the server: the PocketBase data disk is an ext4 image on the data drive.
+# nofail = a missing drive cannot block boot; pocketbase.service will not start without it.
+/mnt/PiDrive2/_pocketbase-DO-NOT-DELETE/disk.img /srv/pocketbase ext4 loop,noatime,nofail,x-systemd.requires-mounts-for=/mnt/PiDrive2 0 0

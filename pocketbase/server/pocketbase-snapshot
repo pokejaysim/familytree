@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Nightly local snapshot of PocketBase, written to the second drive.
+
+PocketBase's own nightly backups go off-site (Cloudflare R2), so this keeps a local copy
+too, without depending on them. Each snapshot is a zip in PocketBase's backup layout
+(data.db, auxiliary.db, storage/...), so it can be restored from the dashboard with
+"Upload backup". Database copies use SQLite's online backup, so they are consistent even
+while PocketBase is running. Thumbnails are skipped; PocketBase recreates them.
+
+Keeps the newest KEEP snapshots. Exits non-zero (and systemd marks the run failed) on any problem.
+"""
+import datetime
+import os
+import pathlib
+import sqlite3
+import sys
+import tempfile
+import zipfile
+
+PB_DATA = pathlib.Path("/srv/pocketbase/pb_data")
+DEST = pathlib.Path("/mnt/PiDrive1/_pocketbase-backups")
+KEEP = 30
+
+
+def fail(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    if not os.path.ismount("/srv/pocketbase"):
+        fail("The PocketBase disk isn't mounted; no snapshot taken.")
+    if not os.path.ismount("/mnt/PiDrive1"):
+        fail("PiDrive1 isn't mounted; no snapshot taken.")
+    DEST.mkdir(exist_ok=True)
+
+    name = "pb_snapshot_" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S") + ".zip"
+    partial = DEST / (".partial_" + name)
+    with tempfile.TemporaryDirectory() as tmp:
+        with zipfile.ZipFile(partial, "w") as z:
+            for db in ("data.db", "auxiliary.db"):
+                src = sqlite3.connect(PB_DATA / db)
+                copy_path = pathlib.Path(tmp) / db
+                dst = sqlite3.connect(copy_path)
+                src.backup(dst)
+                ok = dst.execute("PRAGMA integrity_check").fetchone()[0]
+                dst.close()
+                src.close()
+                if ok != "ok":
+                    fail(f"{db}: integrity check failed on the copy")
+                z.write(copy_path, db, compress_type=zipfile.ZIP_DEFLATED)
+            files = 0
+            for path in sorted((PB_DATA / "storage").rglob("*")):
+                rel = path.relative_to(PB_DATA)
+                if path.is_file() and not any(part.startswith("thumbs_") for part in rel.parts):
+                    z.write(path, str(rel), compress_type=zipfile.ZIP_STORED)  # photos are already compressed
+                    files += 1
+    with zipfile.ZipFile(partial) as z:
+        bad = z.testzip()
+        if bad:
+            fail(f"The new snapshot is damaged ({bad}); kept the previous ones.")
+    partial.rename(DEST / name)
+    print(f"Snapshot {name}: {files} stored files, {(DEST / name).stat().st_size / 1048576:.1f} MB")
+
+    snapshots = sorted(DEST.glob("pb_snapshot_*.zip"))
+    for old in snapshots[:-KEEP]:
+        old.unlink()
+        print(f"Removed old snapshot {old.name}")
+
+
+if __name__ == "__main__":
+    main()

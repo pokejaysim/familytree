@@ -24,6 +24,12 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - Families with no partners are sibling groups whose parents are unknown; the map draws them under an invisible "ghost" root (a bus line, no parent stem) so the tree starts at that generation.
 - `src/lib/graph.ts` indexes a tree snapshot for parent/child/sibling/partner lookups
 
+## Moving to PocketBase (in progress, see `pocketbase/README.md`)
+- The live app still runs on Supabase. A self-hosted PocketBase on Jason's Raspberry Pi holds an imported, verified copy of the family data (phase 1 done 2026-11-25).
+- Next phases: review-system hooks, accounts and email (2); app data layer (3); public address, off-site backup and cutover (4).
+- Schema-as-code lives in `pocketbase/pb_migrations`, with the same names as Supabase minus `_id` (`people.tree`). Supabase UUIDs are kept as record IDs. `people.photo` links to a `media` record. Profiles became fields on `users`.
+- Until cutover, Supabase is the source of truth. Re-import with `import-supabase … replace` rather than editing PocketBase by hand.
+
 ## Hosting
 - GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
