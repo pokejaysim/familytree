@@ -1,7 +1,7 @@
-# PocketBase backend (in progress)
+# PocketBase backend
 
-The family tree is moving from Supabase to a self-hosted [PocketBase](https://pocketbase.io)
-(v0.40.6). This folder holds only code: the schema and tools. **Family data never goes in
+The family tree moved from Supabase to a self-hosted [PocketBase](https://pocketbase.io)
+(v0.40.6) on 2026-11-25. This folder holds only code: the schema and tools. **Family data never goes in
 this repo** (it is public). It lives only in the databases themselves and their backups.
 
 ```
@@ -19,6 +19,8 @@ tools/
   verify_import.py        compares an import with its export, field by field and file by file
   test_review_system.py   65 end-to-end checks of the review system (made-up data, throwaway server)
   run_tests_on_server.sh  builds a throwaway PocketBase from this folder, runs the checks, deletes it
+  make_thumbs.pb.js       console command `make-thumbs`: pre-makes photo thumbnails (run after bulk imports)
+  make_owner.pb.js        console command `make-owner <email> [personId]`: admin + tree owner (used at switchover)
 server/                   reference copies of the server setup (Raspberry Pi, Debian 12 arm64)
   pocketbase.service            systemd service: 127.0.0.1:8090, runs only when its data disk is mounted
   fstab.example                 the data disk: an ext4 image on the data drive, mounted at /srv/pocketbase
@@ -77,7 +79,19 @@ To deploy:
 2. Copy `pb_hooks/` and any new `pb_migrations/` files to `/srv/pocketbase/`, owned by `pocketbase`.
 3. Run `systemctl restart pocketbase`. New migrations apply on start.
 
-## Re-importing (e.g. at cutover)
+## Developing against a test copy
+
+Never point a local dev server at the real PocketBase. Instead:
+1. Restore the latest snapshot zip into a folder on the server.
+2. Run it as a second PocketBase on `127.0.0.1:8091`, then reach it from the Mac with `ssh -L 8091:127.0.0.1:8091`.
+3. In the copy's settings, turn off email and set the app URL to `http://localhost:5173`, so it never emails real people.
+4. Use made-up accounts only.
+5. Delete the copy when you're done. It holds the family's data.
+
+## Importing from Supabase (history: done at the switchover)
+
+**Don't re-import now.** The site has run on PocketBase since 2026-11-25. `replace` would wipe
+every change made since, including accounts. The steps are kept for reference:
 
 ```bash
 python3 -I pocketbase/tools/export_supabase.py /some/folder/outside/the/repo

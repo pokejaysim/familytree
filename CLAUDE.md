@@ -53,7 +53,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
   - **Files:** refs `"media/<id>/<file>"` or `"uploads/<id>/<file>"`. `useSignedUrl(ref, thumb?)` builds URLs from one shared file token (1 h); thumbnails are `160x160` for the map and avatars, `480x0` for galleries. Run `tools/make_thumbs.pb.js` after bulk imports.
   - **Uploads:** `uploadToTree` puts a file in `uploads`. `changes.ts` turns a media insert's upload ref into `data.upload`, and `photo_path` into the `photo` link; `hydrate()` maps stored requests back for the Review page.
   - **Accounts:** `profile.ts` reads users as profiles. Members' emails show because users `manageRule` = admin.
-- **Developing:** use a test copy of PocketBase built from a snapshot (made-up accounts; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`). Never develop against the real server.
+- **Developing:** use a test copy of PocketBase built from a snapshot (see "Developing against a test copy" in `pocketbase/README.md`; made-up accounts; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`). Never develop against the real server. The copy used for the switchover was deleted on 2026-11-25.
 - **Supabase:** the old project `nurkbmmacrepftlepizi` is kept untouched as a fallback for a month after the switchover (it can be un-paused within 90 days). `supabase/migrations/` is history only.
 
 ## Hosting
