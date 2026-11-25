@@ -4,41 +4,57 @@ A private, hosted family-tree app for recording ancestors, relationships, photos
 Origin: rebuilding and extending the family tree Jason's granddad made in the 1990s.
 
 ## Stack
-- React 19 + Vite + TypeScript SPA (no separate backend; the browser talks to Supabase directly under RLS)
+- React 19 + Vite + TypeScript SPA on GitHub Pages; the backend is a self-hosted PocketBase on Jason's Raspberry Pi (see "Backend" below)
 - Tailwind CSS v4 (`@theme` in `src/index.css`, no tailwind.config). Custom classes: `btn-primary`, `btn-ghost`, `btn-danger`, `input`, `label`, `card`
 - Product name: "Sim Family Tree" (header, tab title, login). Visual design: "Kinfolk" (Claude Design project `Family Tree Options.dc.html`, option 7a). Paper #FAF8F3, moss header #2E4A38, brass accent #A8843A / #D9B25C, sage lines #B9C7B9, EB Garamond everywhere. Generation disc tints cycle sage → honey → clay → sky (`TINTS` in `src/components/TreeCanvas.tsx`). Selected card inverts to moss with cream text.
 - TanStack Query for all data access (`src/lib/queries.ts`), React Router v7
 - d3-hierarchy + d3-zoom + d3-transition for the infinite-canvas map (`src/components/TreeCanvas.tsx`): couples share a node, orthogonal connectors, minimap, `zoomTo` glide. Branches fold: a − toggle under every couple with children, a `+N` pill while folded (N hidden relatives), folds kept in localStorage `sft-collapsed:<treeId>`, the toggled couple stays put on screen, `zoomTo` unfolds the path to a searched person, and the zoom controls carry fold-all / unfold-all. A spouse's own ancestors (e.g. Teresa's Dusun line) are stacked before the spouse's card at negative depths rather than drawn as a separate tree; the founding couple is the root candidate with the most children. Two orientations (`Orient`): `down` (rows, couples side by side — the book's chart, default on wide screens) and `right` (columns, siblings stacked, couples one above the other — default under 640px); the layout runs on generation/sibling axes and maps to x/y, ChartPage keeps the choice in localStorage `sft-orient` and offers a turn button in the zoom controls. `PersonSpotlight.tsx` is the bottom-left card shown on select.
-- Supabase: project `familytree` (ref `nurkbmmacrepftlepizi`, region ca-central-1). Auth = email + password with self-serve sign-up (name + "how are you related" note) and password reset. **Approval queue:** every account gets a `profiles` row (status pending/approved/declined, role admin/editor/viewer, default viewer) via a trigger on `auth.users`; the app shows `PendingPage` until approved. RLS: `members: read` needs `private.is_approved()`; only admins write the tables directly (`admins: write`). Admins manage everyone on `/members` (`MembersPage`; Approve = editor, "View only" = viewer); header badge via `pending_member_count()` RPC. `useCanEdit()` from `src/lib/profile.ts` hides edit controls from viewers.
-- **Reviewed contributions** (migration `20261013000000_reviewed_contributions`): every data change goes through `submit_changes(tree, summary, subject, changes[])` (`src/lib/changes.ts`, `useSubmit`). One user action = one `change_requests` row holding ordered inserts/updates/deletes; new rows get client ids (`newId()`) so a request can create a person and link them in one go. Editors' requests wait (status pending) for an admin on `/review` (`ReviewPage`: approve/decline with note, "this is me" links, recent history with Undo); admins' requests apply immediately but are still recorded. Triggers write every row change to `change_log`; `revert_request` undoes a request including cascaded deletes. Editors can still upload files to storage (a photo must exist to be reviewed); only admins delete/update files. Tree-level text (foreword/preface) and creating trees are admin-only. "This is me": `profiles.person_id/person_status`, `claim_person` / `review_claim`; a linked account's avatar opens their profile. Contributors see `/contribute` (`ContributePage`: guide + their suggestions), a "Help complete …'s profile" box listing gaps, pending notices on profiles, and "Send for review" buttons; feedback via `lib/toast.tsx`. Never write family data with direct table calls in the app; scripts run as the admin and bypass review (logged with no request id). Jason (jsim81@gmail.com) is the admin. Local dev auto-signs-in with `VITE_DEV_EMAIL`/`VITE_DEV_PASSWORD` from `.env.local` (git-ignored, dev builds only) so the login screen never shows on Jason's machine. Storage bucket `media` (private, signed URLs)
+- **Accounts:** email and password, with self-serve sign-up (name plus a "how are you related" note), email confirmation (`?confirm=` link) and password reset (`?reset=` link), both handled in `App.tsx`.
+  - **Approval queue:** a hook makes every new account `status` pending and `role` viewer, whatever the form sends. Only confirmed emails can sign in, and the app shows `PendingPage` until approval.
+  - **Managing members:** admins manage everyone on `/members` (`MembersPage`; Approve = editor, "View only" = viewer). The header badges come from `GET /api/sft/counts`. `useCanEdit()` from `src/lib/profile.ts` hides edit controls from viewers.
+  - Jason is the admin.
+- **Reviewed contributions:** every data change goes through `POST /api/sft/submit` (`src/lib/changes.ts`, `useSubmit`).
+  - **One user action = one request:** each is a `change_requests` record holding ordered inserts, updates and deletes. New rows get client IDs (`newId()`), so a request can create a person and link them in one go.
+  - **Who applies what:** editors' requests wait (status pending) for an admin on `/review` (`ReviewPage`: approve or decline with a note, "this is me" links, recent history with Undo). Admins' requests apply immediately but are still recorded.
+  - **History and undo:** hooks write every record change to `change_log`, including cascades and dashboard edits. `/api/sft/revert` undoes a request, including cascaded deletes and photo files.
+  - **Photos:** contributors upload into `uploads` (waiting for review); approval moves the file into `media`.
+  - **Admin-only:** tree-level text (foreword and preface) and creating trees.
+  - **"This is me":** `users.person` / `person_status`, via `/api/sft/claim` and `/api/sft/review-claim`. A linked account's avatar opens their profile.
+  - **For contributors:** `/contribute` (`ContributePage`: a guide plus their suggestions), a "Help complete …'s profile" box listing gaps, pending notices on profiles, and "Send for review" buttons. Feedback goes through `lib/toast.tsx`.
+  - **Rule:** never write family data with direct collection calls in the app. Scripts and the dashboard bypass review; they're logged with no request ID.
 
-## Data model (see `supabase/migrations/`)
-- `trees` → `tree_members` (owner / editor / viewer). RLS helpers (schema `private`, not exposed over REST): `can_view_tree(tree_id)`, `can_edit_tree(tree_id)`
+## Data model (see `pocketbase/pb_migrations/`)
+- `trees` → `tree_members` (owner / editor / viewer). Access is by account status: approved members read; only an approved admin writes.
 - `people` – one row per person. Dates are stored twice: `birth_date` as written ("abt 1921") and `birth_date_sort` (ISO, derived by `toSortDate` in `src/lib/dates.ts`)
 - `families` – a union of two partners (either may be null). `family_children` links children to a family. This is the GEDCOM model: parent–child links always go through a family
 - `events` – timeline entries for a person or family
 - `sources` → `citations` (attach to a person, family, or event; confidence 0–3)
-- `media` – photos/scans in the `media` bucket at `<tree_id>/<uuid>.<ext>`. `people.photo_path` is the profile photo
+- `media` – photos and scans, with the file on the record (protected). `people.photo` links to the person's portrait media record. The app sees both as file refs (`storage_path`, `photo_path`; see `src/lib/pb.ts`).
 - `trees.foreword*` (Jason's September 2026 note) and `trees.intro*` (Bernard's 2007 preface): the tree's introduction, foreword first, opened from a "Preface" note on the map (`IntroPane`), auto-opened once per device (localStorage `sft-intro-seen:<treeId>`); admins edit it at `/trees/:id/about` (`AboutPage`, no nav tab). For the Sim family it is Bernard's 2007 preface, verbatim.
 - A person with several marriages is paired on the map with the partner whose family has children; further spouses are drawn as small dashed `MiniCard`s beneath the person's own card.
 - Families with no partners are sibling groups whose parents are unknown; the map draws them under an invisible "ghost" root (a bus line, no parent stem) so the tree starts at that generation.
 - `src/lib/graph.ts` indexes a tree snapshot for parent/child/sibling/partner lookups
 
-## Moving to PocketBase (in progress, see `pocketbase/README.md`)
-- The live app still runs on Supabase. A self-hosted PocketBase on Jason's Raspberry Pi holds an imported, verified copy of the family data (phase 1 done 2026-11-25).
-- The review system has been ported to `pocketbase/pb_hooks` and is live on the Pi, with 65 end-to-end checks in `tools/test_review_system.py` (phase 2 done 2026-11-25).
-- Phase 3 (2026-11-25) is on branch `pocketbase-app` and isn't merged until the phase 4 cutover, because GitHub Pages deploys `main`. That branch's app talks only to PocketBase:
-  - **The adapter:** `src/lib/pb.ts` holds the client and the adapter. Pages keep the Supabase-era shapes (`person_id`, `photo_path`, `storage_path`), and `toApp`/`toPbFields` translate.
-  - **Files:** passed around as refs `"media/<id>/<file>"` or `"uploads/<id>/<file>"`. `useSignedUrl(ref, thumb?)` builds URLs from one shared file token (1 h); the thumbnails are `160x160` for the map and avatars, `480x0` for galleries.
+## Backend: PocketBase (see `pocketbase/README.md`)
+- PocketBase v0.40.6 runs on Jason's Raspberry Pi 3 (ssh alias `pihole`, which is also the home Pi-hole DNS: never restart Pi-hole). Switched over from Supabase on 2026-11-25.
+- **Addresses:**
+  - Public API: `https://tree-api.pjscollectibles.ca`, through the Pi's Cloudflare tunnel. `/_/` and `/api/collections/_superusers` are blocked publicly.
+  - Admin dashboard: Tailscale only, at `https://raspberrypi.<tailnet>.ts.net/_/`.
+  - PocketBase listens on 127.0.0.1:8090 with `--origins=https://pokejaysim.github.io`.
+- **Data and backups:**
+  - Data lives in an ext4 image on a USB drive, mounted at `/srv/pocketbase`.
+  - Backups: PocketBase's own nightly, plus a nightly snapshot to the second drive. They are local only, by Jason's choice.
+- **Code:**
+  - Schema and settings are code in `pocketbase/pb_migrations`; server logic is in `pocketbase/pb_hooks`.
+  - Field names match the Supabase columns minus `_id` (`people.tree`), and records kept their Supabase UUIDs.
+  - Test hook changes with `pocketbase/tools/run_tests_on_server.sh` (65 checks) before deploying.
+- **The app side:**
+  - **`src/lib/pb.ts`:** the client plus an adapter. Pages keep the Supabase-era shapes (`person_id`, `photo_path`, `storage_path`), and `toApp`/`toPbFields` translate.
+  - **Files:** refs `"media/<id>/<file>"` or `"uploads/<id>/<file>"`. `useSignedUrl(ref, thumb?)` builds URLs from one shared file token (1 h); thumbnails are `160x160` for the map and avatars, `480x0` for galleries. Run `tools/make_thumbs.pb.js` after bulk imports.
   - **Uploads:** `uploadToTree` puts a file in `uploads`. `changes.ts` turns a media insert's upload ref into `data.upload`, and `photo_path` into the `photo` link; `hydrate()` maps stored requests back for the Review page.
   - **Accounts:** `profile.ts` reads users as profiles. Members' emails show because users `manageRule` = admin.
-  - **Email links:** `App.tsx` handles `?confirm=<token>` and `?reset=<token>`.
-  - **Env:** `VITE_PB_URL`; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`, a made-up test admin.
-  - **Testing:** develop against the test copy on the Pi (`pocketbase-dev`, 127.0.0.1:8091, `/srv/pocketbase/dev`, reached through an SSH tunnel; made-up accounts only), never the real one on 8090.
-- Next: phase 4 is the public address, the switchover, and pre-making thumbnails. The first view of 95 scans made the Pi generate thumbs for ~20 s.
-- Backups stay local by Jason's choice; there is no off-site copy.
-- Schema-as-code lives in `pocketbase/pb_migrations`, with the same names as Supabase minus `_id` (`people.tree`). Supabase UUIDs are kept as record IDs. `people.photo` links to a `media` record. Profiles became fields on `users`.
-- Until cutover, Supabase is the source of truth. Re-import with `import-supabase … replace` rather than editing PocketBase by hand.
+- **Developing:** use a test copy of PocketBase built from a snapshot (made-up accounts; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`). Never develop against the real server.
+- **Supabase:** the old project `nurkbmmacrepftlepizi` is kept untouched as a fallback for a month after the switchover (it can be un-paused within 90 days). `supabase/migrations/` is history only.
 
 ## Hosting
 - GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
@@ -60,12 +76,12 @@ From Jason's asset pack (`docs/asset-pack-README.md`): `src/assets/tree-mark*.sv
 npm run dev      # http://localhost:5173
 npm run build    # tsc + vite build
 ```
-Env: `.env.local` with `VITE_PB_URL` (see `.env.example`). On `main`, until cutover: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+Env: `.env.local` with `VITE_PB_URL` (see `.env.example`). The deploy reads the `VITE_PB_URL` repo variable.
 
 ## Conventions
-- Every DB write goes through a hook in `src/lib/queries.ts` that invalidates `['treeData', treeId]`
+- Every data change goes through `useSubmit` (`src/lib/changes.ts`), which refreshes the cached queries
 - Keep genealogy date text verbatim; never overwrite what a source says with a normalised value
-- Migrations: add a new file under `supabase/migrations/` AND apply it to the hosted project (Supabase MCP `apply_migration` or `supabase db push`)
+- Migrations: add a new file under `pocketbase/pb_migrations/` and deploy it to `/srv/pocketbase/pb_migrations/` on the Pi (after a snapshot), then restart `pocketbase`. It applies on start.
 
 ## Source material
 Granddad's recovered floppy-disk files live at
