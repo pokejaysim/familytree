@@ -13,6 +13,7 @@ import secrets
 import struct
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 import zlib
@@ -277,6 +278,25 @@ check(h["email"]["ready"] is False, "with email off, site health says email isn'
 check(call("POST", "/api/sft/test-email", editor)[0] == 403, "only the admin can send a test email")
 s2, b2 = call("POST", "/api/sft/test-email", admin)
 check(s2 == 400 and "isn't set up" in str(b2), "with email off, a test email explains why it can't be sent")
+
+print("Privacy: members only see their own account")
+for who, tok, uid in (("a contributor", editor, editor_id), ("a view-only member", viewer, viewer_id)):
+    lst = must(call("GET", "/api/collections/users/records?perPage=200", tok))
+    check(lst["totalItems"] == 1 and lst["items"][0]["id"] == uid, f"{who} can only list their own account")
+    check(call("GET", f"/api/collections/users/records/{admin_id}", tok)[0] == 404, f"{who} can't open anyone else's account")
+    seen = must(call("GET", "/api/collections/users/records?filter=" + urllib.parse.quote("last_seen != ''"), tok))
+    check(all(u["id"] == uid for u in seen["items"]), f"{who} can't find out who else has signed in")
+    check(must(call("GET", "/api/collections/tree_members/records", tok))["totalItems"] == 0, f"{who} can't list the tree's members")
+    check(must(call("GET", "/api/collections/change_log/records", tok))["totalItems"] == 0, f"{who} can't read the change history")
+    owner = must(call("GET", "/api/collections/trees/records?expand=owner", tok))["items"]
+    check(all(not (t.get("expand") or {}).get("owner") for t in owner), f"{who} can't see the tree owner's account through the tree")
+check(must(call("GET", "/api/collections/users/records?perPage=200", admin))["totalItems"] >= 5, "the admin can see every account")
+before = rec("users", editor_id)[1]
+call("PATCH", f"/api/collections/users/records/{editor_id}", editor, {"last_seen": "2020-01-01 00:00:00.000Z"})
+call("PATCH", f"/api/collections/users/records/{editor_id}", editor, {"welcomed_at": ""})
+after = rec("users", editor_id)[1]
+check(after["last_seen"] == before["last_seen"] and after["welcomed_at"] == before["welcomed_at"], "a member can't change their own last visit or welcome record")
+check(call("GET", "/api/collections/people/records", pending)[1].get("totalItems", 0) == 0, "an account waiting for approval sees nobody in the tree")
 
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)
