@@ -40,7 +40,10 @@ export default function SourcePage() {
           <h2 className="font-serif text-2xl">{s.title}</h2>
           <p className="text-sm text-ink-mute">{[s.author, s.publication].filter(Boolean).join(', ')}</p>
           {s.repository && <p className="text-sm text-ink-mute">Repository: {s.repository}</p>}
-          {s.url && <a className="text-sm text-moss underline" href={s.url} target="_blank" rel="noreferrer">{s.url}</a>}
+          {/* Only ordinary web addresses become links; anything else is shown as plain text. */}
+          {s.url && (/^https?:\/\//i.test(s.url)
+            ? <a className="text-sm text-moss underline [overflow-wrap:anywhere]" href={s.url} target="_blank" rel="noopener noreferrer">{s.url}</a>
+            : <span className="text-sm text-ink-mute [overflow-wrap:anywhere]">{s.url}</span>)}
         </div>
         {canEdit && <div className="flex gap-1">
           <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> {isAdmin ? 'Edit' : 'Suggest an edit'}</button>

@@ -37,7 +37,8 @@ onRecordCreateRequest((e) => {
     const meta = $app.settings().meta
     const admins = $app.findRecordsByFilter("users", "role = 'admin' && status = 'approved'", "", 20, 0)
     if (!admins.length || !meta.senderAddress) return
-    const name = e.record.getString("name") || "Someone"
+    // Names go into the subject line, so no line breaks or control characters.
+    const name = (e.record.getString("name") || "Someone").replace(/[\x00-\x1f\x7f]+/g, " ").trim().slice(0, 100) || "Someone"
     const note = e.record.getString("note")
     $app.newMailClient().send(new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName },
@@ -75,7 +76,7 @@ routerAdd("POST", "/api/sft/welcomed", (e) => {
 
 routerAdd("POST", "/api/sft/contact", (e) => {
   const body = e.requestInfo().body || {}
-  const name = String(body.name || "").trim().slice(0, 100)
+  const name = String(body.name || "").replace(/[\x00-\x1f\x7f]+/g, " ").trim().slice(0, 100) // goes into the subject line
   const email = String(body.email || "").trim().slice(0, 200)
   const message = String(body.message || "").trim()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadRequestError("Please give an email address so Jason can reply.")

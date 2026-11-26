@@ -35,7 +35,8 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
       }
     } catch (err) {
       const status = (err as { status?: number })?.status
-      if (status === 429) setMsg({ text: 'Too many tries in a row. Wait a few seconds, then try again.' })
+      // Sign-in is limited per few seconds; sign-ups and reset emails per visitor over a longer stretch.
+      if (status === 429) setMsg({ text: { signin: 'Too many tries in a row. Wait a few seconds, then try again.', signup: 'Too many sign-ups from this internet connection. Please try again in an hour.', reset: 'Too many reset emails asked for from this internet connection. Please try again in 15 minutes.' }[mode] })
       else if (status === 0) setMsg({ text: errorMessage(err) }) // couldn't reach the server
       else if (mode === 'signin') {
         // PocketBase doesn't say which part failed: a wrong password and an unconfirmed email look the same.
@@ -48,8 +49,8 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   }
   const resend = async () => {
     setOfferResend(false)
-    await users.requestVerification(email).catch(() => undefined)
-    setMsg({ text: 'If that address is waiting to be confirmed, a new link is on its way.', ok: true })
+    const limited = await users.requestVerification(email).then(() => false, (err: { status?: number }) => err?.status === 429)
+    setMsg(limited ? { text: 'Too many confirmation emails asked for from this internet connection. Please try again in 15 minutes.' } : { text: 'If that address is waiting to be confirmed, a new link is on its way.', ok: true })
   }
 
   const title = { signin: 'Sign in', signup: 'Create your account', reset: 'Reset your password' }[mode]

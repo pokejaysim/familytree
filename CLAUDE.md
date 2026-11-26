@@ -46,6 +46,8 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **Addresses:**
   - Public API: `https://tree-api.pjscollectibles.ca`, through the Pi's Cloudflare tunnel. `/_/` and `/api/collections/_superusers` are blocked publicly.
   - Admin dashboard: Tailscale only, at `https://raspberrypi.<tailnet>.ts.net/_/`.
+  - **Admin side is closed to the internet:** `pb_hooks/public_guard.pb.js` returns 404 for the dashboard, anything under the superusers collection (any spelling, or its id) and any superuser token when the request carries Cloudflare's `Cf-Ray`/`Cf-Connecting-Ip` headers. The tunnel's two path rules only match the lower-case spelling, so the hook is the real block. Superuser work happens over Tailscale or on the Pi.
+  - **Email limits (guests, per address):** 5 sign-ups an hour, 5 password-reset and 5 confirmation requests per 15 minutes (migration 1765100000). Signed-in requests (the Admin page's send buttons) aren't limited.
   - PocketBase listens on 127.0.0.1:8090 with `--origins=https://simfamilytree.com,https://pokejaysim.github.io` (the old address redirects to the new one).
 - **Data and backups:**
   - Data lives in an ext4 image on a USB drive, mounted at `/srv/pocketbase`.
@@ -63,6 +65,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **Supabase:** the old project `nurkbmmacrepftlepizi` is kept untouched as a fallback for a month after the switchover (it can be un-paused within 90 days). `supabase/migrations/` is history only.
 
 ## Hosting
+- The published build carries a Content-Security-Policy meta tag (added by a plugin in `vite.config.ts`, build only): own scripts only, connections and images only to the site and `VITE_PB_URL`. Anything new loaded from another origin must be added there. The typeface is self-hosted (`@fontsource/eb-garamond`, imported in `main.tsx`).
 - GitHub Pages at https://simfamilytree.com, a custom domain set in the repo's Pages settings, with DNS in Cloudflare (DNS only, not proxied, so GitHub issues the HTTPS certificate). The old https://pokejaysim.github.io/familytree/ redirects there. (Repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
 ## Phone layout

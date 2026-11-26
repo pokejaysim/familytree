@@ -20,7 +20,7 @@ export default function UpdatePasswordPage({ token, onDone }: { token: string; o
 
   const fail = (err: unknown) => {
     const status = (err as { status?: number })?.status
-    setMsg(status === 429 ? 'Too many tries in a row. Wait a few seconds, then try again.' : errorMessage(err))
+    setMsg(status === 429 ? 'Too many tries from this internet connection. Please try again in 15 minutes.' : errorMessage(err))
   }
   const save = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true); setMsg(null)

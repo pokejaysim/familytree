@@ -298,5 +298,21 @@ after = rec("users", editor_id)[1]
 check(after["last_seen"] == before["last_seen"] and after["welcomed_at"] == before["welcomed_at"], "a member can't change their own last visit or welcome record")
 check(call("GET", "/api/collections/people/records", pending)[1].get("totalItems", 0) == 0, "an account waiting for approval sees nobody in the tree")
 
+print("The server's admin side is closed to the internet")
+def via_cloudflare(method, path, token=None, body=None):
+    req = urllib.request.Request(BASE + path, method=method, data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"Content-Type": "application/json", "Cf-Ray": "test", "Cf-Connecting-Ip": "203.0.113.9", **({"Authorization": token} if token else {})})
+    try:
+        with urllib.request.urlopen(req) as res: return res.status
+    except urllib.error.HTTPError as err: return err.code
+creds = {"identity": os.environ["SU_EMAIL"], "password": os.environ["SU_PASSWORD"]}
+sid = must(call("GET", "/api/collections/_superusers", su))["id"]
+for spelling in ("_superusers", "_SUPERUSERS", "_SuperUsers", sid):
+    check(via_cloudflare("POST", f"/api/collections/{spelling}/auth-with-password", None, creds) == 404, f"the admin sign-in is closed from the internet, spelled {spelling if spelling != sid else 'by its id'}")
+check(via_cloudflare("POST", "/api/collections/_SUPERUSERS/request-password-reset", None, {"email": os.environ["SU_EMAIL"]}) == 404, "...and so is its password reset")
+check(via_cloudflare("GET", "/_/") == 404 and via_cloudflare("GET", "/api/settings", su) == 404 and via_cloudflare("GET", "/api/collections/users/records", su) == 404, "the dashboard and an admin token don't work from the internet")
+check(call("GET", "/api/settings", su)[0] == 200, "the admin side still works from the home network (Tailscale)")
+check(via_cloudflare("GET", "/api/collections/people/records", editor) == 200 and via_cloudflare("POST", "/api/collections/users/auth-with-password", None, {"identity": "x@example.test", "password": "wrong-password"}) == 400, "members are unaffected")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)
