@@ -31,9 +31,8 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="If you sign in with Google">
-            <li>Google gives us your name, your email address and an ID number for your Google account. We use them only to create your account here and sign you in.</li>
+            <li>Google gives us your name, your email address and an ID number for your Google account. We use them only to create your account here and sign you in, and we don’t pass them on to anyone.</li>
             <li>We never see your Google password, and the site can’t read your Gmail, contacts or anything else in your Google account.</li>
-            <li>We don’t share what Google gives us with anyone.</li>
           </Section>
 
           <Section title="Who can see it">
