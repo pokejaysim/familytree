@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { CalendarDays, Camera, Check, PenLine, UserRound } from 'lucide-react'
+import { CalendarDays, Camera, Check, PenLine, Pause, Play, RotateCcw, UserRound } from 'lucide-react'
 import Avatar from './Avatar'
 import { buildGraph, type Graph } from '../lib/graph'
 import { foundersOf, generationsBelow, relationTo, WORDS } from '../lib/kin'
@@ -9,11 +9,16 @@ import type { TreeData } from '../lib/queries'
 import { ADMIN_NAME } from '../config'
 
 /**
- * A short welcome for new members: four cards, each with a small scene that plays as it appears.
+ * The welcome for new members, played like a short silent video: four scenes flow on by themselves
+ * (about 30 seconds), with captions, a progress bar, Pause, Replay and Skip. Built from the real tree,
+ * so it shows the family's portraits and, once a member is linked, their own relatives.
  * Shown once per member on each device (App.tsx decides when); "Watch the welcome again" on the
  * Contribute page replays it. Written in Jason's voice, like the Contribute page.
- * Animations live in index.css (.wt-*) and are skipped for people who prefer reduced motion.
+ * Animations live in index.css (.wt-*); people who prefer reduced motion get the scenes without movement.
  */
+const SCENE_MS = [7000, 7500, 7500, 8000]
+const FADE_MS = 400
+
 export default function WelcomeTour({ data, meId, role, onClose, onOpenMap }: {
   data: TreeData | undefined
   meId: string | null
@@ -24,12 +29,10 @@ export default function WelcomeTour({ data, meId, role, onClose, onOpenMap }: {
   const graph = useMemo(() => (data ? buildGraph(data) : null), [data])
   const founders = useMemo(() => (graph ? foundersOf(graph) : []), [graph])
   const me = (meId && graph?.people.get(meId)) || null
-  const [step, setStep] = useState(0)
-  const next = useRef<HTMLButtonElement>(null)
 
   const gens = graph && founders[0] ? generationsBelow(graph, founders[0]) : 0
   const founderNames = founders.map((f) => f.nickname || f.given_names.split(' ')[0]).join(' and ')
-  const cards: { title: string; text: ReactNode; scene: ReactNode }[] = [
+  const scenes: { title: string; text: ReactNode; scene: ReactNode }[] = [
     {
       title: 'Welcome to the family tree',
       text: <>{graph && gens > 0 ? `${graph.people.size} people across ${WORDS[gens] ?? gens} generations, starting with ${founderNames}. ` : ''}It began with Bernard’s family book, and now the whole family can add to it.</>,
@@ -61,48 +64,93 @@ export default function WelcomeTour({ data, meId, role, onClose, onOpenMap }: {
       scene: <AddScene last={role === 'admin' ? 'Goes in straight away' : `${ADMIN_NAME} looks it over`} />,
     },
   ]
-  const last = step === cards.length - 1
-  const card = cards[step]
+  const starts = SCENE_MS.map((_, i) => SCENE_MS.slice(0, i).reduce((a, b) => a + b, 0))
+  const total = SCENE_MS.reduce((a, b) => a + b, 0)
 
-  useEffect(() => { next.current?.focus() }, [step])
+  const [t, setT] = useState(0) // milliseconds played
+  const [paused, setPaused] = useState(false)
+  const done = t >= total
+  const step = done ? scenes.length - 1 : starts.findLastIndex((s) => t >= s)
+  const leaving = !done && step < scenes.length - 1 && t > starts[step] + SCENE_MS[step] - FADE_MS
+  const playBtn = useRef<HTMLButtonElement>(null)
+  const endBtn = useRef<HTMLButtonElement>(null)
+
+  // The clock. A hidden tab doesn't count (frames stop, and a long gap is clamped).
+  useEffect(() => {
+    if (paused || done) return
+    let raf = 0
+    let prev = performance.now()
+    const tick = (now: number) => {
+      const dt = Math.min(now - prev, 100)
+      prev = now
+      setT((x) => Math.min(x + dt, total))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [paused, done, total])
+
+  const jump = (i: number) => { setT(starts[i]); setPaused(false) }
+  const replay = () => { setT(0); setPaused(false); playBtn.current?.focus() }
+  useEffect(() => { playBtn.current?.focus() }, [])
+  useEffect(() => { if (done) endBtn.current?.focus() }, [done])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowRight') setStep((s) => Math.min(s + 1, cards.length - 1))
-      else if (e.key === 'ArrowLeft') setStep((s) => Math.max(s - 1, 0))
+      else if (e.key === 'ArrowRight' && step < scenes.length - 1) jump(step + 1)
+      else if (e.key === 'ArrowLeft') jump(Math.max(step - (t - starts[step] < 1500 ? 1 : 0), 0))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, cards.length])
+  })
 
+  const clock = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
+  const scene = scenes[step]
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="wt-title" className="wt-panel w-full max-w-md overflow-hidden rounded-xl bg-white shadow-sheet">
-        <div className="flex items-center justify-between px-5 pt-4">
-          <span className="text-[14px] text-ink-mute">{step + 1} of {cards.length}</span>
-          <button className="text-[15px] text-ink-mute underline underline-offset-4 hover:text-moss" onClick={onClose}>Skip</button>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 p-4">
+      <div role="dialog" aria-modal="true" aria-label="Welcome to the Sim Family Tree" className="wt-panel w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-sheet">
+        {/* The picture. Tapping it pauses, like a video. */}
+        <div className={`relative aspect-[16/10] w-full overflow-hidden bg-paper ${paused ? 'wt-paused' : ''}`} onClick={() => !done && setPaused((p) => !p)}>
+          <div key={step} aria-hidden="true" className={`wt-drift flex h-full w-full items-center justify-center transition-opacity duration-300 ${leaving ? 'opacity-0' : ''}`} style={{ '--len': `${SCENE_MS[step]}ms` } as CSSProperties}>
+            {scene.scene}
+          </div>
+          {paused && !done && <span className="absolute inset-0 flex items-center justify-center bg-paper/40" aria-hidden="true"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-moss/90 text-cream"><Play size={26} className="ml-1" /></span></span>}
+          {done && (
+            <div className="wt-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/85">
+              {onOpenMap
+                ? <button ref={endBtn} className="btn-primary min-h-11 px-5 text-[16px]" onClick={(e) => { e.stopPropagation(); onOpenMap() }}>Open the map</button>
+                : <button ref={endBtn} className="btn-primary min-h-11 px-5 text-[16px]" onClick={(e) => { e.stopPropagation(); onClose() }}>Done</button>}
+              <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); replay() }}><RotateCcw size={15} /> Watch again</button>
+            </div>
+          )}
         </div>
-        {/* key: each card's scene plays from the start when it appears */}
-        <div key={step}>
-          <div className="mx-5 mt-3 flex h-44 items-center justify-center overflow-hidden rounded-lg bg-paper" aria-hidden="true">{card.scene}</div>
-          <div className="min-h-[9.5rem] px-6 pt-5">
-            <h2 id="wt-title" className="wt-in text-[24px] leading-tight text-ink" style={{ '--d': '120ms' } as CSSProperties}>{card.title}</h2>
-            <p className="wt-in mt-2 text-[16px] leading-relaxed text-ink-soft" style={{ '--d': '220ms' } as CSSProperties}>{card.text}</p>
-            {last && <p className="mt-3 text-[14px] text-ink-mute">You can watch this again any time from How to contribute.</p>}
-          </div>
+
+        {/* Captions: read out by screen readers as each scene begins. */}
+        <div key={`c${step}`} aria-live="polite" className="min-h-[8.5rem] px-6 pt-5">
+          <h2 className="wt-in text-[22px] leading-tight text-ink" style={d(150)}>{scene.title}</h2>
+          <p className="wt-in mt-2 text-[16px] leading-relaxed text-ink-soft" style={d(300)}>{scene.text}</p>
+          {done && <p className="mt-3 text-[14px] text-ink-mute">You can watch this again any time from How to contribute.</p>}
         </div>
-        <div className="mt-6 flex items-center gap-2 border-t border-line px-5 py-4">
-          <div className="flex gap-1.5" aria-hidden="true">
-            {cards.map((_, i) => <span key={i} className={`h-2 w-2 rounded-full transition-colors ${i === step ? 'bg-moss' : 'bg-line'}`} />)}
+
+        <div className="mt-4 flex items-center gap-3 border-t border-line px-4 py-3">
+          <button ref={playBtn} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-moss hover:bg-moss-light"
+            aria-label={done ? 'Watch again' : paused ? 'Play' : 'Pause'} onClick={() => (done ? replay() : setPaused((p) => !p))}>
+            {done ? <RotateCcw size={19} /> : paused ? <Play size={19} /> : <Pause size={19} />}
+          </button>
+          <div className="flex flex-1 gap-1.5">
+            {scenes.map((s, i) => {
+              const fill = Math.max(0, Math.min(1, (t - starts[i]) / SCENE_MS[i]))
+              return (
+                <button key={i} className="group flex h-10 flex-1 items-center" aria-label={`Scene ${i + 1}: ${s.title}`} aria-current={i === step ? 'step' : undefined} onClick={() => jump(i)}>
+                  <span className="h-1.5 w-full overflow-hidden rounded-full bg-line group-hover:bg-field">
+                    <span className="block h-full rounded-full bg-moss" style={{ width: `${fill * 100}%` }} />
+                  </span>
+                </button>
+              )
+            })}
           </div>
-          <div className="ml-auto flex gap-2">
-            {step > 0 && <button className="btn-ghost" onClick={() => setStep(step - 1)}>Back</button>}
-            {!last
-              ? <button ref={next} className="btn-primary" onClick={() => setStep(step + 1)}>Next</button>
-              : onOpenMap
-                ? <button ref={next} className="btn-primary" onClick={onOpenMap}>Open the map</button>
-                : <button ref={next} className="btn-primary" onClick={onClose}>Done</button>}
-          </div>
+          <span className="w-[4.5rem] shrink-0 text-right text-[13px] tabular-nums text-ink-mute" aria-hidden="true">{clock(t)} / {clock(total)}</span>
+          <button className="shrink-0 text-[15px] text-ink-mute underline underline-offset-4 hover:text-moss" onClick={onClose}>{done ? 'Close' : 'Skip'}</button>
         </div>
       </div>
     </div>

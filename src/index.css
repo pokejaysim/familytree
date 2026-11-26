@@ -70,9 +70,14 @@ body { background: var(--color-paper); color: var(--color-ink); font-family: var
   .wt-leaf { transform-box: view-box; transform-origin: 36px 36px; animation: wt-pop 360ms cubic-bezier(0, 0, .58, 1) calc(var(--d, 0ms) + 250ms) both; }
   .wt-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: wt-draw 400ms ease-out var(--d, 0ms) forwards; }
   .wt-tap { transform-box: fill-box; transform-origin: center; animation: wt-tap 1100ms ease-out var(--d, 0ms) 3 both; }
+  /* A slow push in on each scene, so it feels like film rather than a slide. */
+  .wt-drift { animation: wt-drift var(--len, 7000ms) linear both; }
 }
+/* Pause freezes every scene animation where it is. */
+.wt-paused, .wt-paused * { animation-play-state: paused !important; }
 @keyframes wt-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes wt-pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
 @keyframes wt-root { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
 @keyframes wt-draw { to { stroke-dashoffset: 0; } }
+@keyframes wt-drift { from { transform: scale(1); } to { transform: scale(1.07); } }
 @keyframes wt-tap { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(2); } }
