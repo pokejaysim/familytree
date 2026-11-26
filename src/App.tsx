@@ -133,7 +133,7 @@ function Welcome() {
     setOpen(false)
     if (firstTime) markWelcomed().then(() => qc.invalidateQueries({ queryKey: ['profile'] })).catch(() => { /* plays again next sign-in; harmless */ })
   }
-  return <WelcomeTour data={data} meId={meId} role={profile.role} onClose={close} onOpenMap={treeId ? () => { close(); nav(`/trees/${treeId}/chart`) } : null} />
+  return <WelcomeTour data={data} meId={meId} role={profile.role} onClose={close} onStart={() => { close(); nav('/') }} onOpenMap={treeId ? () => { close(); nav(`/trees/${treeId}/chart`) } : null} />
 }
 
 /** Shown when the site can't reach the family tree server. Tries again by itself when the device comes back online. */

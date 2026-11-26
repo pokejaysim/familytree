@@ -58,7 +58,7 @@ onRecordUpdateRequest((e) => {
     const meta = $app.settings().meta
     if (!meta.senderAddress) return
     const first = (e.record.getString("name").trim().split(/\s+/)[0] || "").replace(/[<>&"]/g, "")
-    const site = meta.appURL
+    const site = meta.appURL + "/?signin" // opens the sign-in form rather than the newcomers' welcome
     $app.newMailClient().send(new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName },
       to: [{ address: e.record.email(), name: e.record.getString("name") }],

@@ -13,6 +13,7 @@ import Modal from '../components/Modal'
 import Avatar from '../components/Avatar'
 import PersonPicker from '../components/PersonPicker'
 import IntroPane from '../components/IntroPane'
+import GettingStarted from '../components/GettingStarted'
 
 /** Home. With one family tree it is that family's cover; with several it lists them. */
 export default function TreesPage() {
@@ -113,6 +114,7 @@ function Cover({ treeId }: { treeId: string }) {
           </button>
         )}
       </div>
+      <GettingStarted treeId={treeId} hasForeword={!!(tree.foreword || tree.intro)} onFind={() => setFinding(true)} onRead={() => setReading(true)} />
       {finding && data && (
         <Modal title="Find a relative" onClose={() => setFinding(false)}>
           <PersonPicker people={data.people} placeholder="Type a name" onPick={(p) => nav(`/trees/${treeId}/people/${p.id}`)} />

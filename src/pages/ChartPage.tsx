@@ -28,12 +28,7 @@ export default function ChartPage() {
   })
   const turn = () => { const next: Orient = orient === 'down' ? 'right' : 'down'; setOrient(next); try { localStorage.setItem('sft-orient', next) } catch { /* ignore */ } }
 
-  // Show the introduction automatically the first time this device opens the tree; the note on the map reopens it any time.
-  useEffect(() => {
-    if (!tree?.intro && !tree?.foreword) return
-    const key = `sft-intro-seen:${treeId}`
-    try { if (!localStorage.getItem(key)) { localStorage.setItem(key, '1'); setIntroOpen(true) } } catch { /* storage unavailable: just don't auto-open */ }
-  }, [tree?.intro, tree?.foreword, treeId])
+  // The foreword opens from the note on the map (and the home page's Getting started card); it no longer pops up by itself.
   const selected = personId && graph ? graph.people.get(personId) ?? null : null
   const canEdit = useCanEdit()
   const isAdmin = useIsAdmin()

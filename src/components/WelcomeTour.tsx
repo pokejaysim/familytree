@@ -19,11 +19,13 @@ import { ADMIN_NAME } from '../config'
 const SCENE_MS = [7000, 7500, 7500, 8000]
 const FADE_MS = 400
 
-export default function WelcomeTour({ data, meId, role, onClose, onOpenMap }: {
+export default function WelcomeTour({ data, meId, role, onClose, onStart, onOpenMap }: {
   data: TreeData | undefined
   meId: string | null
   role: 'admin' | 'editor' | 'viewer'
   onClose: () => void
+  /** "Get started": close and go to the home page, where the Getting started card is. */
+  onStart: () => void
   onOpenMap: (() => void) | null
 }) {
   const graph = useMemo(() => (data ? buildGraph(data) : null), [data])
@@ -117,10 +119,11 @@ export default function WelcomeTour({ data, meId, role, onClose, onOpenMap }: {
           {paused && !done && <span className="absolute inset-0 flex items-center justify-center bg-paper/40" aria-hidden="true"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-moss/90 text-cream"><Play size={26} className="ml-1" /></span></span>}
           {done && (
             <div className="wt-in absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/85">
-              {onOpenMap
-                ? <button ref={endBtn} className="btn-primary min-h-11 px-5 text-[16px]" onClick={(e) => { e.stopPropagation(); onOpenMap() }}>Open the map</button>
-                : <button ref={endBtn} className="btn-primary min-h-11 px-5 text-[16px]" onClick={(e) => { e.stopPropagation(); onClose() }}>Done</button>}
-              <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); replay() }}><RotateCcw size={15} /> Watch again</button>
+              <button ref={endBtn} className="btn-primary min-h-11 px-6 text-[16px]" onClick={(e) => { e.stopPropagation(); onStart() }}>Get started</button>
+              <div className="flex flex-wrap justify-center gap-2">
+                {onOpenMap && <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); onOpenMap() }}>Open the map</button>}
+                <button className="btn-ghost" onClick={(e) => { e.stopPropagation(); replay() }}><RotateCcw size={15} /> Watch again</button>
+              </div>
             </div>
           )}
         </div>

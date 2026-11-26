@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import type { Tree } from '../lib/types'
 import divider from '../assets/branch-divider.svg'
+import { forewordReadKey } from '../lib/welcome'
 import SupportLine from './SupportLine'
 
 /** Paragraphs separated by blank lines; a paragraph wrapped in quotation marks becomes a block quote. */
@@ -26,6 +27,8 @@ export function Letter({ text }: { text: string }) {
 
 /** Reading pane for the tree's introduction (for the Sim family, Bernard's preface), opened from the map. */
 export default function IntroPane({ tree, canEdit, onClose, onOpenMap }: { tree: Tree; canEdit: boolean; onClose: () => void; onOpenMap?: () => void }) {
+  // Opening it ticks "Read the foreword" off the Getting started card.
+  useEffect(() => { try { localStorage.setItem(forewordReadKey(tree.id), '1') } catch { /* ignore */ } }, [tree.id])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
