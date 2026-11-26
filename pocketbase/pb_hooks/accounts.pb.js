@@ -5,6 +5,7 @@
 //   admin (or the dashboard) can approve it. It gets a confirm-your-email message, and the admins
 //   get a note that someone is waiting. If email isn't set up yet, sign-up still works.
 // - Each member's last visit is noted (last_seen) for the Admin page, at most every 10 minutes.
+// - The welcome video is marked as seen (welcomed_at) so it only plays on a member's first sign-in.
 // - An upload always belongs to whoever uploaded it and starts out "pending" (waiting for review).
 // - Every night, abandoned uploads are cleared away, along with kept copies of deleted photos
 //   that are old enough that nobody will undo them.
@@ -59,6 +60,13 @@ onRecordAuthRequest((e) => {
     console.log("sft: couldn't note a visit", String(err))
   }
 }, "users")
+
+// The signed-in member has seen the welcome video. Only ever marks your own account, and only once.
+routerAdd("POST", "/api/sft/welcomed", (e) => {
+  $app.db().newQuery("UPDATE users SET welcomed_at = {:t} WHERE id = {:id} AND (welcomed_at = '' OR welcomed_at IS NULL)")
+    .bind({ t: new DateTime().string(), id: e.auth.id }).execute()
+  return e.json(200, { ok: true })
+}, $apis.requireAuth("users"))
 
 onRecordCreateRequest((e) => {
   if (!e.hasSuperuserAuth()) {

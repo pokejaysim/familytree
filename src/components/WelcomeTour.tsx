@@ -12,7 +12,7 @@ import { ADMIN_NAME } from '../config'
  * The welcome for new members, played like a short silent video: four scenes flow on by themselves
  * (about 30 seconds), with captions, a progress bar, Pause, Replay and Skip. Built from the real tree,
  * so it shows the family's portraits and, once a member is linked, their own relatives.
- * Shown once per member on each device (App.tsx decides when); "Watch the welcome again" on the
+ * Plays once per member, on their first sign-in (App.tsx decides when); "Watch the welcome again" on the
  * Contribute page replays it. Written in Jason's voice, like the Contribute page.
  * Animations live in index.css (.wt-*); people who prefer reduced motion get the scenes without movement.
  */

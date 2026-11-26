@@ -252,5 +252,13 @@ check(u["person"] == dad and u["person_status"] == "approved", "the admin can li
 check(call("POST", "/api/sft/link-member", admin, {"user": viewer_id, "person": dad})[0] == 400, "...but not to someone another member is already linked to")
 check(call("POST", "/api/sft/link-member", admin, {"user": editor2_id, "person": None})[0] == 200 and rec("users", editor2_id)[1]["person"] == "", "the admin can clear a member's link")
 
+print("Welcome video")
+check(not rec("users", viewer_id)[1].get("welcomed_at"), "a member hasn't seen the welcome yet")
+check(call("POST", "/api/sft/welcomed")[0] == 401, "marking it seen needs a signed-in member")
+check(call("POST", "/api/sft/welcomed", viewer, {"id": editor_id})[0] == 200 and bool(rec("users", viewer_id)[1].get("welcomed_at")) and not rec("users", editor_id)[1].get("welcomed_at"), "it marks only your own account")
+first = rec("users", viewer_id)[1]["welcomed_at"]
+call("POST", "/api/sft/welcomed", viewer)
+check(rec("users", viewer_id)[1]["welcomed_at"] == first, "the first time is kept")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)

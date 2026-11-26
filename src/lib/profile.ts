@@ -20,6 +20,8 @@ export interface Profile {
   verified: boolean
   /** Their last visit, recorded since the Admin page arrived (null before then). */
   last_seen: string | null
+  /** When they first watched (or skipped) the welcome video; null until then. */
+  welcomed_at: string | null
 }
 
 /** A PocketBase user account as the app's member profile (Supabase kept these in a separate "profiles" table). */
@@ -36,6 +38,7 @@ const toProfile = (r: RecordModel): Profile => ({
   person_status: r.person_status || null,
   verified: !!r.verified,
   last_seen: r.last_seen ? String(r.last_seen).replace(' ', 'T') : null,
+  welcomed_at: r.welcomed_at ? String(r.welcomed_at).replace(' ', 'T') : null,
 })
 
 /** The signed-in user's own membership record. */
@@ -97,6 +100,9 @@ export function useLinkMember() {
 /** Send a member the same emails they could ask for themselves: a password reset link, or the confirm-your-email link. */
 export const sendAccountEmail = (kind: 'reset' | 'confirm', email: string) =>
   call(kind === 'reset' ? pb.collection('users').requestPasswordReset(email) : pb.collection('users').requestVerification(email))
+
+/** Record that the signed-in member has seen the welcome video, so it doesn't play again on any device. */
+export const markWelcomed = () => call(pb.send('/api/sft/welcomed', { method: 'POST' }))
 
 /** The visitor's own person in the tree, once an admin has confirmed "This is me"; otherwise null. */
 export function useMeId(): string | null {
