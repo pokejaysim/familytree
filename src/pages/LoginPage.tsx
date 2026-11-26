@@ -68,7 +68,12 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   }
 
   const link = 'whitespace-nowrap underline underline-offset-4 hover:text-moss'
-  const help = <p className="border-t border-line pt-3 text-center text-[15px] text-ink-mute">Stuck? <Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Get help or send us a message</Link></p>
+  const help = (
+    <div className="space-y-1 border-t border-line pt-3 text-center text-[15px] text-ink-mute">
+      <p>Stuck? <Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Get help or send us a message</Link></p>
+      <p><Link to="/privacy" className="underline underline-offset-4 hover:text-moss">Privacy</Link></p>
+    </div>
+  )
   const brand = <div className="mb-3 text-[22px] font-medium text-moss lg:hidden">Sim Family Tree</div>
 
   return (

@@ -29,7 +29,7 @@ export default function HelpPage() {
     { q: 'I’ve spotted a mistake', a: <>Thank you! Open that person’s page, tap <b className="font-medium">Suggest an edit</b> and put in what’s right. If you can, say where it comes from, like a certificate or a family story. If you can’t edit, send us a message below.</> },
     { q: 'My change hasn’t shown up yet', a: <>We look over every change before it goes into the tree. Until then it shows on the person’s page as waiting, and in your list on the How to contribute page, where you can take it back if you change your mind.</> },
     { q: 'How do I stop the family news emails?', a: <>Tap <b className="font-medium">Stop these emails</b> at the bottom of any news email, or untick <b className="font-medium">Email me new posts</b> on the <Link className="text-brass underline underline-offset-2" to="/news">News</Link> page. New posts still appear there, and you can switch the emails back on any time.</> },
-    { q: 'Who can see the family tree?', a: <>Only family members we’ve approved, once they’ve signed in. Nobody else can see names, dates, photos or stories.</> },
+    { q: 'Who can see the family tree?', a: <>Only family members we’ve approved, once they’ve signed in. Nobody else can see names, dates, photos or stories. The <Link className="text-brass underline underline-offset-2" to="/privacy">Privacy</Link> page says what the site keeps and how to have something removed.</> },
   ]
 
   return (

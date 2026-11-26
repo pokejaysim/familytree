@@ -10,6 +10,7 @@ import PendingPage from './pages/PendingPage'
 import { showSplash, takeSignIn, whenSplashDone } from './lib/splash'
 import { finishGoogle, GOOGLE_PARAMS, isGoogleReturn } from './lib/signin'
 import HelpPage from './pages/HelpPage'
+import PrivacyPage from './pages/PrivacyPage'
 import { useTreeData, useTrees } from './lib/queries'
 import WelcomeTour from './components/WelcomeTour'
 import { WELCOME_EVENT } from './lib/welcome'
@@ -94,8 +95,10 @@ export default function App() {
   if (links.resetToken) return <UpdatePasswordPage token={links.resetToken} onDone={links.resetDone} />
   if (links.signingIn) return <div className="flex h-full items-center justify-center text-ink-mute">Signing you in…</div>
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
-  // Help is open to everyone: people who can't sign in, or are waiting for approval, need it most.
-  if (pathname === '/help' && (!session || (profile.data && profile.data.status !== 'approved'))) return <HelpPage />
+  // Help and Privacy are open to everyone: people who can't sign in, or are waiting for approval, need them most,
+  // and Google's sign-in setup needs a public privacy page. (privacy.html on the live site, so allow a trailing slash.)
+  const page = pathname.replace(/\/+$/, '').replace(/\.html$/, '')
+  if ((page === '/help' || page === '/privacy') && (!session || (profile.data && profile.data.status !== 'approved'))) return page === '/help' ? <HelpPage /> : <PrivacyPage />
   if (!session) return <LoginPage notice={links.notice} />
   // Couldn't load the account (no connection, or the server is restarting): say so, rather than showing the "waiting for approval" page.
   if (!profile.data && profile.isError) return <CantConnect onRetry={() => profile.refetch()} busy={profile.isFetching} />
@@ -112,6 +115,8 @@ export default function App() {
       <Route path="/review" element={<Navigate to="/admin" replace />} />
       <Route path="/contribute" element={<ContributePage />} />
       <Route path="/help" element={<HelpPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/privacy.html" element={<PrivacyPage />} />
       <Route path="/news" element={<NewsPage />} />
       <Route path="/news/:postId" element={<NewsPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>

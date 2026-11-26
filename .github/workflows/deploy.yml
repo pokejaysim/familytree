@@ -26,6 +26,8 @@ jobs:
           VITE_PB_URL: ${{ vars.VITE_PB_URL }}
       # Single-page app: serve index.html for deep links like /trees/...
       - run: cp dist/index.html dist/404.html
+      # The privacy page must answer as a normal page (not the 404 fallback): Google's sign-in setup links to it.
+      - run: cp dist/index.html dist/privacy.html
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:
