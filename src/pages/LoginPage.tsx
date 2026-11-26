@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useState, type FormEvent } from 'react'
 import { errorMessage, pb } from '../lib/pb'
+import { noteSignIn } from '../lib/splash'
 import { ADMIN_NAME } from '../config'
 import BrandPanel from '../components/BrandPanel'
 
@@ -23,7 +25,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
     e.preventDefault()
     setBusy(true); setMsg(null); setOfferResend(false)
     try {
-      if (mode === 'signin') await users.authWithPassword(email, password)
+      if (mode === 'signin') { await users.authWithPassword(email, password); noteSignIn() }
       else if (mode === 'signup') {
         await users.create({ email, password, passwordConfirm: password, name, note })
         setMsg({ text: `Check your email for a confirmation link. Once you’ve confirmed it and ${ADMIN_NAME} has approved your account, you can sign in and look around.`, ok: true })
@@ -88,6 +90,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
             <button type="button" className="hover:underline" onClick={() => { setMode('signin'); setMsg(null) }}>Back to sign in</button>
           )}
         </div>
+        <p className="border-t border-line pt-3 text-center text-[15px] text-ink-mute">Stuck? <Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Get help or send Jason a message</Link></p>
       </form>
       </div>
     </div>

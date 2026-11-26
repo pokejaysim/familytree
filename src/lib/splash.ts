@@ -1,5 +1,5 @@
 /**
- * Two-second login splash, ported from Jason's splash pack (docs/splash-README.md).
+ * Two-second sign-in splash (plays right after someone signs in with the form; see noteSignIn), ported from Jason's splash pack (docs/splash-README.md).
  * Roots reveal, seven leaves open, the title fades in, then everything clears.
  * Decorative only: pointer-events none, never steals focus, skipped for reduced-motion users,
  * cleaned up on completion (2.2 s fallback) or when the tab is hidden.
@@ -35,6 +35,12 @@ svg{display:block;width:144px;height:144px;overflow:visible;}
 `
 
 let active: Promise<void> | null = null
+
+let signedInJustNow = false
+/** The sign-in form calls this when someone signs in, so the splash plays then (and not every time the site opens). */
+export const noteSignIn = () => { signedInJustNow = true }
+/** True once after a sign-in from the form. */
+export const takeSignIn = () => { const was = signedInJustNow; signedInJustNow = false; return was }
 
 /** Resolves once the splash (if one is playing) has gone, so anything else can wait its turn. */
 export const whenSplashDone = (): Promise<void> => active ?? Promise.resolve()

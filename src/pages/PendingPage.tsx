@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { signOut } from '../lib/auth'
 import type { Profile } from '../lib/profile'
 import { ADMIN_NAME } from '../config'
@@ -16,7 +17,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
         {declined ? (
           <>
             <h1 className="text-2xl">This request wasn’t approved</h1>
-            <p className="text-ink-soft">If you think that’s a mistake, get in touch with {ADMIN_NAME} directly.</p>
+            <p className="text-ink-soft">If you think that’s a mistake, send {ADMIN_NAME} a message from the Help page.</p>
           </>
         ) : (
           <>
@@ -25,6 +26,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
             <p className="text-sm text-ink-mute">Signed in as {profile?.email}</p>
           </>
         )}
+        <p className="text-[15px]"><Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Questions? Get help or send {ADMIN_NAME} a message</Link></p>
         <button className="btn-ghost mx-auto" onClick={signOut}>Sign out</button>
       </div>
     </div>

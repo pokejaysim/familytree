@@ -6,6 +6,9 @@
 //   get a note that someone is waiting. If email isn't set up yet, sign-up still works.
 // - Each member's last visit is noted (last_seen) for the Admin page, at most every 10 minutes.
 // - The welcome video is marked as seen (welcomed_at) so it only plays on a member's first sign-in.
+// - The Help page's message form emails the admins. Anyone can use it (people who can't sign in need
+//   it most), so it's limited: 3 messages an hour from one address and 30 an hour in all, plus a
+//   hidden "website" field that only spam robots fill in.
 // - An upload always belongs to whoever uploaded it and starts out "pending" (waiting for review).
 // - Every night, abandoned uploads are cleared away, along with kept copies of deleted photos
 //   that are old enough that nobody will undo them.
@@ -67,6 +70,50 @@ routerAdd("POST", "/api/sft/welcomed", (e) => {
     .bind({ t: new DateTime().string(), id: e.auth.id }).execute()
   return e.json(200, { ok: true })
 }, $apis.requireAuth("users"))
+
+routerAdd("POST", "/api/sft/contact", (e) => {
+  const body = e.requestInfo().body || {}
+  const name = String(body.name || "").trim().slice(0, 100)
+  const email = String(body.email || "").trim().slice(0, 200)
+  const message = String(body.message || "").trim()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadRequestError("Please give an email address so Jason can reply.")
+  if (message.length < 5) throw new BadRequestError("Please write a message.")
+  if (message.length > 5000) throw new BadRequestError("That message is too long. Please keep it under 5,000 characters.")
+  if (body.website) return e.json(200, { ok: true }) // a robot filled in the hidden field: pretend it worked
+
+  // Limits, counted in memory (they reset if the server restarts, which is fine).
+  const now = Date.now()
+  const recent = (key, max) => {
+    const hits = String($app.store().get(key) || "").split(",").filter((t) => t && now - Number(t) < 3600000)
+    if (hits.length >= max) return false
+    hits.push(String(now))
+    $app.store().set(key, hits.join(","))
+    return true
+  }
+  if (!recent("sft-contact:" + e.realIP(), 3) || !recent("sft-contact:all", 30)) {
+    throw new ApiError(429, "Too many messages in a short time. Please try again in an hour.", {})
+  }
+
+  const meta = $app.settings().meta
+  const admins = $app.findRecordsByFilter("users", "role = 'admin' && status = 'approved'", "", 20, 0)
+  if (!admins.length || !meta.senderAddress) throw new ApiError(503, "Messages can't be sent right now. Please try again later.", {})
+  const who = e.auth && e.auth.collection().name === "users"
+    ? `Signed in as ${e.auth.getString("name") || e.auth.email()} (${e.auth.email()}, ${e.auth.getString("status")}).`
+    : "Not signed in."
+  try {
+    $app.newMailClient().send(new MailerMessage({
+      from: { address: meta.senderAddress, name: meta.senderName },
+      to: admins.map((a) => ({ address: a.email(), name: a.getString("name") })),
+      headers: { "Reply-To": email },
+      subject: `${name || "Someone"} sent a message from the family tree`,
+      text: `${name || "Someone"} (${email}) wrote:\n\n${message}\n\n---\n${who}\nReply to this email to answer them.`,
+    }))
+  } catch (err) {
+    console.log("sft: couldn't send a Help page message", String(err))
+    throw new ApiError(502, "Your message couldn't be sent just now. Please try again in a few minutes.", {})
+  }
+  return e.json(200, { ok: true })
+})
 
 onRecordCreateRequest((e) => {
   if (!e.hasSuperuserAuth()) {

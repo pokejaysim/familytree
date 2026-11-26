@@ -260,5 +260,13 @@ first = rec("users", viewer_id)[1]["welcomed_at"]
 call("POST", "/api/sft/welcomed", viewer)
 check(rec("users", viewer_id)[1]["welcomed_at"] == first, "the first time is kept")
 
+print("Help page messages")
+msg = {"name": "Cousin", "email": "cousin@example.test", "message": "Hello, I can't sign in."}
+check(call("POST", "/api/sft/contact", None, {**msg, "email": "nope"})[0] == 400, "a message needs a real-looking email to reply to")
+check(call("POST", "/api/sft/contact", None, {**msg, "message": ""})[0] == 400, "a message can't be empty")
+check(call("POST", "/api/sft/contact", None, {**msg, "website": "spam.example"})[0] == 200, "robots filling the hidden field are quietly ignored")
+tries = [call("POST", "/api/sft/contact", None, msg)[0] for _ in range(4)]
+check(429 not in tries[:3] and tries[3] == 429, "anyone can send a message, but only 3 an hour from one address")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { ClipboardCheck, LogOut, Menu, PenLine, UserRound, X } from 'lucide-react'
+import { ClipboardCheck, LifeBuoy, LogOut, Menu, PenLine, UserRound, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { signOut, useAuth } from '../lib/auth'
 import { useIsAdmin, usePendingCount, useProfile } from '../lib/profile'
@@ -8,7 +8,7 @@ import { usePendingReviewCount } from '../lib/changes'
 import { usePerson } from '../lib/queries'
 import treeMarkLight from '../assets/tree-mark-light.svg'
 
-/** Moss header: brand, optional tree tabs, Contribute / Admin with a pending badge, user disc. On phones the links fold into a labelled menu. */
+/** Moss header: brand, optional tree tabs, Contribute / Help / Admin with a pending badge, user disc. On phones the links fold into a labelled menu. */
 export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
   const { session } = useAuth()
   const { data: profile } = useProfile()
@@ -28,6 +28,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
       {tabs && <nav className="hidden gap-7 sm:flex">{tabs}</nav>}
       <div className="ml-auto hidden items-center gap-7 sm:flex">
         <NavLink to="/contribute" className={navCls}>Contribute</NavLink>
+        <NavLink to="/help" className={navCls}>Help</NavLink>
         {isAdmin && <NavLink to="/admin" title="Sign-ups, suggested changes and members" className={navCls}>Admin{badge(toReview + pending)}</NavLink>}
         {session && (myProfile
           ? <Link to={myProfile} className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brass text-[13px] text-cream hover:ring-2 hover:ring-cream/60" title={`${label}: open your profile`} aria-label="Your profile">{initials}</Link>
@@ -65,6 +66,7 @@ function PhoneMenu({ isAdmin, toReview, pending, myProfile }: { isAdmin: boolean
         <nav role="menu" className="absolute top-full right-2 z-50 mt-1 w-64 overflow-hidden rounded-md border border-line bg-white py-1 shadow-card">
           {myProfile && <Link role="menuitem" to={myProfile} className={row}><UserRound size={18} className="text-moss" /> Your profile</Link>}
           <NavLink role="menuitem" to="/contribute" className={row}><PenLine size={18} className="text-moss" /> How to contribute</NavLink>
+          <NavLink role="menuitem" to="/help" className={row}><LifeBuoy size={18} className="text-moss" /> Help and contact</NavLink>
           {isAdmin && <NavLink role="menuitem" to="/admin" className={row}><ClipboardCheck size={18} className="text-moss" /> Admin{count(toReview + pending)}</NavLink>}
           <button role="menuitem" className={`${row} w-full border-t border-line`} onClick={signOut}><LogOut size={18} className="text-moss" /> Sign out</button>
         </nav>

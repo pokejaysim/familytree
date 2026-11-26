@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import LoginPage, { type Notice } from './pages/LoginPage'
 import { pb } from './lib/pb'
@@ -8,7 +8,8 @@ import { useEffect, useState } from 'react'
 import { markWelcomed, useMeId, useProfile } from './lib/profile'
 import { useQueryClient } from '@tanstack/react-query'
 import PendingPage from './pages/PendingPage'
-import { showSplash, whenSplashDone } from './lib/splash'
+import { showSplash, takeSignIn, whenSplashDone } from './lib/splash'
+import HelpPage from './pages/HelpPage'
 import { useTreeData, useTrees } from './lib/queries'
 import WelcomeTour from './components/WelcomeTour'
 import { WELCOME_EVENT } from './lib/welcome'
@@ -53,15 +54,9 @@ function useEmailLinks() {
   return { resetToken, resetDone, notice }
 }
 
-/** Plays the two-second splash each time an approved member arrives in the app: on sign-in, and on opening the site already signed in. */
+/** Plays the two-second splash when someone has just signed in with the form (not every time the site opens), once their account is approved. */
 function useLoginSplash(ready: boolean) {
-  const [shownFor, setShownFor] = useState<string | null>(null)
-  const { session } = useAuth()
-  const uid = session?.user.id ?? null
-  useEffect(() => {
-    if (ready && uid && shownFor !== uid) { setShownFor(uid); showSplash() }
-    if (!uid && shownFor) setShownFor(null) // signed out: next sign-in plays it again
-  }, [ready, uid, shownFor])
+  useEffect(() => { if (ready && takeSignIn()) showSplash() }, [ready])
 }
 
 export default function App() {
@@ -69,10 +64,13 @@ export default function App() {
   const { session, loading } = useAuth()
   const links = useEmailLinks()
   const profile = useProfile()
+  const { pathname } = useLocation()
   const approved = !!session && !links.resetToken && profile.data?.status === 'approved'
   useLoginSplash(approved)
   if (links.resetToken) return <UpdatePasswordPage token={links.resetToken} onDone={links.resetDone} />
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
+  // Help is open to everyone: people who can't sign in, or are waiting for approval, need it most.
+  if (pathname === '/help' && (!session || (profile.data && profile.data.status !== 'approved'))) return <HelpPage />
   if (!session) return <LoginPage notice={links.notice} />
   // Couldn't load the account (no connection, or the server is restarting): say so, rather than showing the "waiting for approval" page.
   if (!profile.data && profile.isError) return <CantConnect onRetry={() => profile.refetch()} busy={profile.isFetching} />
@@ -88,6 +86,7 @@ export default function App() {
       <Route path="/support" element={<SupportPage />} />
       <Route path="/review" element={<Navigate to="/admin" replace />} />
       <Route path="/contribute" element={<ContributePage />} />
+      <Route path="/help" element={<HelpPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />
