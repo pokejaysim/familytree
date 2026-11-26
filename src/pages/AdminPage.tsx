@@ -75,7 +75,7 @@ export default function AdminPage() {
               <Group title="Say they’re someone in the tree" count={claims.length}>
                 {claims.map((m) => {
                   const other = members.find((o) => o.id !== m.id && o.person_status === 'approved' && o.person_id === m.person_id)
-                  return <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} note={m.note} personId={m.person_id!} clash={other ? other.name || other.email : undefined} />
+                  return <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} personId={m.person_id!} clash={other ? other.name || other.email : undefined} />
                 })}
               </Group>
             )}
@@ -200,7 +200,6 @@ function JoinCard({ m }: { m: Profile }) {
       <div>
         <p className="text-[17px] text-ink [overflow-wrap:anywhere]">{m.name || m.email}</p>
         <p className="text-[15px] text-ink-mute [overflow-wrap:anywhere]">{m.email} · signed up {day(m.created_at)}</p>
-        {m.note && <p className="mt-1 text-[15px] italic text-ink-soft">“{m.note}”</p>}
       </div>
       {review.error && <p className="text-[15px] text-danger">{review.error.message}</p>}
       <div className="flex flex-wrap gap-2">

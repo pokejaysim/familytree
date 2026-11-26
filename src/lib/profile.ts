@@ -11,7 +11,6 @@ export interface Profile {
   name: string | null
   status: MemberStatus
   role: MemberRole
-  note: string | null
   created_at: string
   reviewed_at: string | null
   person_id: string | null
@@ -31,7 +30,6 @@ const toProfile = (r: RecordModel): Profile => ({
   name: r.name || null,
   status: (r.status || 'pending') as MemberStatus,
   role: (r.role || 'viewer') as MemberRole,
-  note: r.note || null,
   created_at: String(r.created ?? '').replace(' ', 'T'),
   reviewed_at: r.reviewed_at ? String(r.reviewed_at).replace(' ', 'T') : null,
   person_id: r.person || null,

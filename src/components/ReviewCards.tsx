@@ -109,14 +109,13 @@ function Thumb({ path }: { path: string }) {
 }
 
 /** `clash`: another member already linked to the same person (only the admin sees this). */
-export function ClaimCard({ profileId, who, note, personId, clash }: { profileId: string; who: string; note: string | null; personId: string; clash?: string }) {
+export function ClaimCard({ profileId, who, personId, clash }: { profileId: string; who: string; personId: string; clash?: string }) {
   const review = useReviewClaim()
   const { data: p } = usePerson(personId)
   return (
     <article className="card flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="flex-1 text-sm">
         <p className="text-[17px] text-ink">{who} says they are {p ? <Link className="text-moss underline underline-offset-2" to={`/trees/${p.tree_id}/people/${p.id}`}>{fullName(p)}</Link> : 'someone in the tree'}</p>
-        {note && <p className="mt-1 italic text-ink-soft">“{note}”</p>}
         {clash && <p className="mt-2 text-[15px] text-danger">{clash} is already linked to this person. Decline this one, or remove {clash}’s link under Members first. {who} only sees that it’s waiting for you.</p>}
       </div>
       <div className="flex gap-2">

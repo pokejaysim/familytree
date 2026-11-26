@@ -29,7 +29,6 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [name, setName] = useState('')
-  const [note, setNote] = useState('')
   const [msg, setMsg] = useState<Notice | null>(notice ?? null)
   const [busy, setBusy] = useState(false)
   const pwId = useId()
@@ -45,7 +44,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
     try {
       if (mode === 'signin') { await users.authWithPassword(email, password); rememberSignIn(); noteSignIn() }
       else if (mode === 'signup') {
-        await users.create({ email, password, passwordConfirm: password, name, note })
+        await users.create({ email, password, passwordConfirm: password, name })
         // Straight in: they land on the "You're on the list" page until they're approved.
         try { await users.authWithPassword(email, password); rememberSignIn(); noteSignIn() }
         catch { setMode('signin'); setMsg({ text: 'Your account is ready. Sign in with your email and password.', ok: true }) }
@@ -102,7 +101,6 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           </div>
           {mode === 'signup' && <Steps />}
           {mode === 'signup' && <label className="block"><span className="label">Your name</span><input className="input" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></label>}
-          {mode === 'signup' && <label className="block"><span className="label">How are you related?</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Eng Kiat’s daughter" maxLength={140} /></label>}
           <div>
             <label className="block"><span className="label">Email</span><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
             {mode === 'signup' && <p className="mt-1 text-[14px] text-ink-mute">Use an email you check: that’s where your “You’re in” email goes.</p>}
