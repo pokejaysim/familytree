@@ -1,7 +1,7 @@
 {
   "name": "Sim Family Tree",
   "short_name": "Sim Family",
-  "start_url": "/familytree/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#FAF8F3",
   "theme_color": "#2E4A38",
