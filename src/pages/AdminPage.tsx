@@ -73,7 +73,10 @@ export default function AdminPage() {
             )}
             {claims.length > 0 && (
               <Group title="Say they’re someone in the tree" count={claims.length}>
-                {claims.map((m) => <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} note={m.note} personId={m.person_id!} />)}
+                {claims.map((m) => {
+                  const other = members.find((o) => o.id !== m.id && o.person_status === 'approved' && o.person_id === m.person_id)
+                  return <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} note={m.note} personId={m.person_id!} clash={other ? other.name || other.email : undefined} />
+                })}
               </Group>
             )}
             {queue.length > 0 && (

@@ -108,7 +108,8 @@ function Thumb({ path }: { path: string }) {
   return small && full ? <a href={full} target="_blank" rel="noreferrer"><img src={small} alt="" loading="lazy" className="mt-1 h-28 w-28 rounded border border-line object-cover" /></a> : null
 }
 
-export function ClaimCard({ profileId, who, note, personId }: { profileId: string; who: string; note: string | null; personId: string }) {
+/** `clash`: another member already linked to the same person (only the admin sees this). */
+export function ClaimCard({ profileId, who, note, personId, clash }: { profileId: string; who: string; note: string | null; personId: string; clash?: string }) {
   const review = useReviewClaim()
   const { data: p } = usePerson(personId)
   return (
@@ -116,9 +117,10 @@ export function ClaimCard({ profileId, who, note, personId }: { profileId: strin
       <div className="flex-1 text-sm">
         <p className="text-[17px] text-ink">{who} says they are {p ? <Link className="text-moss underline underline-offset-2" to={`/trees/${p.tree_id}/people/${p.id}`}>{fullName(p)}</Link> : 'someone in the tree'}</p>
         {note && <p className="mt-1 italic text-ink-soft">“{note}”</p>}
+        {clash && <p className="mt-2 text-[15px] text-danger">{clash} is already linked to this person. Decline this one, or remove {clash}’s link under Members first. {who} only sees that it’s waiting for you.</p>}
       </div>
       <div className="flex gap-2">
-        <button className="btn-primary" disabled={review.isPending} onClick={() => review.mutate({ profile: profileId, approve: true })}><Check size={14} /> Confirm</button>
+        <button className="btn-primary" disabled={review.isPending || !!clash} onClick={() => review.mutate({ profile: profileId, approve: true })}><Check size={14} /> Confirm</button>
         <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ profile: profileId, approve: false })}><X size={14} /> Decline</button>
       </div>
     </article>

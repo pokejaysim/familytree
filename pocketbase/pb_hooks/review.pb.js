@@ -89,6 +89,8 @@ routerAdd("POST", "/api/sft/revert", (e) => {
 }, $apis.requireAuth("users"))
 
 // "This is me": link your account to a person in the tree. Admins' links apply at once.
+// A member's claim always just waits for the admin, even if someone else is already linked to that
+// person: saying so would tell them that person has an account here. The clash shows only to the admin.
 routerAdd("POST", "/api/sft/claim", (e) => {
   const lib = require(`${__hooks}/sft_lib.js`)
   const user = e.auth
@@ -102,8 +104,10 @@ routerAdd("POST", "/api/sft/claim", (e) => {
     } else {
       const personId = String(body.person)
       if (!lib.findOrNull(tx, "people", personId)) lib.fail("That person is not in the tree.")
-      const taken = tx.findRecordsByFilter("users", "person = {:p} && person_status = 'approved' && id != {:me}", "", 1, 0, { p: personId, me: user.id })
-      if (taken.length) lib.fail("Someone else has already linked their account to this person.")
+      if (lib.isAdmin(user)) {
+        const taken = tx.findRecordsByFilter("users", "person = {:p} && person_status = 'approved' && id != {:me}", "", 1, 0, { p: personId, me: user.id })
+        if (taken.length) lib.fail(`${taken[0].getString("name") || taken[0].email()} is already linked to this person.`)
+      }
       me.set("person", personId)
       me.set("person_status", lib.isAdmin(user) ? "approved" : "pending")
     }
@@ -121,6 +125,8 @@ routerAdd("POST", "/api/sft/review-claim", (e) => {
     if (!u) lib.fail("That account no longer exists.")
     if (body.approve) {
       if (!u.getString("person")) lib.fail("That account isn't asking to be linked to anyone.")
+      const taken = tx.findRecordsByFilter("users", "person = {:p} && person_status = 'approved' && id != {:u}", "", 1, 0, { p: u.getString("person"), u: u.id })
+      if (taken.length) lib.fail(`${taken[0].getString("name") || taken[0].email()} is already linked to this person. Decline this one, or remove their link on the Admin page first.`)
       u.set("person_status", "approved")
     } else {
       u.set("person", "")
