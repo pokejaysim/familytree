@@ -24,13 +24,16 @@ import AboutPage from './pages/AboutPage'
 import SupportPage from './pages/SupportPage'
 import AdminPage from './pages/AdminPage'
 import ContributePage from './pages/ContributePage'
+import NewsPage from './pages/NewsPage'
+import { stopNewsEmails } from './lib/news'
 import { Toaster, toast } from './lib/toast'
 
 /**
  * Links into the site:
  * - …/?reset=<token> (forgot password) shows the new-password page until it's saved or cancelled;
  * - …/?confirm=<token> (from emails sent before sign-up was simplified) is confirmed straight away; it's no longer needed to sign in;
- * - …/?code=…&state=… is Google sending someone back after "Continue with Google" (lib/signin.ts).
+ * - …/?code=…&state=… is Google sending someone back after "Continue with Google" (lib/signin.ts);
+ * - …/?news-off=<user>.<key> is the "stop these emails" link in family news emails (works signed out).
  * The outcome becomes a notice on the sign-in page (and a toast for anyone already in).
  */
 const handledConfirmations = new Set<string>() // React's dev double-run must not use a token twice
@@ -40,6 +43,17 @@ function useEmailLinks() {
   const resetToken = params.get('reset')
   const confirmToken = params.get('confirm')
   const [google, setGoogle] = useState(() => isGoogleReturn(params) ? params.toString() : '')
+  const newsOff = params.get('news-off')
+  const qc = useQueryClient()
+  useEffect(() => {
+    if (!newsOff || handledConfirmations.has(newsOff)) return
+    handledConfirmations.add(newsOff)
+    const tell = (n: Notice) => { setNotice(n); toast(n.ok ? 'saved' : 'error', n.text) }
+    stopNewsEmails(newsOff)
+      .then(() => { tell({ text: 'You won’t get family news emails any more. You can switch them back on from the News page.', ok: true }); qc.invalidateQueries({ queryKey: ['profile'] }) })
+      .catch(() => tell({ text: 'That link didn’t work. Sign in and use the switch on the News page instead.' }))
+      .finally(() => setParams((p) => { p.delete('news-off'); return p }, { replace: true }))
+  }, [newsOff, setParams, qc])
   useEffect(() => {
     if (!google || handledConfirmations.has(google)) return
     handledConfirmations.add(google)
@@ -98,6 +112,8 @@ export default function App() {
       <Route path="/review" element={<Navigate to="/admin" replace />} />
       <Route path="/contribute" element={<ContributePage />} />
       <Route path="/help" element={<HelpPage />} />
+      <Route path="/news" element={<NewsPage />} />
+      <Route path="/news/:postId" element={<NewsPage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />
         <Route path="chart" element={<ChartPage />} />

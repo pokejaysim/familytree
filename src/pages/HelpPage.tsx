@@ -6,12 +6,11 @@ import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
 import { call, errorMessage, pb } from '../lib/pb'
 import { replayWelcome } from '../lib/welcome'
-import { ADMIN_NAME } from '../config'
 
 /**
  * Answers to common questions, and a message form that emails the admins (POST /api/sft/contact).
  * Open to everyone, signed in or not (App.tsx lets /help through), because people who can't
- * sign in are the ones who need it most. Written in Jason's voice, like the Contribute page.
+ * sign in are the ones who need it most. Speaks as "we", like the rest of the site.
  */
 export default function HelpPage() {
   const { session } = useAuth()
@@ -21,13 +20,14 @@ export default function HelpPage() {
   const faqs: { q: string; a: ReactNode }[] = [
     { q: 'I forgot my password', a: <>On the sign-in page, tap <b className="font-medium">Forgot password?</b> and enter the email you signed up with. You’ll get an email from Sim Family Tree with a link to choose a new password. The link works for 24 hours. If it doesn’t arrive within a few minutes, look in your Junk or Spam folder.</> },
     { q: 'Can I sign in with Google?', a: <>Yes. If you have a Google account (a Gmail address, for example), tap <b className="font-medium">Continue with Google</b> on the sign-in page, whether you’re new or already have an account. If you first joined with a password and the same email address, Google takes you into that same account, and from then on you sign in with Google. You can still set a password at any time with <b className="font-medium">Forgot password?</b></> },
-    { q: 'I signed up but can’t get in yet', a: <>I look at every new account myself, usually within a day or two, because the tree has details about living relatives. Until then you’ll see a “You’re on the list” page. As soon as you’re in, you’ll get an email from Sim Family Tree (look in Junk if it doesn’t arrive) and the site lets you in by itself. If it’s been a few days, send me a message below.</> },
+    { q: 'I signed up but can’t get in yet', a: <>We look at every new account ourselves, usually within a day or two, because the tree has details about living relatives. Until then you’ll see a “You’re on the list” page. As soon as you’re in, you’ll get an email from Sim Family Tree (look in Junk if it doesn’t arrive) and the site lets you in by itself. If it’s been a few days, send us a message below.</> },
     { q: 'How do I find someone?', a: <>Use <b className="font-medium">Find a relative</b> on the home page or the map and type part of their name. If you prefer a list, it’s under <b className="font-medium">People</b>, grouped by branch of the family.</> },
-    { q: 'How do I show which person I am?', a: <>Find yourself in the tree, open your page and tap <b className="font-medium">This is me</b> under your name. Once I’ve confirmed it, the map starts from you and every page says how that person is related to you.</> },
+    { q: 'How do I show which person I am?', a: <>Find yourself in the tree, open your page and tap <b className="font-medium">This is me</b> under your name. Once we’ve confirmed it, the map starts from you and every page says how that person is related to you.</> },
     { q: 'How do I add a photo, a date or a story?', a: <>Open the person’s page. Tap <b className="font-medium">Suggest an edit</b> to fix a name or a date or to add memories, the camera for their portrait, or <b className="font-medium">Upload</b> for more photos and documents. There’s more on the <Link className="text-brass underline underline-offset-2" to="/contribute">How to contribute</Link> page.</> },
-    { q: 'I’ve spotted a mistake', a: <>Thank you! Open that person’s page, tap <b className="font-medium">Suggest an edit</b> and put in what’s right. If you can, say where it comes from, like a certificate or a family story. If you can’t edit, send me a message below.</> },
-    { q: 'My change hasn’t shown up yet', a: <>I look over every change before it goes into the tree. Until then it shows on the person’s page as waiting, and in your list on the How to contribute page, where you can take it back if you change your mind.</> },
-    { q: 'Who can see the family tree?', a: <>Only family members I’ve approved, once they’ve signed in. Nobody else can see names, dates, photos or stories.</> },
+    { q: 'I’ve spotted a mistake', a: <>Thank you! Open that person’s page, tap <b className="font-medium">Suggest an edit</b> and put in what’s right. If you can, say where it comes from, like a certificate or a family story. If you can’t edit, send us a message below.</> },
+    { q: 'My change hasn’t shown up yet', a: <>We look over every change before it goes into the tree. Until then it shows on the person’s page as waiting, and in your list on the How to contribute page, where you can take it back if you change your mind.</> },
+    { q: 'How do I stop the family news emails?', a: <>Tap <b className="font-medium">Stop these emails</b> at the bottom of any news email, or untick <b className="font-medium">Email me new posts</b> on the <Link className="text-brass underline underline-offset-2" to="/news">News</Link> page. New posts still appear there, and you can switch the emails back on any time.</> },
+    { q: 'Who can see the family tree?', a: <>Only family members we’ve approved, once they’ve signed in. Nobody else can see names, dates, photos or stories.</> },
   ]
 
   return (
@@ -36,7 +36,7 @@ export default function HelpPage() {
       <main className="min-h-0 flex-1 overflow-auto">
         <article className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
           <h1 className="text-3xl leading-tight sm:text-4xl">Help</h1>
-          <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">Answers to the questions people ask most. If you’re still stuck, <a href="#message" className="text-brass underline underline-offset-4 hover:text-moss">send me a message</a> at the bottom of the page.</p>
+          <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">Answers to the questions people ask most. If you’re still stuck, <a href="#message" className="text-brass underline underline-offset-4 hover:text-moss">send us a message</a> at the bottom of the page.</p>
           {!session && <p className="mt-3 text-[16px]"><Link to="/" className="text-brass underline underline-offset-4 hover:text-moss">Back to sign in</Link></p>}
 
           <ul className="mt-8 divide-y divide-line rounded-lg border border-line bg-white">
@@ -84,12 +84,12 @@ function ContactForm({ initialName, initialEmail }: { initialName: string; initi
 
   return (
     <section id="message" className="mt-12 scroll-mt-4">
-      <h2 className="text-[24px] leading-tight">Send {ADMIN_NAME} a message</h2>
-      <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">It comes straight to my email, and I’ll reply to the address you give here.</p>
+      <h2 className="text-[24px] leading-tight">Send us a message</h2>
+      <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">It comes straight to us by email, and we’ll reply to the address you give here.</p>
       {sentTo ? (
         <div role="status" className="card mt-5 space-y-3">
           <p className="text-[17px] text-moss">Thanks, your message is on its way.</p>
-          <p className="text-[16px] text-ink-soft">I’ll reply to <span className="font-medium text-ink [overflow-wrap:anywhere]">{sentTo}</span>, usually within a day or two.</p>
+          <p className="text-[16px] text-ink-soft">We’ll reply to <span className="font-medium text-ink [overflow-wrap:anywhere]">{sentTo}</span>, usually within a day or two.</p>
           <button className="text-[15px] text-brass underline underline-offset-4 hover:text-moss" onClick={() => setSentTo(null)}>Send another message</button>
         </div>
       ) : (

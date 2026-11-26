@@ -6,14 +6,13 @@ import { foundersOf, generationsBelow, relationTo, WORDS } from '../lib/kin'
 import { TREE } from '../lib/splash'
 import type { Person } from '../lib/types'
 import type { TreeData } from '../lib/queries'
-import { ADMIN_NAME } from '../config'
 
 /**
  * The welcome for new members, played like a short silent video: four scenes flow on by themselves
  * (about 30 seconds), with captions, a progress bar, Pause, Replay and Skip. Built from the real tree,
  * so it shows the family's portraits and, once a member is linked, their own relatives.
  * Plays once per member, on their first sign-in (App.tsx decides when); "Watch the welcome again" on the
- * Contribute page replays it. Written in Jason's voice, like the Contribute page.
+ * Contribute page replays it. Speaks as "we", like the rest of the site.
  * Animations live in index.css (.wt-*); people who prefer reduced motion get the scenes without movement.
  */
 const SCENE_MS = [7000, 7500, 7500, 8000]
@@ -51,19 +50,19 @@ export default function WelcomeTour({ data, meId, role, onClose, onStart, onOpen
       scene: <YouScene me={me} graph={graph} />,
     } : {
       title: 'Find yourself',
-      text: <>Look yourself up and tap <b className="font-medium">This is me</b> under your name. Once I’ve confirmed it, the map starts from you and every page says how that person is related to you.</>,
+      text: <>Look yourself up and tap <b className="font-medium">This is me</b> under your name. Once we’ve confirmed it, the map starts from you and every page says how that person is related to you.</>,
       scene: <YouScene me={null} graph={graph} />,
     },
     role === 'viewer' ? {
       title: 'Know something we’re missing?',
-      text: <>Your account can look around for now. If you’d like to add photos, dates or stories, just ask me and I’ll turn that on.</>,
-      scene: <AddScene last="Ask Jason to turn on adding" />,
+      text: <>Your account can look around for now. If you’d like to add photos, dates or stories, just ask us and we’ll turn that on.</>,
+      scene: <AddScene last="Ask us to turn on adding" />,
     } : {
       title: 'Add what you know',
       text: role === 'admin'
         ? <>Know a date, remember a story, or have an old photo? Add it on anyone’s page. Your changes go in straight away, and you can undo any of them from the Admin page.</>
-        : <>Know a date, remember a story, or have an old photo? Add it on anyone’s page. I look over every change before it goes in, so don’t worry about getting something wrong.</>,
-      scene: <AddScene last={role === 'admin' ? 'Goes in straight away' : `${ADMIN_NAME} looks it over`} />,
+        : <>Know a date, remember a story, or have an old photo? Add it on anyone’s page. We look over every change before it goes in, so don’t worry about getting something wrong.</>,
+      scene: <AddScene last={role === 'admin' ? 'Goes in straight away' : 'We look it over'} />,
     },
   ]
   const starts = SCENE_MS.map((_, i) => SCENE_MS.slice(0, i).reduce((a, b) => a + b, 0))

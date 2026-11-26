@@ -25,6 +25,8 @@ onRecordCreateRequest((e) => {
     e.record.set("reviewed_by", "")
     e.record.set("emailVisibility", false)
     e.record.setVerified(false)
+    e.record.set("news_emails_off", false)
+    e.record.set("unsub_key", "") // filled with a fresh random key (see migration 1765500000)
   }
   e.next()
   if (e.hasSuperuserAuth()) return // made in the dashboard: no notice needed
@@ -74,13 +76,13 @@ onRecordUpdateRequest((e) => {
       subject: `You're in: the ${meta.appName}`,
       html: [
         `<p>Hello${first ? " " + first : ""},</p>`,
-        "<p>Jason has approved your account, so you can now explore the family tree and add what you know.</p>",
+        "<p>Your account has been approved, so you can now explore the family tree and add what you know.</p>",
         `<p><a href="${site}" style="display:inline-block;padding:10px 18px;background:#2E4A38;color:#FAF8F3;border-radius:6px;text-decoration:none">Open the family tree</a></p>`,
         `<p>To get in, ${how[0]}</p>`,
-        "<p>Jason</p>",
+        `<p>The ${meta.appName}</p>`,
       ].join("\n"),
-      text: `Hello${first ? " " + first : ""},\n\nJason has approved your account, so you can now explore the family tree and add what you know:\n${site}\n\n`
-        + `To get in, ${how[1]}\n\nJason`,
+      text: `Hello${first ? " " + first : ""},\n\nYour account has been approved, so you can now explore the family tree and add what you know:\n${site}\n\n`
+        + `To get in, ${how[1]}\n\nThe ${meta.appName}`,
     }))
   } catch (err) {
     console.log("sft: couldn't send the you're-in email", String(err))
@@ -113,7 +115,7 @@ routerAdd("POST", "/api/sft/contact", (e) => {
   const name = String(body.name || "").replace(/[\x00-\x1f\x7f]+/g, " ").trim().slice(0, 100) // goes into the subject line
   const email = String(body.email || "").trim().slice(0, 200)
   const message = String(body.message || "").trim()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadRequestError("Please give an email address so Jason can reply.")
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadRequestError("Please give an email address so we can reply.")
   if (message.length < 5) throw new BadRequestError("Please write a message.")
   if (message.length > 5000) throw new BadRequestError("That message is too long. Please keep it under 5,000 characters.")
   if (body.website) return e.json(200, { ok: true }) // a robot filled in the hidden field: pretend it worked

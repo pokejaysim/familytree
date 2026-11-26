@@ -14,12 +14,13 @@ pb_hooks/        server-side logic
                           "You're in" email on approval; uploads belong to their uploader;
                           nightly tidy-up of old uploads
   google.pb.js            /api/sft/google: admins switch "Continue with Google" on or off
+  news.pb.js              family news: emailing a post to members, the news email switch and stop link
   sft_lib.js              shared helpers (a port of the Supabase reviewed_contributions functions)
 tools/
   export_supabase.py      Supabase -> JSON + files, into a folder OUTSIDE the repo
   import_supabase.pb.js   one-time console command that imports that export
   verify_import.py        compares an import with its export, field by field and file by file
-  test_review_system.py   132 end-to-end checks of the review system (made-up data, throwaway server)
+  test_review_system.py   155 end-to-end checks of the review system (made-up data, throwaway server)
   run_tests_on_server.sh  builds a throwaway PocketBase from this folder, runs the checks, deletes it
   make_thumbs.pb.js       console command `make-thumbs`: pre-makes photo thumbnails (run after bulk imports)
   make_owner.pb.js        console command `make-owner <email> [personId]`: admin + tree owner (used at switchover)

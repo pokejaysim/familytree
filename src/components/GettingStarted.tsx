@@ -5,7 +5,6 @@ import { useAuth } from '../lib/auth'
 import { useCanEdit, useProfile } from '../lib/profile'
 import { useMyRequests } from '../lib/changes'
 import { hasReadForeword } from '../lib/welcome'
-import { ADMIN_NAME } from '../config'
 
 /**
  * A small checklist on the home page for new members: find yourself ("This is me"), read the foreword,
@@ -30,26 +29,26 @@ export default function GettingStarted({ treeId, hasForeword, onFind, onRead }: 
       done: linked || asked,
       title: 'Find yourself in the tree',
       text: linked ? 'Done. Your card is marked You, and every page says how that person is related to you.'
-        : asked ? `Done. ${ADMIN_NAME} will confirm it’s you.`
+        : asked ? 'Done. We’ll confirm it’s you.'
         : 'Open your own page and tap This is me under your name.',
       action: !(linked || asked) && <button className={button} onClick={onFind}>Find yourself</button>,
     },
     ...(hasForeword ? [{
       done: hasReadForeword(treeId),
       title: 'Read the foreword',
-      text: `A note from ${ADMIN_NAME} on how the tree began with Bernard’s book.`,
+      text: 'A short note on how the tree began with Bernard’s book.',
       action: <button className={button} onClick={onRead}>Read it</button>,
     }] : []),
     canEdit ? {
       done: mine.length > 0,
       title: 'Add something you know',
-      text: `A date, a story or an old photo. ${ADMIN_NAME} checks each one before it goes in, so you can’t break anything.`,
+      text: 'A date, a story or an old photo. We check each one before it goes in, so you can’t break anything.',
       action: linked ? <Link className={button} to={`/trees/${treeId}/people/${profile.person_id}`}>Start with your page</Link> : <Link className={button} to="/contribute">See how</Link>,
     } : {
       done: false,
       title: 'Know something we’re missing?',
-      text: `Your account can look around. If you’d like to add photos, dates or stories, ask ${ADMIN_NAME} to turn that on.`,
-      action: <Link className={button} to="/help#message">Ask {ADMIN_NAME}</Link>,
+      text: 'Your account can look around. If you’d like to add photos, dates or stories, ask us to turn that on.',
+      action: <Link className={button} to="/help#message">Ask us</Link>,
     },
   ]
   const count = steps.filter((s) => s.done).length

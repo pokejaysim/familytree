@@ -21,6 +21,8 @@ export interface Profile {
   last_seen: string | null
   /** When they first watched (or skipped) the welcome video; null until then. */
   welcomed_at: string | null
+  /** They asked not to get family news emails. */
+  news_emails_off: boolean
 }
 
 /** A PocketBase user account as the app's member profile (Supabase kept these in a separate "profiles" table). */
@@ -37,6 +39,7 @@ const toProfile = (r: RecordModel): Profile => ({
   verified: !!r.verified,
   last_seen: r.last_seen ? String(r.last_seen).replace(' ', 'T') : null,
   welcomed_at: r.welcomed_at ? String(r.welcomed_at).replace(' ', 'T') : null,
+  news_emails_off: !!r.news_emails_off,
 })
 
 /** The signed-in user's own membership record. */

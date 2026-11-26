@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { CoffeeIcon } from '../components/SupportLine'
-import { ADMIN_NAME, DONATE_URL } from '../config'
+import { DONATE_URL } from '../config'
 import divider from '../assets/branch-divider.svg'
 
 /** "Support this site": what donations pay for, and the other ways relatives can help. Uses the journal illustration from the coffee asset pack. */
@@ -25,7 +25,7 @@ export default function SupportPage() {
             <h2 className="text-[22px] text-ink">Where it goes</h2>
             <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-white">
               {[
-                ['The home server', `The site and every record in it run on a small computer ${ADMIN_NAME} keeps at home.`],
+                ['The home server', 'The site and every record in it run on a small computer kept at home.'],
                 ['Storage and backups', 'Every portrait and scanned page is stored on its drives and copied to a second drive every night. The archive grows with each section of the book that’s added.'],
                 ['A proper address', 'A domain name of our own, so the link to the family tree never has to change.'],
               ].map(([title, text]) => (
@@ -41,7 +41,7 @@ export default function SupportPage() {
             <h2 className="text-[22px] text-ink">Other ways to help</h2>
             <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">
               Photos, dates, stories and corrections are what the site is for, so they help as much as money does. If you spot a
-              mistake, or have a picture the rest of the family has never seen, add it to that person’s page or send it to {ADMIN_NAME}.
+              mistake, or have a picture the rest of the family has never seen, add it to that person’s page or send it to us.
             </p>
           </section>
 

@@ -395,5 +395,116 @@ check(call("DELETE", "/api/sft/google", admin)[0] == 200 and must(call("GET", "/
       "the admin can switch it off again")
 fake.shutdown()
 
+print("Family news")
+# A stand-in mail server on this machine catches the emails, so the tests can read exactly what each member gets.
+import socketserver
+from email import message_from_string, policy as email_policy
+MAILS = []
+class FakeSMTP(socketserver.StreamRequestHandler):
+    def handle(self):
+        def w(line):
+            self.wfile.write((line + "\r\n").encode()); self.wfile.flush()
+        w("220 test")
+        mail = {"to": [], "data": ""}
+        while True:
+            raw = self.rfile.readline()
+            if not raw:
+                return
+            cmd = raw.decode(errors="replace").strip()
+            up = cmd.upper()
+            if up.startswith(("EHLO", "HELO")):
+                w("250-test"); w("250 8BITMIME")
+            elif up.startswith("MAIL FROM"):
+                mail = {"to": [], "data": ""}; w("250 ok")
+            elif up.startswith("RCPT TO"):
+                addr = cmd.split(":", 1)[1].strip().strip("<>")
+                if addr.startswith("news-bounce"):
+                    w("550 no such mailbox")  # an address that always fails
+                else:
+                    mail["to"].append(addr); w("250 ok")
+            elif up == "DATA":
+                w("354 go")
+                lines = []
+                while True:
+                    l = self.rfile.readline()
+                    if l in (b".\r\n", b".\n", b""):
+                        break
+                    lines.append(l.decode(errors="replace"))
+                mail["data"] = "".join(lines); MAILS.append(mail); w("250 queued")
+            elif up == "QUIT":
+                w("221 bye"); return
+            else:
+                w("250 ok")
+class SMTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+smtp = SMTPServer(("127.0.0.1", 0), FakeSMTP)
+threading.Thread(target=smtp.serve_forever, daemon=True).start()
+before_settings = must(call("GET", "/api/settings", su))
+must(call("PATCH", "/api/settings", su, {"smtp": {"enabled": True, "host": "127.0.0.1", "port": smtp.server_address[1], "username": "", "password": "", "tls": False},
+                                          "meta": {"senderAddress": "family@example.test", "senderName": "Sim Family Tree", "appURL": "https://simfamilytree.com"}}), "point email at the stand-in")
+
+s_, post = call("POST", "/api/collections/news/records", admin, {"title": "Test news", "body": "**26 November 2026**\n\nHello <b>everyone</b>.\nA second line.\n\nAnother paragraph.",
+                                                                  "author": viewer_id, "emailed_count": 99, "sent_to": [viewer_id]})
+check(s_ == 200 and post.get("author") == admin_id and post.get("emailed_count") == 0, "an admin can post news, and it's theirs with nothing marked as emailed")
+check(call("POST", "/api/collections/news/records", editor, {"title": "Not allowed"})[0] != 200, "an editor can't post news")
+items = must(call("GET", "/api/collections/news/records", viewer))["items"]
+check(any(i["id"] == post["id"] for i in items) and all("sent_to" not in i for i in items), "a member can read the news, but not who it was emailed to")
+check(call("GET", "/api/collections/news/records", pending)[1].get("totalItems", 0) == 0 and call("GET", "/api/collections/news/records")[1].get("totalItems", 0) == 0,
+      "someone waiting for approval, or not signed in, can't read it")
+s_, b_ = call("PATCH", f"/api/collections/news/records/{post['id']}", admin, {"title": "Test news", "emailed_count": 50, "author": viewer_id})
+check(s_ == 200 and b_["emailed_count"] == 0 and b_["author"] == admin_id, "editing a post can't change its author or email tally")
+check(call("POST", f"/api/sft/news/{post['id']}/send", editor)[0] == 403 and call("POST", f"/api/sft/news/{post['id']}/send")[0] in (401, 403), "only an admin can email the news")
+
+check(must(call("POST", "/api/sft/news/emails", viewer, {"on": False})) == {"on": False} and rec("users", viewer_id)[1]["news_emails_off"] is True, "a member can switch the news emails off")
+for i in range(8):  # enough members that the email goes out in more than one go
+    create("users", {"email": f"news-reader-{i}-{secrets.token_hex(2)}@example.test", "password": "longpassword1", "passwordConfirm": "longpassword1", "name": f"Test Reader {i}", "status": "approved", "role": "viewer"})
+create("users", {"email": "news-bounce@example.test", "password": "longpassword1", "passwordConfirm": "longpassword1", "name": "Test Bounce", "status": "approved", "role": "viewer"})
+approved = must(call("GET", "/api/collections/users/records?perPage=500&filter=" + urllib.parse.quote("status='approved'"), su))["items"]
+expected = {u["email"] for u in approved if not u["news_emails_off"] and not u["email"].startswith("news-bounce")}
+def send_run():
+    rounds, sent_n, failed_n = 0, 0, 0
+    while rounds < 20:
+        rounds += 1
+        r = must(call("POST", f"/api/sft/news/{post['id']}/send", admin, {"again": rounds == 1}), "send news")
+        sent_n += r["sent"]; failed_n += r["failed"]
+        if r["remaining"] == 0:
+            break
+    return rounds, sent_n, failed_n
+rounds, sent_total, failed_total = send_run()
+to = [m["to"] for m in MAILS]
+check(sent_total == len(expected) and {t[0] for t in to} == expected, f"the news reaches every approved member who wants it ({len(expected)}), in {rounds} goes")
+check(all(len(t) == 1 for t in to) and len(to) == len({t[0] for t in to}), "each member gets their own email, once, with nobody else's address on it")
+check(rounds >= 2, "a big family is emailed a few at a time, so no single request runs long")
+viewer_email = rec("users", viewer_id)[1]["email"]
+check(viewer_email not in expected and all(t[0] != viewer_email for t in to), "a member who switched the emails off doesn't get one")
+check(failed_total == 1, "an address that fails is reported, and doesn't stop everyone after it")
+again = send_run()
+check(again[1] == 0 and again[2] == 1 and len(MAILS) == sent_total, "sending again tries the failed address once more, and doesn't email anyone twice")
+check(rec("news", post["id"])[1]["emailed_count"] == sent_total, "the post shows how many it was emailed to")
+editor_email = rec("users", editor_id)[1]["email"]
+mail = message_from_string(next(m["data"] for m in MAILS if m["to"] == [editor_email]), policy=email_policy.default)
+admin_email = rec("users", admin_id)[1]["email"]
+html_part = mail.get_body(("html",)).get_content()
+check(mail["Subject"] == "Family news: Test news" and admin_email in str(mail["Reply-To"]), "the email is titled with the post, and replies go to the admin who sent it")
+check("&lt;b&gt;everyone" in html_part and "<strong>26 November 2026</strong>" in html_part and f"https://simfamilytree.com/news/{post['id']}" in html_part,
+      "the words come through as written (no hidden code), with a link to the post")
+off_link = str(mail["List-Unsubscribe"]).strip("<>")
+check(off_link.startswith("https://simfamilytree.com/?news-off=") and off_link in html_part, "every email has a stop-these-emails link, for people and for mail apps")
+u_, k_ = off_link.split("news-off=", 1)[1].split(".", 1)
+check(call("POST", "/api/sft/news/off", None, {"u": u_, "k": "wrong-key-wrong-key-1234"})[0] == 400 and call("POST", "/api/sft/news/off", None, {"u": viewer_id, "k": k_})[0] == 400,
+      "the link only works with that member's own key")
+check(call("POST", "/api/sft/news/off", None, {"u": u_, "k": k_})[0] == 200 and rec("users", editor_id)[1]["news_emails_off"] is True, "the link switches the emails off without signing in")
+check("unsub_key" not in must(call("GET", f"/api/collections/users/records/{editor_id}", editor)) and all("unsub_key" not in u for u in must(call("GET", "/api/collections/users/records?perPage=200", admin))["items"]),
+      "nobody can read the keys behind those links, not even an admin")
+pw = secrets.token_urlsafe(18)
+newbie = must(call("POST", "/api/collections/users/records", body={"email": "news-newbie@example.test", "password": pw, "passwordConfirm": pw, "name": "Test Newbie", "unsub_key": "chosen-by-me-0000000000", "news_emails_off": True}), "sign up")
+nb = rec("users", newbie["id"])[1]
+check(len(nb.get("unsub_key", "")) == 24 and nb["unsub_key"] != "chosen-by-me-0000000000" and nb["news_emails_off"] is False, "a new sign-up gets its own random key and starts with the emails on")
+check(must(call("POST", "/api/sft/news/emails", viewer, {"on": True})) == {"on": True} and rec("users", viewer_id)[1]["news_emails_off"] is False, "...and a member can switch them back on")
+check(call("DELETE", f"/api/collections/news/records/{post['id']}", editor)[0] != 204 and call("DELETE", f"/api/collections/news/records/{post['id']}", admin)[0] == 204, "only an admin can delete a post")
+must(call("PATCH", "/api/settings", su, {"smtp": {"enabled": False}, "meta": {"senderAddress": before_settings["meta"]["senderAddress"], "appURL": before_settings["meta"]["appURL"]}}), "put email back")
+smtp.shutdown()
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)

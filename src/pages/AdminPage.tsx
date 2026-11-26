@@ -306,7 +306,7 @@ const size = (n: number) => {
   return `${n >= 100 || i === 0 ? Math.round(n) : n.toFixed(1)} ${units[i]}`
 }
 const moment = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
-const PROBLEMS: [RegExp, string][] = [[/admins about a sign-up/, 'The email telling you about a sign-up'], [/you're-in/, 'A “You’re in” email to someone you approved'], [/confirmation|verification/i, 'A confirm-your-email message'], [/password reset/i, 'A password reset email'], [/test email/, 'A test email'], [/Help page message/, 'A message from the Help page']]
+const PROBLEMS: [RegExp, string][] = [[/admins about a sign-up/, 'The email telling you about a sign-up'], [/you're-in/, 'A “You’re in” email to someone you approved'], [/confirmation|verification/i, 'A confirm-your-email message'], [/password reset/i, 'A password reset email'], [/test email/, 'A test email'], [/Help page message/, 'A message from the Help page'], [/family news/, 'A family news email']]
 const problemText = (m: string) => PROBLEMS.find(([re]) => re.test(m))?.[1] ?? 'An email'
 /** Backups run nightly; one older than this means a night was missed. */
 const STALE_HOURS = 36

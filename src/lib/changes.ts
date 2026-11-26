@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import type { RecordModel } from 'pocketbase'
 import { call, fileRef, isMediaRef, isUploadRef, pb, pbFilter, refId, toApp, toPbFields, type MediaRefs } from './pb'
 import { toast } from './toast'
-import { ADMIN_NAME } from '../config'
 
 /**
  * Every change to the family data goes through the review endpoints (pocketbase/pb_hooks/review.pb.js).
@@ -125,7 +124,7 @@ export function useSubmit(treeId: string) {
     mutationFn: ({ summary, subject = null, changes }: { summary: string; subject?: string | null; changes: Change[] }) => submitChanges(treeId, summary, subject, changes),
     onSuccess: (r) => {
       refreshAll(qc)
-      if (r.status === 'pending') toast('review', `Sent to ${ADMIN_NAME} for review`, `It will appear in the tree once ${ADMIN_NAME} approves it. You can follow it on the Contribute page.`)
+      if (r.status === 'pending') toast('review', 'Sent for review', 'It will appear in the tree once it’s approved. You can follow it on the Contribute page.')
       else toast('saved', 'Saved')
     },
     onError: (e: Error) => toast('error', 'That change could not be sent', e.message),
@@ -201,7 +200,7 @@ export function useClaimPerson() {
       const me = pb.authStore.record ? await pb.collection('users').getOne(pb.authStore.record.id, { fields: 'person_status' }).catch(() => null) : null
       if (!id) toast('saved', 'Link removed')
       else if (me?.person_status === 'approved') toast('saved', 'Linked to your account', 'Your initials at the top (or Your profile in the Menu on a phone) bring you back to it.')
-      else toast('review', 'Profile link requested', `${ADMIN_NAME} will confirm it’s you.`)
+      else toast('review', 'Profile link requested', 'We’ll confirm it’s you.')
     },
     onError: (e: Error) => toast('error', 'That did not work', e.message),
   })

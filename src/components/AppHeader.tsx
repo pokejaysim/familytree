@@ -1,16 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { ClipboardCheck, LifeBuoy, LogOut, Menu, PenLine, UserRound, X } from 'lucide-react'
+import { ClipboardCheck, LifeBuoy, LogOut, Menu, Newspaper, PenLine, UserRound, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { signOut, useAuth } from '../lib/auth'
 import { useIsAdmin, usePendingCount, useProfile } from '../lib/profile'
 import { usePendingReviewCount } from '../lib/changes'
 import { usePerson } from '../lib/queries'
+import { newsSeen, useLatestNews } from '../lib/news'
 import treeMarkLight from '../assets/tree-mark-light.svg'
 
-/** Moss header: brand, optional tree tabs, Contribute / Help / Admin with a pending badge, user disc. On phones the links fold into a labelled menu. */
+/** True when there's a news post this member hasn't seen on this device (cleared by visiting the News page). */
+function useNewNews() {
+  const { session } = useAuth()
+  const { data: latest } = useLatestNews()
+  const uid = session?.user.id
+  const [seen, setSeen] = useState(() => newsSeen(uid))
+  useEffect(() => {
+    setSeen(newsSeen(uid))
+    const update = () => setSeen(newsSeen(uid))
+    window.addEventListener('sft-news-seen', update)
+    return () => window.removeEventListener('sft-news-seen', update)
+  }, [uid])
+  return !!latest && latest.created_at > seen
+}
+
+/** Moss header: brand, optional tree tabs, News (with a dot for new posts) / Contribute / Help / Admin with a pending badge, user disc. On phones the links fold into a labelled menu. */
 export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
   const { session } = useAuth()
+  const fresh = useNewNews()
   const { data: profile } = useProfile()
   const isAdmin = useIsAdmin()
   const { data: pending = 0 } = usePendingCount(isAdmin)
@@ -27,6 +44,7 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
       <Link to="/" className="flex items-center gap-2 whitespace-nowrap text-[17px] sm:text-[22px] font-medium text-cream" title="Home"><img src={treeMarkLight} alt="" width={30} height={30} className="h-[26px] w-[26px] sm:h-[30px] sm:w-[30px]" />Sim Family Tree</Link>
       {tabs && <nav className="hidden gap-7 sm:flex">{tabs}</nav>}
       <div className="ml-auto hidden items-center gap-7 sm:flex">
+        <NavLink to="/news" className={navCls} title={fresh ? 'There’s news you haven’t read' : undefined}>News{fresh && <span className="absolute -top-0.5 -right-2.5 h-2 w-2 rounded-full bg-brass-light" aria-label="(new)" />}</NavLink>
         <NavLink to="/contribute" className={navCls}>Contribute</NavLink>
         <NavLink to="/help" className={navCls}>Help</NavLink>
         {isAdmin && <NavLink to="/admin" title="Sign-ups, suggested changes and members" className={navCls}>Admin{badge(toReview + pending)}</NavLink>}
@@ -35,13 +53,13 @@ export default function AppHeader({ tabs }: { tabs?: ReactNode }) {
           : <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brass text-[13px] text-cream" title={label}>{initials}</span>)}
         {session && <button className="text-sage transition-colors hover:text-cream" title="Sign out" aria-label="Sign out" onClick={signOut}><LogOut size={18} /></button>}
       </div>
-      {session && <PhoneMenu isAdmin={isAdmin} toReview={toReview} pending={pending} myProfile={myProfile} />}
+      {session && <PhoneMenu isAdmin={isAdmin} toReview={toReview} pending={pending} myProfile={myProfile} fresh={fresh} />}
     </header>
   )
 }
 
 /** Phone-only menu: every destination with its name written out, instead of a row of guessable icons. */
-function PhoneMenu({ isAdmin, toReview, pending, myProfile }: { isAdmin: boolean; toReview: number; pending: number; myProfile: string | null }) {
+function PhoneMenu({ isAdmin, toReview, pending, myProfile, fresh }: { isAdmin: boolean; toReview: number; pending: number; myProfile: string | null; fresh: boolean }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const { pathname } = useLocation()
@@ -61,10 +79,12 @@ function PhoneMenu({ isAdmin, toReview, pending, myProfile }: { isAdmin: boolean
       <button className="relative flex min-h-10 items-center gap-1.5 rounded px-2 text-[16px] text-cream" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((o) => !o)}>
         {open ? <X size={20} /> : <Menu size={20} />} Menu
         {waiting > 0 && !open && <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brass-light px-1 text-[11px] font-semibold text-moss">{waiting}</span>}
+        {waiting === 0 && fresh && !open && <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-brass-light" aria-label="(news you haven’t read)" />}
       </button>
       {open && (
         <nav role="menu" className="absolute top-full right-2 z-50 mt-1 w-64 overflow-hidden rounded-md border border-line bg-white py-1 shadow-card">
           {myProfile && <Link role="menuitem" to={myProfile} className={row}><UserRound size={18} className="text-moss" /> Your profile</Link>}
+          <NavLink role="menuitem" to="/news" className={row}><Newspaper size={18} className="text-moss" /> Family news{fresh && <span className="ml-auto rounded-full bg-brass-light px-2 text-[13px] font-semibold text-moss">New</span>}</NavLink>
           <NavLink role="menuitem" to="/contribute" className={row}><PenLine size={18} className="text-moss" /> How to contribute</NavLink>
           <NavLink role="menuitem" to="/help" className={row}><LifeBuoy size={18} className="text-moss" /> Help and contact</NavLink>
           {isAdmin && <NavLink role="menuitem" to="/admin" className={row}><ClipboardCheck size={18} className="text-moss" /> Admin{count(toReview + pending)}</NavLink>}

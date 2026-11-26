@@ -5,7 +5,6 @@ import { useAuth } from '../lib/auth'
 import { useCanEdit, useIsAdmin, useProfile } from '../lib/profile'
 import { useMyRequests, useWithdrawRequest } from '../lib/changes'
 import { useTrees } from '../lib/queries'
-import { ADMIN_NAME } from '../config'
 import divider from '../assets/branch-divider.svg'
 import { replayWelcome } from '../lib/welcome'
 
@@ -23,10 +22,10 @@ export default function ContributePage() {
   const steps: { icon: React.ReactNode; title: string; text: React.ReactNode }[] = [
     { icon: <UserRound size={18} />, title: 'Start with yourself', text: myProfile
         ? <>Your account is linked to <Link className="text-brass underline underline-offset-2" to={myProfile}>your profile</Link>. Have a look at your own details first. Nobody knows them better than you.</>
-        : <>Look yourself up and tap <b className="font-medium">This is me</b> under your name. Once I’ve confirmed it, you can get back to your profile any time from your initials at the top of the page, or from <b className="font-medium">Your profile</b> in the Menu on a phone.</> },
+        : <>Look yourself up and tap <b className="font-medium">This is me</b> under your name. Once we’ve confirmed it, you can get back to your profile any time from your initials at the top of the page, or from <b className="font-medium">Your profile</b> in the Menu on a phone.</> },
     { icon: <Search size={18} />, title: 'Find who you know about', text: <>Search for anyone with <b className="font-medium">Find a relative</b> on the <Link className="text-brass underline underline-offset-2" to={`${base}/chart`}>map</Link>, or scroll through the <Link className="text-brass underline underline-offset-2" to={`${base}/people`}>People</Link> list. Tap their card, then <b className="font-medium">Open profile</b>.</> },
     { icon: <Camera size={18} />, title: 'Add what you know', text: <>Every profile shows what’s still missing. Tap <b className="font-medium">Suggest an edit</b> to fix a name or a date, or to share a few memories. Tap the camera to add their photo, or <b className="font-medium">Upload</b> for more pictures and documents. If a parent, brother, sister or child is missing, tap the <b className="font-medium">+</b> next to that list.</> },
-    { icon: <Clock3 size={18} />, title: 'I take a look', text: <>I look over every change before it goes into the tree, so don’t worry about getting something wrong. Until then you’ll see it on the profile and in your list below, and you can take it back if you change your mind.</> },
+    { icon: <Clock3 size={18} />, title: 'We take a look', text: <>We look over every change before it goes into the tree, so don’t worry about getting something wrong. Until then you’ll see it on the profile and in your list below, and you can take it back if you change your mind.</> },
   ]
 
   return (
@@ -44,7 +43,7 @@ export default function ContributePage() {
 
           {!canEdit && (
             <p className="mt-8 rounded-md border border-brass-light/60 bg-note p-4 text-[15px] text-ink-soft">
-              Your account can look around but can’t suggest changes yet. Just ask me and I’ll turn that on for you.
+              Your account can look around but can’t suggest changes yet. Just <Link className="text-brass underline underline-offset-2" to="/help#message">ask us</Link> and we’ll turn that on for you.
             </p>
           )}
 
@@ -71,7 +70,6 @@ export default function ContributePage() {
           </section>
 
           <p className="mt-10 text-center text-[17px] italic text-ink-soft">Thank you for helping.</p>
-          <p className="mt-1 text-center text-[17px] italic text-ink-soft">{ADMIN_NAME}</p>
 
           {session && !isAdmin && <MySuggestions userId={session.user.id} />}
 
@@ -106,7 +104,7 @@ function MySuggestions({ userId }: { userId: string }) {
             <li key={r.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="text-[15px] text-ink">{r.summary}</p>
-                <p className="text-[13px] text-ink-mute">{new Date(r.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}{r.review_note && <> · {ADMIN_NAME}: “{r.review_note}”</>}</p>
+                <p className="text-[13px] text-ink-mute">{new Date(r.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}{r.review_note && <> · Note: “{r.review_note}”</>}</p>
               </div>
               <span className={`inline-flex items-center gap-1 self-start rounded-full px-2.5 py-0.5 text-[13px] sm:self-center ${s.cls}`}>{r.status === 'approved' && <BadgeCheck size={12} />}{s.label}</span>
               {r.status === 'pending' && <button className="self-start text-[13px] text-brass underline underline-offset-2 hover:text-moss sm:self-center" onClick={() => withdraw.mutate(r.id)}>Withdraw</button>}

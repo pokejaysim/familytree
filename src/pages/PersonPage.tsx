@@ -15,7 +15,6 @@ import Lightbox from '../components/Lightbox'
 import { useAuth } from '../lib/auth'
 import { useCanEdit, useIsAdmin, useMeId, useProfile, useSaveLabel } from '../lib/profile'
 import { relationTo } from '../lib/kin'
-import { ADMIN_NAME } from '../config'
 
 type RelAction = { kind: 'parent' } | { kind: 'partner' } | { kind: 'child'; family: Family } | { kind: 'sibling' }
 
@@ -120,7 +119,7 @@ export default function PersonPage() {
           <Link className="btn-ghost" to={`/trees/${treeId}/chart/${personId}`}><GitFork size={14} /> Chart</Link>
           {canEdit && <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> {isAdmin ? 'Edit' : 'Suggest an edit'}</button>}
           {canEdit && <button className="btn-danger" title={isAdmin ? 'Delete person' : 'Suggest removing this person'} onClick={async () => {
-            if (!confirm(isAdmin ? `Delete ${name}? You can undo this from the Admin page.` : `Suggest removing ${name} from the tree? ${ADMIN_NAME} will review it first.`)) return
+            if (!confirm(isAdmin ? `Delete ${name}? You can undo this from the Admin page.` : `Suggest removing ${name} from the tree? We’ll review it first.`)) return
             const r = await send(`Remove ${name} from the tree`, [{ table: 'people', op: 'delete', key: { id: personId } }])
             if (r.status === 'approved') nav(`/trees/${treeId}/people`)
           }}><Trash2 size={14} /></button>}
@@ -172,7 +171,7 @@ export default function PersonPage() {
 
       {editing && (
         <Modal title={isAdmin ? 'Edit person' : `Suggest an edit to ${name}`} onClose={() => setEditing(false)}>
-          {!isAdmin && <p className="mb-3 text-sm text-ink-mute">Change anything you know is wrong or missing. {ADMIN_NAME} checks every change before it appears.</p>}
+          {!isAdmin && <p className="mb-3 text-sm text-ink-mute">Change anything you know is wrong or missing. We check every change before it appears.</p>}
           <PersonForm initial={person} submitting={submit.isPending} submitLabel={saveLabel} onCancel={() => setEditing(false)}
             onSubmit={async (input) => { await send(`Edit details of ${name}`, [{ table: 'people', op: 'update', key: { id: personId }, data: changedFields(person, input) }]); setEditing(false) }} />
         </Modal>
@@ -199,12 +198,12 @@ function ThisIsMe({ person }: { person: Person }) {
   const mine = profile.person_id === person.id
   if (mine && profile.person_status === 'approved') return <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-moss-light px-3 py-1 text-sm text-moss"><BadgeCheck size={15} /> This is you</p>
   if (mine) return (
-    <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-ink-mute"><Clock3 size={15} className="text-brass" /> Waiting for {ADMIN_NAME} to confirm this is you.
+    <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-ink-mute"><Clock3 size={15} className="text-brass" /> Waiting for us to confirm this is you.
       <button className="text-brass underline underline-offset-2 hover:text-moss" onClick={() => claim.mutate(null)}>Cancel</button></p>
   )
   if (profile.person_id || !person.is_living) return null
   return (
-    <button className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-moss px-3 py-1 text-sm text-moss hover:bg-moss-light" onClick={() => { if (confirm(`Link your account to ${fullName(person)}? ${ADMIN_NAME} will confirm it.`)) claim.mutate(person.id) }}>
+    <button className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-moss px-3 py-1 text-sm text-moss hover:bg-moss-light" onClick={() => { if (confirm(`Link your account to ${fullName(person)}? We’ll confirm it.`)) claim.mutate(person.id) }}>
       <UserRound size={15} /> This is me
     </button>
   )
@@ -220,7 +219,7 @@ function PendingNotice({ personId }: { personId: string }) {
   return (
     <section className="rounded-md border border-brass-light/60 bg-note p-4">
       <p className="flex items-center gap-2 text-[15px] text-ink"><Clock3 size={16} className="text-brass" />
-        {pending.length === 1 ? 'One change to this profile is' : `${pending.length} changes to this profile are`} waiting for {ADMIN_NAME}’s review
+        {pending.length === 1 ? 'One change to this profile is' : `${pending.length} changes to this profile are`} waiting for review
       </p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-[15px] text-ink-soft marker:text-brass-light">
         {pending.map((r) => (
@@ -239,7 +238,7 @@ function PendingNotice({ personId }: { personId: string }) {
 function HelpCard({ name, missing, canEdit, isAdmin }: { name: string; missing: { label: string; act: () => void }[]; canEdit: boolean; isAdmin: boolean }) {
   if (!canEdit) return (
     <p className="rounded-md border border-line bg-paper px-4 py-3 text-sm text-ink-soft">
-      Know something about {name}? Your account can view the tree. Ask {ADMIN_NAME} to let you contribute, or <Link to="/contribute" className="text-brass underline underline-offset-2">see how contributing works</Link>.
+      Know something about {name}? Your account can view the tree. Ask us to let you contribute, or <Link to="/contribute" className="text-brass underline underline-offset-2">see how contributing works</Link>.
     </p>
   )
   if (missing.length === 0 && isAdmin) return null
@@ -248,7 +247,7 @@ function HelpCard({ name, missing, canEdit, isAdmin }: { name: string; missing: 
       <p className="text-[17px] text-ink">{missing.length ? `Help complete ${name}’s profile` : `Know more about ${name}?`}</p>
       <p className="mt-0.5 text-sm text-ink-mute">
         {missing.length ? 'Anything you know helps, even an approximate date.' : 'Add a story, a photo or a correction.'}
-        {!isAdmin && ` ${ADMIN_NAME} checks each change before it appears.`} <Link to="/contribute" className="text-brass underline underline-offset-2">How to contribute</Link>
+        {!isAdmin && ' We check each change before it appears.'} <Link to="/contribute" className="text-brass underline underline-offset-2">How to contribute</Link>
       </p>
       {missing.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">

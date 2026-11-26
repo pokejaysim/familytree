@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { signOut } from '../lib/auth'
 import type { Profile } from '../lib/profile'
-import { ADMIN_NAME } from '../config'
 import treeMark from '../assets/tree-mark.svg'
 import divider from '../assets/branch-divider.svg'
 
@@ -34,12 +33,12 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
         {declined ? (
           <>
             <h1 className="text-2xl">This request wasn’t approved</h1>
-            <p className="text-ink-soft">If you think that’s a mistake, send {ADMIN_NAME} a message from the Help page.</p>
+            <p className="text-ink-soft">If you think that’s a mistake, send us a message from the Help page.</p>
           </>
         ) : (
           <>
             <h1 className="text-2xl">Thanks{first ? `, ${first}` : ''}. You’re on the list.</h1>
-            <p className="text-[16px] leading-relaxed text-ink-soft">{ADMIN_NAME} looks at every new account personally, because the tree has details about living relatives. That usually takes a day or two.</p>
+            <p className="text-[16px] leading-relaxed text-ink-soft">We look at every new account personally, because the tree has details about living relatives. That usually takes a day or two.</p>
             <p className="text-[16px] leading-relaxed text-ink-soft">
               You’ll get an email at <span className="font-medium text-ink [overflow-wrap:anywhere]">{profile?.email}</span> as soon as you’re in.
               There’s nothing else to do: this page opens the tree by itself, and next time you visit you’ll go straight in.
@@ -47,7 +46,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
             <p className="text-[14px] text-ink-mute">Not your email address? Sign out and sign up again with the right one.</p>
           </>
         )}
-        <p className="text-[15px]"><Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Questions? Get help or send {ADMIN_NAME} a message</Link></p>
+        <p className="text-[15px]"><Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Questions? Get help or send us a message</Link></p>
         <button className="btn-ghost mx-auto" onClick={signOut}>Sign out</button>
       </div>
     </div>

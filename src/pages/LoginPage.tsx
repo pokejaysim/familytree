@@ -3,14 +3,13 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { errorMessage, pb } from '../lib/pb'
 import { signedIn, signedInBefore, useGoogleSignIn } from '../lib/signin'
-import { ADMIN_NAME } from '../config'
 import BrandPanel from '../components/BrandPanel'
 import GoogleButton, { OrUseEmail } from '../components/GoogleButton'
 
 type Mode = 'welcome' | 'signin' | 'signup' | 'reset'
 export type Notice = { text: string; ok?: boolean }
 
-const STEPS = ['Ask to join. It takes a minute.', `${ADMIN_NAME} checks it’s you, usually within a day or two.`, 'You get an email, and you’re in.']
+const STEPS = ['Ask to join. It takes a minute.', 'We check it’s you, usually within a day or two.', 'You get an email, and you’re in.']
 
 /**
  * What signed-out visitors see. Newcomers get a welcome with two clear choices (ask to join, or sign in)
@@ -58,7 +57,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
       else if (status === 0) setMsg({ text: errorMessage(err) }) // couldn't reach the server
       else if (mode === 'signin') {
         setMsg({ text: status === 403
-          ? `This account can’t sign in right now. Send ${ADMIN_NAME} a message from the Help page.`
+          ? 'This account can’t sign in right now. Send us a message from the Help page.'
           : 'That email and password didn’t work. Check it’s the email you signed up with, or tap Forgot password.' })
       } else if (mode === 'signup' && (err as { response?: { data?: { email?: { code?: string } } } })?.response?.data?.email?.code === 'validation_not_unique') {
         setMsg({ text: 'There’s already an account with that email. Tap Sign in below, or use Forgot password if you can’t remember the password.' })
@@ -69,7 +68,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   }
 
   const link = 'whitespace-nowrap underline underline-offset-4 hover:text-moss'
-  const help = <p className="border-t border-line pt-3 text-center text-[15px] text-ink-mute">Stuck? <Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Get help or send {ADMIN_NAME} a message</Link></p>
+  const help = <p className="border-t border-line pt-3 text-center text-[15px] text-ink-mute">Stuck? <Link to="/help" className="text-brass underline underline-offset-4 hover:text-moss">Get help or send us a message</Link></p>
   const brand = <div className="mb-3 text-[22px] font-medium text-moss lg:hidden">Sim Family Tree</div>
 
   return (
@@ -81,7 +80,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           <div>
             {brand}
             <h1 className="text-[26px] leading-tight">Welcome to the family tree</h1>
-            <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">Bernard’s family book, online, with photos and stories from the whole family. It’s private: only family members {ADMIN_NAME} has approved can see it.</p>
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">Bernard’s family book, online, with photos and stories from the whole family. It’s private: only family members we’ve approved can see it.</p>
           </div>
           <div className="space-y-2">
             <button className="btn-primary min-h-11 w-full justify-center text-[16px]" onClick={() => go('signup')} autoFocus>I’m new here: ask to join</button>

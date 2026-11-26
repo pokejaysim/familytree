@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BookOpen, GitFork, Plus, Search } from 'lucide-react'
+import { BookOpen, GitFork, Newspaper, Plus, Search } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useCreateTree, useTree, useTreeData, useTrees } from '../lib/queries'
 import { useIsAdmin } from '../lib/profile'
@@ -14,6 +14,7 @@ import Avatar from '../components/Avatar'
 import PersonPicker from '../components/PersonPicker'
 import IntroPane from '../components/IntroPane'
 import GettingStarted from '../components/GettingStarted'
+import { useLatestNews } from '../lib/news'
 
 /** Home. With one family tree it is that family's cover; with several it lists them. */
 export default function TreesPage() {
@@ -113,6 +114,7 @@ function Cover({ treeId }: { treeId: string }) {
             <BookOpen size={17} /> Read {tree.foreword && tree.intro ? 'the foreword and preface' : tree.foreword ? 'the foreword' : 'the introduction'}
           </button>
         )}
+        <LatestNews />
       </div>
       <GettingStarted treeId={treeId} hasForeword={!!(tree.foreword || tree.intro)} onFind={() => setFinding(true)} onRead={() => setReading(true)} />
       {finding && data && (
@@ -122,5 +124,16 @@ function Cover({ treeId }: { treeId: string }) {
       )}
       {reading && <IntroPane tree={tree} canEdit={isAdmin} onClose={() => setReading(false)} onOpenMap={() => nav(`/trees/${treeId}/chart`)} />}
     </section>
+  )
+}
+
+/** The newest family news post, if it's from the last two months. */
+function LatestNews() {
+  const { data: latest } = useLatestNews()
+  if (!latest || Date.now() - Date.parse(latest.created_at) > 60 * 86400000) return null
+  return (
+    <Link to={`/news/${latest.id}`} className="mt-3 flex items-start gap-2 text-[16px] text-brass underline underline-offset-4 hover:text-moss">
+      <Newspaper size={17} className="mt-1 shrink-0" /><span>Family news: {latest.title}</span>
+    </Link>
   )
 }
