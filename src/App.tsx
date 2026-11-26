@@ -8,6 +8,7 @@ import { markWelcomed, useMeId, useProfile } from './lib/profile'
 import { useQueryClient } from '@tanstack/react-query'
 import PendingPage from './pages/PendingPage'
 import { showSplash, takeSignIn, whenSplashDone } from './lib/splash'
+import { finishGoogle, GOOGLE_PARAMS, isGoogleReturn } from './lib/signin'
 import HelpPage from './pages/HelpPage'
 import { useTreeData, useTrees } from './lib/queries'
 import WelcomeTour from './components/WelcomeTour'
@@ -26,10 +27,11 @@ import ContributePage from './pages/ContributePage'
 import { Toaster, toast } from './lib/toast'
 
 /**
- * Links from PocketBase's emails:
+ * Links into the site:
  * - …/?reset=<token> (forgot password) shows the new-password page until it's saved or cancelled;
- * - …/?confirm=<token> (from emails sent before sign-up was simplified) is confirmed straight away; it's no longer needed to sign in.
- * Either way the outcome becomes a notice on the sign-in page (and a toast for anyone already in).
+ * - …/?confirm=<token> (from emails sent before sign-up was simplified) is confirmed straight away; it's no longer needed to sign in;
+ * - …/?code=…&state=… is Google sending someone back after "Continue with Google" (lib/signin.ts).
+ * The outcome becomes a notice on the sign-in page (and a toast for anyone already in).
  */
 const handledConfirmations = new Set<string>() // React's dev double-run must not use a token twice
 function useEmailLinks() {
@@ -37,6 +39,15 @@ function useEmailLinks() {
   const [notice, setNotice] = useState<Notice | undefined>()
   const resetToken = params.get('reset')
   const confirmToken = params.get('confirm')
+  const [google, setGoogle] = useState(() => isGoogleReturn(params) ? params.toString() : '')
+  useEffect(() => {
+    if (!google || handledConfirmations.has(google)) return
+    handledConfirmations.add(google)
+    setParams((p) => { GOOGLE_PARAMS.forEach((k) => p.delete(k)); return p }, { replace: true })
+    finishGoogle(new URLSearchParams(google))
+      .catch((err: Error) => setNotice({ text: err.message }))
+      .finally(() => setGoogle(''))
+  }, [google, setParams])
   useEffect(() => {
     if (!confirmToken || handledConfirmations.has(confirmToken)) return
     handledConfirmations.add(confirmToken)
@@ -50,7 +61,7 @@ function useEmailLinks() {
     setParams((p) => { p.delete('reset'); return p }, { replace: true })
     setNotice(message ? { text: message, ok: true } : undefined)
   }
-  return { resetToken, resetDone, notice }
+  return { resetToken, resetDone, notice, signingIn: !!google }
 }
 
 /** Plays the two-second splash when someone has just signed in with the form (not every time the site opens), once their account is approved. */
@@ -67,6 +78,7 @@ export default function App() {
   const approved = !!session && !links.resetToken && profile.data?.status === 'approved'
   useLoginSplash(approved)
   if (links.resetToken) return <UpdatePasswordPage token={links.resetToken} onDone={links.resetDone} />
+  if (links.signingIn) return <div className="flex h-full items-center justify-center text-ink-mute">Signing you in…</div>
   if (loading || (session && profile.isLoading)) return <div className="flex h-full items-center justify-center text-ink-mute">Loading…</div>
   // Help is open to everyone: people who can't sign in, or are waiting for approval, need it most.
   if (pathname === '/help' && (!session || (profile.data && profile.data.status !== 'approved'))) return <HelpPage />

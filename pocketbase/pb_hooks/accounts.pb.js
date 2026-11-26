@@ -4,6 +4,7 @@
 // - A new account is always pending and view-only, whatever the sign-up form sends; only an
 //   admin (or the dashboard) can approve it. The admins get a note that someone is waiting.
 //   There's no confirm-your-email step: Jason's approval is the gate (see migration 1765200000).
+//   "Continue with Google" makes new accounts through this same hook (see google.pb.js).
 // - When an admin approves someone, that person gets a "You're in" email with a link to the site.
 // - Each member's last visit is noted (last_seen) for the Admin page, at most every 10 minutes.
 // - The welcome video is marked as seen (welcomed_at) so it only plays on a member's first sign-in.
@@ -35,11 +36,13 @@ onRecordCreateRequest((e) => {
     // Names go into the subject line, so no line breaks or control characters.
     const name = (e.record.getString("name") || "Someone").replace(/[\x00-\x1f\x7f]+/g, " ").trim().slice(0, 100) || "Someone"
     const note = e.record.getString("note")
+    let how = ""
+    try { if (e.requestInfo().context === "oauth2") how = " with Google" } catch (_) { /* just leave it out */ }
     $app.newMailClient().send(new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName },
       to: admins.map((a) => ({ address: a.email(), name: a.getString("name") })),
       subject: `${name} wants to join the family tree`,
-      text: `${name} (${e.record.email()}) just signed up${note ? ` and wrote: "${note}"` : ""}.\n\n`
+      text: `${name} (${e.record.email()}) just signed up${how}${note ? ` and wrote: "${note}"` : ""}.\n\n`
         + "Their account can't see anything until you approve it on the Admin page:\n"
         + `${meta.appURL}/admin`,
     }))
@@ -59,6 +62,12 @@ onRecordUpdateRequest((e) => {
     if (!meta.senderAddress) return
     const first = (e.record.getString("name").trim().split(/\s+/)[0] || "").replace(/[<>&"]/g, "")
     const site = meta.appURL + "/?signin" // opens the sign-in form rather than the newcomers' welcome
+    let google = false
+    try { google = $app.findAllExternalAuthsByRecord(e.record).some((a) => a && a.provider() === "google") } catch (_) { /* say the password version */ }
+    const how = google
+      ? [`tap <em>Continue with Google</em> and choose your Google account (${e.record.email()}).`, `tap "Continue with Google" and choose your Google account (${e.record.email()}).`]
+      : [`sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap <em>Forgot password?</em> on the sign-in page.`,
+         `sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap "Forgot password?" on the sign-in page.`]
     $app.newMailClient().send(new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName },
       to: [{ address: e.record.email(), name: e.record.getString("name") }],
@@ -67,11 +76,11 @@ onRecordUpdateRequest((e) => {
         `<p>Hello${first ? " " + first : ""},</p>`,
         "<p>Jason has approved your account, so you can now explore the family tree and add what you know.</p>",
         `<p><a href="${site}" style="display:inline-block;padding:10px 18px;background:#2E4A38;color:#FAF8F3;border-radius:6px;text-decoration:none">Open the family tree</a></p>`,
-        `<p>Sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap <em>Forgot password?</em> on the sign-in page.</p>`,
+        `<p>To get in, ${how[0]}</p>`,
         "<p>Jason</p>",
       ].join("\n"),
       text: `Hello${first ? " " + first : ""},\n\nJason has approved your account, so you can now explore the family tree and add what you know:\n${site}\n\n`
-        + `Sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap "Forgot password?" on the sign-in page.\n\nJason`,
+        + `To get in, ${how[1]}\n\nJason`,
     }))
   } catch (err) {
     console.log("sft: couldn't send the you're-in email", String(err))

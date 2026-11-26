@@ -2,17 +2,13 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { errorMessage, pb } from '../lib/pb'
-import { noteSignIn } from '../lib/splash'
+import { signedIn, signedInBefore, useGoogleSignIn } from '../lib/signin'
 import { ADMIN_NAME } from '../config'
 import BrandPanel from '../components/BrandPanel'
+import GoogleButton, { OrUseEmail } from '../components/GoogleButton'
 
 type Mode = 'welcome' | 'signin' | 'signup' | 'reset'
 export type Notice = { text: string; ok?: boolean }
-
-/** Remembered on each device after a sign-in, so returning members skip the welcome and get the form. */
-const SIGNED_IN_BEFORE = 'sft-signed-in-before'
-const signedInBefore = () => { try { return !!localStorage.getItem(SIGNED_IN_BEFORE) } catch { return false } }
-const rememberSignIn = () => { try { localStorage.setItem(SIGNED_IN_BEFORE, '1') } catch { /* storage unavailable: they'll see the welcome again */ } }
 
 const STEPS = ['Ask to join. It takes a minute.', `${ADMIN_NAME} checks it’s you, usually within a day or two.`, 'You get an email, and you’re in.']
 
@@ -21,6 +17,8 @@ const STEPS = ['Ask to join. It takes a minute.', `${ADMIN_NAME} checks it’s y
  * and how joining works. Anyone who has signed in on this device before, arrives from an email link
  * (`?signin`, or a notice such as "password changed"), goes straight to the sign-in form.
  * Asking to join signs you straight in: until an admin approves the account, App shows "You're on the list".
+ * When an admin has switched it on, both forms also offer "Continue with Google" (lib/signin.ts), which
+ * signs up or signs in in one go.
  */
 export default function LoginPage({ notice }: { notice?: Notice }) {
   const [params, setParams] = useSearchParams()
@@ -32,6 +30,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   const [msg, setMsg] = useState<Notice | null>(notice ?? null)
   const [busy, setBusy] = useState(false)
   const pwId = useId()
+  const { data: google } = useGoogleSignIn()
   useEffect(() => { if (notice) { setMsg(notice); setMode((m) => (m === 'welcome' ? 'signin' : m)) } }, [notice])
   // The "You're in" email links to ?signin; it has done its job once the form is showing.
   useEffect(() => { if (params.has('signin')) setParams((p) => { p.delete('signin'); return p }, { replace: true }) }, [params, setParams])
@@ -42,11 +41,11 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
     e.preventDefault()
     setBusy(true); setMsg(null)
     try {
-      if (mode === 'signin') { await users.authWithPassword(email, password); rememberSignIn(); noteSignIn() }
+      if (mode === 'signin') { await users.authWithPassword(email, password); signedIn() }
       else if (mode === 'signup') {
         await users.create({ email, password, passwordConfirm: password, name })
         // Straight in: they land on the "You're on the list" page until they're approved.
-        try { await users.authWithPassword(email, password); rememberSignIn(); noteSignIn() }
+        try { await users.authWithPassword(email, password); signedIn() }
         catch { setMode('signin'); setMsg({ text: 'Your account is ready. Sign in with your email and password.', ok: true }) }
       } else {
         await users.requestPasswordReset(email)
@@ -100,6 +99,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
             {mode === 'reset' && <p className="text-[15px] text-ink-mute">Enter your email and we’ll send a link to choose a new password.</p>}
           </div>
           {mode === 'signup' && <Steps />}
+          {google && mode !== 'reset' && <><GoogleButton onError={(text) => setMsg({ text })} /><OrUseEmail /></>}
           {mode === 'signup' && <label className="block"><span className="label">Your name</span><input className="input" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></label>}
           <div>
             <label className="block"><span className="label">Email</span><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>

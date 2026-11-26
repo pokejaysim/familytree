@@ -72,7 +72,7 @@ export default function WelcomeTour({ data, meId, role, onClose, onStart, onOpen
   const [t, setT] = useState(0) // milliseconds played
   const [paused, setPaused] = useState(false)
   const done = t >= total
-  const step = done ? scenes.length - 1 : starts.findLastIndex((s) => t >= s)
+  const step = done ? scenes.length - 1 : Math.max(0, starts.findLastIndex((s) => t >= s))
   const leaving = !done && step < scenes.length - 1 && t > starts[step] + SCENE_MS[step] - FADE_MS
   const playBtn = useRef<HTMLButtonElement>(null)
   const endBtn = useRef<HTMLButtonElement>(null)
@@ -83,7 +83,8 @@ export default function WelcomeTour({ data, meId, role, onClose, onStart, onOpen
     let raf = 0
     let prev = performance.now()
     const tick = (now: number) => {
-      const dt = Math.min(now - prev, 100)
+      // The first frame's time can be a touch earlier than when the clock started: never run backwards.
+      const dt = Math.max(0, Math.min(now - prev, 100))
       prev = now
       setT((x) => Math.min(x + dt, total))
       raf = requestAnimationFrame(tick)

@@ -10,14 +10,16 @@ pb_hooks/        server-side logic
   review.pb.js            /api/sft/* endpoints: submit, review, withdraw, revert, claim, review-claim, counts
   change_log.pb.js        logs every change to the family records (cascades and dashboard edits too);
                           keeps a copy of deleted photos so undo can restore the file
-  accounts.pb.js          sign-ups become pending + view-only; confirmation email, note to admins;
-                          uploads belong to their uploader; nightly tidy-up of old uploads
+  accounts.pb.js          sign-ups (form or Google) become pending + view-only; note to admins;
+                          "You're in" email on approval; uploads belong to their uploader;
+                          nightly tidy-up of old uploads
+  google.pb.js            /api/sft/google: admins switch "Continue with Google" on or off
   sft_lib.js              shared helpers (a port of the Supabase reviewed_contributions functions)
 tools/
   export_supabase.py      Supabase -> JSON + files, into a folder OUTSIDE the repo
   import_supabase.pb.js   one-time console command that imports that export
   verify_import.py        compares an import with its export, field by field and file by file
-  test_review_system.py   65 end-to-end checks of the review system (made-up data, throwaway server)
+  test_review_system.py   132 end-to-end checks of the review system (made-up data, throwaway server)
   run_tests_on_server.sh  builds a throwaway PocketBase from this folder, runs the checks, deletes it
   make_thumbs.pb.js       console command `make-thumbs`: pre-makes photo thumbnails (run after bulk imports)
   make_owner.pb.js        console command `make-owner <email> [personId]`: admin + tree owner (used at switchover)
@@ -43,7 +45,7 @@ Everything stays local, on the server's drives. Jason decided against an off-sit
 - **IDs:** records keep their Supabase UUIDs, so links and URLs don't change.
 - **Portraits:** `people.photo` is a link to the person's `media` record, instead of a second copy of the storage path.
 - **Profiles:** these became fields on the `users` auth collection: `status`, `role`, `note`, `person`, `person_status`, `reviewed_at` and `reviewed_by`.
-- **Access:** approved members read; only an approved admin writes. Everyone else's edits go through `change_requests`. Anyone may sign up, but new accounts are pending and view-only, and only confirmed emails can sign in.
+- **Access:** approved members read; only an approved admin writes. Everyone else's edits go through `change_requests`. Anyone may sign up (with the form, or with Google once an admin switches it on), but new accounts are pending and view-only and see nothing until an admin approves them.
 - **Files:** media files are protected, so viewing them needs a file token. Thumbnails are `160x160`, `480x0` and `1200x0`.
 
 ## The review system (`pb_hooks`)

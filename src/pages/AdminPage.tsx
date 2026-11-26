@@ -6,6 +6,7 @@ import AppHeader from '../components/AppHeader'
 import Modal from '../components/Modal'
 import PersonPicker from '../components/PersonPicker'
 import TreeSettingsForm from '../components/TreeSettingsForm'
+import GoogleSetup from '../components/GoogleSetup'
 import { ClaimCard, HistoryRow, RequestCard } from '../components/ReviewCards'
 import { sendResetLink, useIsAdmin, useLinkMember, useMembers, useReviewMember, type MemberRole, type Profile } from '../lib/profile'
 import { useRecentHistory, useReviewQueue } from '../lib/changes'
@@ -56,6 +57,7 @@ export default function AdminPage() {
               <Chip to="members">Members · {approved.length}</Chip>
               <Chip to="history">Recent changes</Chip>
               <Chip to="health">Site health</Chip>
+              <Chip to="google">Google sign-in</Chip>
               <Chip to="tree">Tree settings</Chip>
             </nav>
           </div>
@@ -125,6 +127,14 @@ export default function AdminPage() {
               <p className="mt-1 text-[15px] text-ink-mute">A quick look at the home server: backups, space and email.</p>
             </div>
             <HealthPanel />
+          </section>
+
+          <section id="google" className="scroll-mt-4 space-y-3">
+            <div>
+              <h2 className="text-[22px]">Sign in with Google</h2>
+              <p className="mt-1 text-[15px] text-ink-mute">Lets relatives join and sign in with their Google account instead of a password. New accounts still wait for you to approve them.</p>
+            </div>
+            <GoogleSetup />
           </section>
 
           {trees?.[0] && (

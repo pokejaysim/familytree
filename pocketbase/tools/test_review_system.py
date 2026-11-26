@@ -330,5 +330,70 @@ check(via_cloudflare("GET", "/_/") == 404 and via_cloudflare("GET", "/api/settin
 check(call("GET", "/api/settings", su)[0] == 200, "the admin side still works from the home network (Tailscale)")
 check(via_cloudflare("GET", "/api/collections/people/records", editor) == 200 and via_cloudflare("POST", "/api/collections/users/auth-with-password", None, {"identity": "x@example.test", "password": "wrong-password"}) == 400, "members are unaffected")
 
+print("Sign in with Google")
+# A stand-in for Google on this machine (PocketBase's generic OIDC provider pointed at it), so the real
+# OAuth2 sign-in path runs end to end: the "code" picks which made-up Google account comes back.
+import http.server, threading
+FAKE_ACCOUNTS = {
+    "new": {"sub": "g-new", "email": "google-newcomer@example.test", "name": "Test Google Newcomer", "email_verified": True},
+    "sneaky": {"sub": "g-sneaky", "email": "google-sneaky@example.test", "name": "Test Sneaky", "email_verified": True},
+    "existing": {"sub": "g-existing", "email": "has-password@example.test", "name": "Test Existing", "email_verified": True},
+}
+class FakeGoogle(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def reply(self, obj):
+        raw = json.dumps(obj).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+    def do_POST(self):  # token exchange: hand back an access token naming the account
+        form = urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode())
+        self.reply({"access_token": "tok-" + form.get("code", [""])[0], "token_type": "Bearer", "expires_in": 3600})
+    def do_GET(self):  # user info
+        self.reply(FAKE_ACCOUNTS.get(self.headers.get("Authorization", "").replace("Bearer tok-", ""), {}))
+fake = http.server.HTTPServer(("127.0.0.1", 0), FakeGoogle)
+threading.Thread(target=fake.serve_forever, daemon=True).start()
+fake_url = f"http://127.0.0.1:{fake.server_address[1]}"
+must(call("PATCH", "/api/collections/users", su, {"oauth2": {"enabled": True, "providers": [{"name": "oidc", "clientId": "test", "clientSecret": "test-secret",
+     "authURL": fake_url + "/auth", "tokenURL": fake_url + "/token", "userInfoURL": fake_url + "/userinfo", "displayName": "Test"}]}}), "set up the stand-in Google")
+def google_sign_in(code, create_data=None):
+    p = next(x for x in must(call("GET", "/api/collections/users/auth-methods"))["oauth2"]["providers"] if x["name"] == "oidc")
+    return call("POST", "/api/collections/users/auth-with-oauth2", body={"provider": "oidc", "code": code, "codeVerifier": p["codeVerifier"], "redirectURL": "https://simfamilytree.com/", **({"createData": create_data} if create_data else {})})
+s_, b_ = google_sign_in("new")
+nu = b_.get("record", {}) if s_ == 200 else {}
+check(s_ == 200 and b_.get("meta", {}).get("isNew") is True, "a new relative can sign up with Google")
+check(nu.get("status") == "pending" and nu.get("role") == "viewer", "...and waits for approval as a view-only account, like the sign-up form")
+check(nu.get("name") == "Test Google Newcomer" and nu.get("email") == "google-newcomer@example.test", "...with the name and email from their Google account")
+check(s_ == 200 and call("GET", "/api/collections/people/records", b_["token"])[1].get("totalItems", 0) == 0, "...and sees nobody in the tree until approved")
+s_, b_ = google_sign_in("sneaky", {"status": "approved", "role": "admin", "person": dad, "person_status": "approved"})
+sn = b_.get("record", {}) if s_ == 200 else {}
+check(s_ == 200 and sn.get("status") == "pending" and sn.get("role") == "viewer" and not sn.get("person"), "a Google sign-up can't make itself approved, an admin or someone in the tree")
+s_, b_ = google_sign_in("new")
+check(s_ == 200 and b_["record"]["id"] == nu.get("id") and b_.get("meta", {}).get("isNew") is False, "signing in with Google again lands in the same account")
+pw = secrets.token_urlsafe(18)
+existing = must(call("POST", "/api/collections/users/records", body={"email": "has-password@example.test", "password": pw, "passwordConfirm": pw, "name": "Test Existing"}), "sign up with a password")
+s_, b_ = google_sign_in("existing")
+check(s_ == 200 and b_["record"]["id"] == existing["id"] and b_.get("meta", {}).get("isNew") is False, "someone who joined with a password and the same address lands in their own account with Google")
+check(call("POST", "/api/collections/users/auth-with-password", body={"identity": "has-password@example.test", "password": pw})[0] == 400,
+      "...and their old password stops working (PocketBase's guard against someone signing up with another person's address)")
+
+print("Turning Google sign-in on and off from the Admin page")
+GID = "1234567890-abcdefghijklmnop.apps.googleusercontent.com"
+check(all(call(m, "/api/sft/google", tok, {"clientId": GID, "clientSecret": "GOCSPX-test-secret-123"} if m == "POST" else None)[0] in (401, 403) for m in ("GET", "POST", "DELETE") for tok in (None, editor, pending)),
+      "only an admin can see or change Google sign-in")
+check(call("POST", "/api/sft/google", admin, {"clientId": "not-a-client-id", "clientSecret": "GOCSPX-test-secret-123"})[0] == 400, "a wrong-looking client ID is refused")
+check(call("POST", "/api/sft/google", admin, {"clientId": GID, "clientSecret": "short"})[0] == 400, "a wrong-looking client secret is refused")
+s_, b_ = call("POST", "/api/sft/google", admin, {"clientId": GID, "clientSecret": "GOCSPX-test-secret-123"})
+check(s_ == 200 and b_.get("on") is True and "GOCSPX" not in json.dumps(b_), "the admin can switch it on, and the secret isn't sent back")
+check(must(call("GET", "/api/sft/google", admin)) == {"on": True, "clientId": GID}, "the Admin page can see it's on")
+providers = must(call("GET", "/api/collections/users/auth-methods"))["oauth2"]["providers"]
+g = next((x for x in providers if x["name"] == "google"), None)
+check(g is not None and [x["name"] for x in providers] == ["google"], "the sign-in page is offered Google (and only Google)")
+check(bool(g) and g["authURL"].startswith("https://accounts.google.com/") and "client_id=" + GID in g["authURL"] and "code_challenge=" in g["authURL"] and g["authURL"].endswith("redirect_uri="),
+      "...with a Google link the site can finish with its own address")
+check(call("POST", "/api/collections/users/auth-with-oauth2", body={"provider": "google", "code": "made-up", "codeVerifier": g["codeVerifier"] if g else "", "redirectURL": "https://simfamilytree.com/"})[0] == 400,
+      "a made-up Google code is turned away")
+check(call("DELETE", "/api/sft/google", admin)[0] == 200 and must(call("GET", "/api/collections/users/auth-methods"))["oauth2"]["providers"] == [] and must(call("GET", "/api/sft/google", admin))["on"] is False,
+      "the admin can switch it off again")
+fake.shutdown()
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)
