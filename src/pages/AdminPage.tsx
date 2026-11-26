@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Check, CheckCircle2, KeyRound, Link2, Mail, RefreshCw, Search, X } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, Copy, KeyRound, Link2, Mail, RefreshCw, Search, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import AppHeader from '../components/AppHeader'
 import Modal from '../components/Modal'
@@ -103,6 +103,7 @@ export default function AdminPage() {
             {isLoading && <p className="text-ink-mute">Loading…</p>}
             {shown.length > 0 && <ul className="divide-y divide-line rounded-lg border border-line bg-white">{shown.map(row)}</ul>}
             {t && shown.length === 0 && <p className="text-[15px] text-ink-mute">No member matches “{q.trim()}”.</p>}
+            {approved.length > 0 && <EmailList members={approved} />}
             {declined.length > 0 && (
               <details className="rounded-lg border border-line bg-white">
                 <summary className="cursor-pointer px-4 py-3 text-[15px] text-ink-soft">Declined or removed · {declined.length}</summary>
@@ -148,6 +149,47 @@ export default function AdminPage() {
           )}
         </div>
       </main>
+    </div>
+  )
+}
+
+/**
+ * "Copy email list": every approved member's name and address, ready to paste into Gmail's Bcc box so
+ * nobody sees anyone else's address. Leaves out anyone who switched off the family news emails. If the
+ * browser won't copy, the list is shown so it can be selected by hand.
+ */
+function EmailList({ members }: { members: Profile[] }) {
+  const [shown, setShown] = useState<string | null>(null)
+  const list = members.filter((m) => m.email && !m.news_emails_off)
+  const left = members.length - list.length
+  const text = list.map((m) => {
+    const name = (m.name ?? '').replace(/["<>\\]/g, '').trim()
+    return name ? `"${name}" <${m.email}>` : m.email
+  }).join(', ')
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setShown(null)
+      toast('saved', `Copied ${list.length} ${list.length === 1 ? 'address' : 'addresses'}`, 'Paste them into the Bcc box in Gmail, so nobody sees anyone else’s address.')
+    } catch {
+      setShown(text)
+    }
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <button className="btn-ghost" onClick={copy} disabled={list.length === 0}><Copy size={16} /> Copy email list</button>
+        <span className="text-[14px] text-ink-mute">
+          {list.length} {list.length === 1 ? 'member' : 'members'}
+          {left > 0 && `, leaving out ${left} who turned off the news emails`}. Paste into Bcc.
+        </span>
+      </div>
+      {shown && (
+        <label className="block">
+          <span className="label">Your browser didn’t let us copy, so select this and copy it yourself</span>
+          <textarea className="input min-h-24" readOnly value={shown} onFocus={(e) => e.currentTarget.select()} />
+        </label>
+      )}
     </div>
   )
 }
