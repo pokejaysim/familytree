@@ -81,7 +81,7 @@ routerAdd("POST", "/api/sft/test-email", (e) => {
       from: { address: settings.meta.senderAddress, name: settings.meta.senderName },
       to: [{ address: e.auth.email(), name: e.auth.getString("name") }],
       subject: `Test email from the ${settings.meta.appName}`,
-      text: "This is the test email you asked for on the Admin page. If you can read it, the family tree can send email: sign-up notices, confirmation links and password reset links.",
+      text: "This is the test email you asked for on the Admin page. If you can read it, the family tree can send email, including sign-up notices, “You’re in” emails, password reset links and family news.",
     }))
   } catch (err) {
     $app.logger().warn("sft: couldn't send a test email", "error", String(err))

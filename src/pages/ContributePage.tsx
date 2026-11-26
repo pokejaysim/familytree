@@ -60,7 +60,7 @@ export default function ContributePage() {
           </ol>
 
           <section className="mt-10 rounded-md border border-line bg-white p-5">
-            <h2 className="text-[19px] text-ink">Good to know</h2>
+            <h2 className="text-[19px] text-ink">A few tips</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-[16px] leading-relaxed text-ink-soft marker:text-sage">
               <li>Rough dates are fine. “1954”, “Jun 1954” and “abt 1954” all work.</li>
               <li>If you can, tap <b className="font-medium">Cite a source</b> to say where you learned something: the family book, a certificate, a letter, or a relative’s memory.</li>

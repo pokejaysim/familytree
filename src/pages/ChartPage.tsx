@@ -80,7 +80,7 @@ export default function ChartPage() {
         <Search size={15} /> <span className="hidden sm:inline">Find a relative</span>
       </button>
 
-      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-paper/95 px-2 py-0.5 text-[14px] italic text-ink-mute sm:block">Drag to explore, scroll to zoom, and fold a branch with the − under a couple.</p>
+      <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-paper/95 px-2 py-0.5 text-[14px] italic text-ink-mute sm:block">Drag to move around, scroll to zoom, and fold a branch with the − under a couple.</p>
 
       {/* Zoom controls, above the minimap */}
       <div className={`absolute right-4 bottom-4 sm:right-8 sm:bottom-[160px] z-10 flex overflow-hidden rounded border border-line bg-white text-ink ${selected ? "hidden sm:flex" : ""}`}>

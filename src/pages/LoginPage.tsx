@@ -80,7 +80,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           <div>
             {brand}
             <h1 className="text-[26px] leading-tight">Welcome to the family tree</h1>
-            <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">Bernard’s family book, online, with photos and stories from the whole family. It’s private: only family members we’ve approved can see it.</p>
+            <p className="mt-2 text-[16px] leading-relaxed text-ink-soft">Bernard’s family book, online, with photos and stories from the whole family. It’s private. Only family members we’ve approved can see it.</p>
           </div>
           <div className="space-y-2">
             <button className="btn-primary min-h-11 w-full justify-center text-[16px]" onClick={() => go('signup')} autoFocus>I’m new here: ask to join</button>
@@ -102,7 +102,7 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           {mode === 'signup' && <label className="block"><span className="label">Your name</span><input className="input" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So relatives know who you are" /></label>}
           <div>
             <label className="block"><span className="label">Email</span><input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-            {mode === 'signup' && <p className="mt-1 text-[14px] text-ink-mute">Use an email you check: that’s where your “You’re in” email goes.</p>}
+            {mode === 'signup' && <p className="mt-1 text-[14px] text-ink-mute">Use an email you check, because that’s where your “You’re in” email goes.</p>}
           </div>
           {mode !== 'reset' && (
             <div>

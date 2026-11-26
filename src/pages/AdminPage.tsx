@@ -217,7 +217,7 @@ function JoinCard({ m }: { m: Profile }) {
         <button className="btn-ghost" disabled={review.isPending} onClick={() => approve('viewer')}>Approve as view only</button>
         <button className="btn-ghost" disabled={review.isPending} onClick={() => { if (confirm(`Decline ${m.name || m.email}? They won’t be able to see the tree.`)) review.mutate({ id: m.id, status: 'declined' }) }}><X size={15} /> Decline</button>
       </div>
-      <p className="text-[14px] text-ink-mute">Check the email looks right before approving: that’s where their “You’re in” email and any password reset links go.</p>
+      <p className="text-[14px] text-ink-mute">Check the email address before approving, because that’s where their “You’re in” email and any password reset links go.</p>
     </article>
   )
 }

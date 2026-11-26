@@ -53,7 +53,7 @@ export default function TreesPage() {
           </div>
         )}
         <div className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-8">
-          <p className="mt-2 text-[16px] text-ink-soft">Know a name, a date or a story? <Link to="/contribute" className="text-brass underline underline-offset-4 hover:text-moss">Here’s how to add it</Link>.</p>
+          <p className="mt-2 text-[16px] text-ink-soft">Know something the tree is missing? <Link to="/contribute" className="text-brass underline underline-offset-4 hover:text-moss">See how to add it</Link>.</p>
           {canEdit && trees && trees.length > 0 && <button className="btn-ghost mt-4" onClick={() => setOpen(true)}><Plus size={16} /> Start another tree</button>}
           <SupportLine variant="compact" />
         </div>

@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
 import { call, errorMessage, pb } from '../lib/pb'
 import { replayWelcome } from '../lib/welcome'
+import { useGoogleSignIn } from '../lib/signin'
 
 /**
  * Answers to common questions, and a message form that emails the admins (POST /api/sft/contact).
@@ -16,6 +17,7 @@ export default function HelpPage() {
   const { session } = useAuth()
   const { data: profile } = useProfile()
   const member = profile?.status === 'approved'
+  const { data: google } = useGoogleSignIn()
 
   const faqs: { q: string; a: ReactNode }[] = [
     { q: 'I forgot my password', a: <>On the sign-in page, tap <b className="font-medium">Forgot password?</b> and enter the email you signed up with. You’ll get an email from Sim Family Tree with a link to choose a new password. The link works for 24 hours. If it doesn’t arrive within a few minutes, look in your Junk or Spam folder.</> },
@@ -40,7 +42,7 @@ export default function HelpPage() {
           {!session && <p className="mt-3 text-[16px]"><Link to="/" className="text-brass underline underline-offset-4 hover:text-moss">Back to sign in</Link></p>}
 
           <ul className="mt-8 divide-y divide-line rounded-lg border border-line bg-white">
-            {faqs.map((f) => (
+            {faqs.filter((f) => google || f.q !== 'Can I sign in with Google?').map((f) => (
               <li key={f.q}>
                 <details className="group">
                   <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 text-[17px] text-ink [&::-webkit-details-marker]:hidden">

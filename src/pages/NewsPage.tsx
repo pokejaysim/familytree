@@ -37,7 +37,7 @@ export default function NewsPage() {
             ? <p className="text-[16px]"><Link to="/news" className="text-brass underline underline-offset-4 hover:text-moss">All family news</Link></p>
             : <>
                 <h1 className="text-3xl leading-tight sm:text-4xl">Family news</h1>
-                <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">News and updates from around the family.</p>
+                <p className="mt-3 text-[17px] leading-relaxed text-ink-soft">News from around the family, newest first.</p>
                 <EmailSwitch />
                 {isAdmin && !writing && <button className="btn-primary mt-6 min-h-11 px-5 text-[16px]" onClick={() => setWriting(true)}><PenLine size={17} /> Write a post</button>}
                 {isAdmin && writing && <Composer onDone={() => setWriting(false)} />}
@@ -106,10 +106,10 @@ function useSender() {
     setProgress(0)
     try {
       const { sent, failed } = await sendNews(post.id, setProgress)
-      if (failed) toast('error', `Emailed to ${sent}, but ${failed} didn’t send`, 'Site health on the Admin page says what went wrong. Press Email again later to try those once more: nobody gets it twice.')
+      if (failed) toast('error', `Emailed to ${sent}, but ${failed} didn’t send`, 'Site health on the Admin page says what went wrong. Press Email again later to try those once more.')
       else toast('saved', sent ? `Emailed to ${sent} ${sent === 1 ? 'person' : 'people'}` : 'Nobody new to email', sent ? `“${post.title}” is on its way.` : 'Everyone who wants the emails has had this one.')
     } catch (err) {
-      toast('error', 'The emails didn’t all go', `${errorMessage(err)} Try again: nobody gets it twice.`)
+      toast('error', 'The emails didn’t all go', `${errorMessage(err)} Try again. Nobody gets it twice.`)
     } finally {
       setProgress(null)
       qc.invalidateQueries({ queryKey: ['news'] })

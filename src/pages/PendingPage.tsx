@@ -41,7 +41,7 @@ export default function PendingPage({ profile }: { profile: Profile | null }) {
             <p className="text-[16px] leading-relaxed text-ink-soft">We look at every new account personally, because the tree has details about living relatives. That usually takes a day or two.</p>
             <p className="text-[16px] leading-relaxed text-ink-soft">
               You’ll get an email at <span className="font-medium text-ink [overflow-wrap:anywhere]">{profile?.email}</span> as soon as you’re in.
-              There’s nothing else to do: this page opens the tree by itself, and next time you visit you’ll go straight in.
+              There’s nothing else to do. This page opens the tree by itself, and next time you visit you’ll go straight in.
             </p>
             <p className="text-[14px] text-ink-mute">Not your email address? Sign out and sign up again with the right one.</p>
           </>

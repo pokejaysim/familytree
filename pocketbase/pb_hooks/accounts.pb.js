@@ -68,20 +68,20 @@ onRecordUpdateRequest((e) => {
     try { google = $app.findAllExternalAuthsByRecord(e.record).some((a) => a && a.provider() === "google") } catch (_) { /* say the password version */ }
     const how = google
       ? [`tap <em>Continue with Google</em> and choose your Google account (${e.record.email()}).`, `tap "Continue with Google" and choose your Google account (${e.record.email()}).`]
-      : [`sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap <em>Forgot password?</em> on the sign-in page.`,
-         `sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap "Forgot password?" on the sign-in page.`]
+      : [`use this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap <em>Forgot password?</em> on the sign-in page.`,
+         `use this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap "Forgot password?" on the sign-in page.`]
     $app.newMailClient().send(new MailerMessage({
       from: { address: meta.senderAddress, name: meta.senderName },
       to: [{ address: e.record.email(), name: e.record.getString("name") }],
       subject: `You're in: the ${meta.appName}`,
       html: [
         `<p>Hello${first ? " " + first : ""},</p>`,
-        "<p>Your account has been approved, so you can now explore the family tree and add what you know.</p>",
+        "<p>Your account has been approved, so you can now look around the family tree and add what you know.</p>",
         `<p><a href="${site}" style="display:inline-block;padding:10px 18px;background:#2E4A38;color:#FAF8F3;border-radius:6px;text-decoration:none">Open the family tree</a></p>`,
         `<p>To get in, ${how[0]}</p>`,
         `<p>The ${meta.appName}</p>`,
       ].join("\n"),
-      text: `Hello${first ? " " + first : ""},\n\nYour account has been approved, so you can now explore the family tree and add what you know:\n${site}\n\n`
+      text: `Hello${first ? " " + first : ""},\n\nYour account has been approved, so you can now look around the family tree and add what you know:\n${site}\n\n`
         + `To get in, ${how[1]}\n\nThe ${meta.appName}`,
     }))
   } catch (err) {

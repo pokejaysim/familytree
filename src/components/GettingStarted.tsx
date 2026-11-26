@@ -42,7 +42,7 @@ export default function GettingStarted({ treeId, hasForeword, onFind, onRead }: 
     canEdit ? {
       done: mine.length > 0,
       title: 'Add something you know',
-      text: 'A date, a story or an old photo. We check each one before it goes in, so you can’t break anything.',
+      text: 'Fix a date, add a story or put up an old photo. We check each one before it goes in, so you can’t break anything.',
       action: linked ? <Link className={button} to={`/trees/${treeId}/people/${profile.person_id}`}>Start with your page</Link> : <Link className={button} to="/contribute">See how</Link>,
     } : {
       done: false,
