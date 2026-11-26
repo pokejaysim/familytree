@@ -43,7 +43,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **Addresses:**
   - Public API: `https://tree-api.pjscollectibles.ca`, through the Pi's Cloudflare tunnel. `/_/` and `/api/collections/_superusers` are blocked publicly.
   - Admin dashboard: Tailscale only, at `https://raspberrypi.<tailnet>.ts.net/_/`.
-  - PocketBase listens on 127.0.0.1:8090 with `--origins=https://pokejaysim.github.io`.
+  - PocketBase listens on 127.0.0.1:8090 with `--origins=https://simfamilytree.com,https://pokejaysim.github.io` (the old address redirects to the new one).
 - **Data and backups:**
   - Data lives in an ext4 image on a USB drive, mounted at `/srv/pocketbase`.
   - Backups: PocketBase's own nightly, plus a nightly snapshot to the second drive. They are local only, by Jason's choice.
@@ -60,7 +60,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **Supabase:** the old project `nurkbmmacrepftlepizi` is kept untouched as a fallback for a month after the switchover (it can be un-paused within 90 days). `supabase/migrations/` is history only.
 
 ## Hosting
-- GitHub Pages at https://pokejaysim.github.io/familytree/ (repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
+- GitHub Pages at https://simfamilytree.com, a custom domain set in the repo's Pages settings, with DNS in Cloudflare (DNS only, not proxied, so GitHub issues the HTTPS certificate). The old https://pokejaysim.github.io/familytree/ redirects there. (Repo `pokejaysim/familytree`, workflow deploys `main`). Vite `base` comes from `BASE_PATH`; the router uses `import.meta.env.BASE_URL`; `404.html` is a copy of `index.html` for deep links.
 
 ## Phone layout
 Below the `sm` breakpoint the tree tabs move to a bottom tab bar (`BottomTabs` in `AppHeader.tsx`), Contribute / Review / Members / Your profile / Sign out fold into a labelled "Menu" (`PhoneMenu`), the spotlight is a bottom sheet, the minimap hides, and the map opens at a readable zoom on the first generation instead of fitting the whole tree. Keep the header's minimum content width under 375px: if it overflows, mobile browsers widen the layout viewport and everything else looks broken.

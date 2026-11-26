@@ -13,7 +13,8 @@ User=pocketbase
 Group=pocketbase
 WorkingDirectory=/srv/pocketbase
 # --origins: only the family tree site may call this from a browser (the dashboard is same-site, so unaffected).
-ExecStart=/opt/pocketbase/pocketbase serve --http=127.0.0.1:8090 --origins=https://pokejaysim.github.io \
+# simfamilytree.com is the site; the old github.io address stays allowed while it redirects there.
+ExecStart=/opt/pocketbase/pocketbase serve --http=127.0.0.1:8090 --origins=https://simfamilytree.com,https://pokejaysim.github.io \
   --dir=/srv/pocketbase/pb_data \
   --migrationsDir=/srv/pocketbase/pb_migrations \
   --hooksDir=/srv/pocketbase/pb_hooks \
