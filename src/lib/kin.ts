@@ -129,3 +129,26 @@ export function branchesOf(graph: Graph): Branch[] {
   if (rest.length) out.push({ key: 'rest', title: 'Not yet connected', note: 'People the tree doesn’t link to the family yet', people: order(rest, () => 0) })
   return out.filter((b) => b.people.length)
 }
+
+export const WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+/** The founding couple: the parentless person with the most children, and their partner(s). */
+export function foundersOf(graph: Graph): Person[] {
+  const roots = [...graph.people.values()].filter((p) => graph.parentsOf(p.id).length === 0)
+  const f = roots.sort((a, b) => graph.childrenOf(b.id).length - graph.childrenOf(a.id).length)[0]
+  if (!f || graph.childrenOf(f.id).length === 0) return []
+  const partners = (graph.familiesOfParent.get(f.id) ?? []).map((fam) => graph.partnerOf(fam, f.id)).filter((q): q is Person => !!q)
+  return [f, ...partners.slice(0, 1)]
+}
+
+/** Generations from the founders down, counting them as the first. */
+export function generationsBelow(graph: Graph, founder: Person): number {
+  let depth = 0
+  const walk = (p: Person, d: number, seen: Set<string>) => {
+    if (seen.has(p.id)) return
+    seen.add(p.id); depth = Math.max(depth, d)
+    graph.childrenOf(p.id).forEach((c) => walk(c, d + 1, seen))
+  }
+  walk(founder, 1, new Set())
+  return depth
+}

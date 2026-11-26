@@ -7,6 +7,7 @@ import { useMyRequests, useWithdrawRequest } from '../lib/changes'
 import { useTrees } from '../lib/queries'
 import { ADMIN_NAME } from '../config'
 import divider from '../assets/branch-divider.svg'
+import { replayWelcome } from '../lib/welcome'
 
 /** How to contribute: a short guide, plus the signed-in person's own suggestions and where they stand. */
 export default function ContributePage() {
@@ -39,6 +40,7 @@ export default function ContributePage() {
             The tree began with Bernard’s family book, and there’s still plenty missing. If you know a name or a date,
             remember a story, or have an old photo tucked away somewhere, please add it. Even a rough guess helps.
           </p>
+          <p className="mt-4 text-center"><button className="text-[16px] text-brass underline underline-offset-4 hover:text-moss" onClick={replayWelcome}>Watch the welcome again</button></p>
 
           {!canEdit && (
             <p className="mt-8 rounded-md border border-brass-light/60 bg-note p-4 text-[15px] text-ink-soft">

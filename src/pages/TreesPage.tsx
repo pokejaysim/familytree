@@ -4,9 +4,9 @@ import { BookOpen, GitFork, Plus, Search } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import { useCreateTree, useTree, useTreeData, useTrees } from '../lib/queries'
 import { useIsAdmin } from '../lib/profile'
-import { buildGraph, type Graph } from '../lib/graph'
+import { buildGraph } from '../lib/graph'
+import { foundersOf, generationsBelow, WORDS } from '../lib/kin'
 import { fullName, lifespan } from '../lib/dates'
-import type { Person } from '../lib/types'
 import AppHeader from '../components/AppHeader'
 import SupportLine from '../components/SupportLine'
 import Modal from '../components/Modal'
@@ -68,29 +68,6 @@ export default function TreesPage() {
       )}
     </div>
   )
-}
-
-const WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
-
-/** The founding couple: the parentless person with the most children, and their partner(s). */
-function foundersOf(graph: Graph): Person[] {
-  const roots = [...graph.people.values()].filter((p) => graph.parentsOf(p.id).length === 0)
-  const f = roots.sort((a, b) => graph.childrenOf(b.id).length - graph.childrenOf(a.id).length)[0]
-  if (!f || graph.childrenOf(f.id).length === 0) return []
-  const partners = (graph.familiesOfParent.get(f.id) ?? []).map((fam) => graph.partnerOf(fam, f.id)).filter((q): q is Person => !!q)
-  return [f, ...partners.slice(0, 1)]
-}
-
-/** Generations from the founders down, counting them as the first. */
-function generationsBelow(graph: Graph, founder: Person): number {
-  let depth = 0
-  const walk = (p: Person, d: number, seen: Set<string>) => {
-    if (seen.has(p.id)) return
-    seen.add(p.id); depth = Math.max(depth, d)
-    graph.childrenOf(p.id).forEach((c) => walk(c, d + 1, seen))
-  }
-  walk(founder, 1, new Set())
-  return depth
 }
 
 /** The family's front page: who they are, where they began, and the way into the map. */

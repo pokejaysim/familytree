@@ -4,7 +4,7 @@
  * Decorative only: pointer-events none, never steals focus, skipped for reduced-motion users,
  * cleaned up on completion (2.2 s fallback) or when the tab is hidden.
  */
-const TREE =
+export const TREE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" aria-hidden="true" fill="#2F4B3A"><g transform="translate(4 2)">' +
   '<path class="leaf" style="--delay:540ms" d="M32 3C24 11 27 18 32 22C37 18 40 10 32 3Z" fill="#AF8C45"/>' +
   '<path class="leaf" style="--delay:420ms" d="M14 11C14 19 18 24 25 24C25 18 21 12 14 11Z"/>' +
@@ -35,6 +35,9 @@ svg{display:block;width:144px;height:144px;overflow:visible;}
 `
 
 let active: Promise<void> | null = null
+
+/** Resolves once the splash (if one is playing) has gone, so anything else can wait its turn. */
+export const whenSplashDone = (): Promise<void> => active ?? Promise.resolve()
 
 /** Play the splash once; resolves when the overlay is gone. Concurrent calls share one run. */
 export function showSplash(): Promise<void> {

@@ -1,13 +1,16 @@
-import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import LoginPage, { type Notice } from './pages/LoginPage'
 import { pb } from './lib/pb'
 import { ADMIN_NAME } from './config'
 import UpdatePasswordPage from './pages/UpdatePasswordPage'
 import { useEffect, useState } from 'react'
-import { useProfile } from './lib/profile'
+import { useMeId, useProfile } from './lib/profile'
 import PendingPage from './pages/PendingPage'
-import { showSplash } from './lib/splash'
+import { showSplash, whenSplashDone } from './lib/splash'
+import { useTreeData, useTrees } from './lib/queries'
+import WelcomeTour from './components/WelcomeTour'
+import { WELCOME_EVENT } from './lib/welcome'
 import TreesPage from './pages/TreesPage'
 import TreeLayout from './pages/TreeLayout'
 import PeoplePage from './pages/PeoplePage'
@@ -76,6 +79,7 @@ export default function App() {
   return (
     <>
     <Toaster />
+    <Welcome />
     <Routes>
       <Route path="/" element={<TreesPage />} />
       <Route path="/admin" element={<AdminPage />} />
@@ -97,6 +101,34 @@ export default function App() {
     </Routes>
     </>
   )
+}
+
+/**
+ * The welcome for new members: once per account on each device, after the sign-in splash has gone.
+ * Waits for the tree to load so the first card can say how many people are in it.
+ */
+function Welcome() {
+  const { session } = useAuth()
+  const { data: profile } = useProfile()
+  const meId = useMeId()
+  const { data: trees } = useTrees()
+  const treeId = trees?.[0]?.id ?? ''
+  const { data } = useTreeData(treeId)
+  const nav = useNavigate()
+  const key = `sft-welcomed:${session?.user.id ?? ''}`
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    let seen = true
+    try { seen = !!localStorage.getItem(key) } catch { /* storage unavailable: don't show it on every visit */ }
+    // A tick later, so the splash (started by App's own effect, which runs after this one) is already playing.
+    const t = seen ? undefined : window.setTimeout(() => whenSplashDone().then(() => setOpen(true)), 0)
+    const replay = () => setOpen(true)
+    window.addEventListener(WELCOME_EVENT, replay)
+    return () => { window.clearTimeout(t); window.removeEventListener(WELCOME_EVENT, replay) }
+  }, [key])
+  if (!open || !profile || (treeId && !data)) return null
+  const close = () => { try { localStorage.setItem(key, new Date().toISOString()) } catch { /* ignore */ } setOpen(false) }
+  return <WelcomeTour data={data} meId={meId} role={profile.role} onClose={close} onOpenMap={treeId ? () => { close(); nav(`/trees/${treeId}/chart`) } : null} />
 }
 
 /** Shown when the site can't reach the family tree server. Tries again by itself when the device comes back online. */
