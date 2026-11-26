@@ -65,6 +65,7 @@ Same behaviour as the Supabase version.
 - **"This is me":**
   - `/api/sft/claim {person}` links your account; an admin's link applies at once, everyone else's waits.
   - `/api/sft/review-claim {user, approve}` is for the admin.
+  - `/api/sft/link-member {user, person}` lets the admin link (or, with no person, unlink) a member directly.
   - `GET /api/sft/counts` gives the admin's badges.
 
 To test changes to the hooks:

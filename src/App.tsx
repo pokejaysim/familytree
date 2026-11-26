@@ -7,7 +7,6 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage'
 import { useEffect, useState } from 'react'
 import { useProfile } from './lib/profile'
 import PendingPage from './pages/PendingPage'
-import MembersPage from './pages/MembersPage'
 import { showSplash } from './lib/splash'
 import TreesPage from './pages/TreesPage'
 import TreeLayout from './pages/TreeLayout'
@@ -18,7 +17,7 @@ import SourcesPage from './pages/SourcesPage'
 import SourcePage from './pages/SourcePage'
 import AboutPage from './pages/AboutPage'
 import SupportPage from './pages/SupportPage'
-import ReviewPage from './pages/ReviewPage'
+import AdminPage from './pages/AdminPage'
 import ContributePage from './pages/ContributePage'
 import { Toaster, toast } from './lib/toast'
 
@@ -79,9 +78,10 @@ export default function App() {
     <Toaster />
     <Routes>
       <Route path="/" element={<TreesPage />} />
-      <Route path="/members" element={<MembersPage />} />
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/members" element={<Navigate to="/admin" replace />} />
       <Route path="/support" element={<SupportPage />} />
-      <Route path="/review" element={<ReviewPage />} />
+      <Route path="/review" element={<Navigate to="/admin" replace />} />
       <Route path="/contribute" element={<ContributePage />} />
       <Route path="/trees/:treeId" element={<TreeLayout />}>
         <Route index element={<Navigate to="chart" replace />} />

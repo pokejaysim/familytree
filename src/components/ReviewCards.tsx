@@ -1,62 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, RotateCcw, X } from 'lucide-react'
-import AppHeader from '../components/AppHeader'
-import { useIsAdmin, useMembers } from '../lib/profile'
-import { useRecentHistory, useReviewClaim, useReviewQueue, useReviewRequest, useRevertRequest, type Change, type ChangeRequest } from '../lib/changes'
+import { useReviewClaim, useReviewRequest, useRevertRequest, type Change, type ChangeRequest } from '../lib/changes'
 import { usePerson, useSignedUrl, useTreeData } from '../lib/queries'
 import { fullName } from '../lib/dates'
 import { CONFIDENCE_LABELS, type Person } from '../lib/types'
 
-/** Admin's review desk: suggested changes waiting for approval, "this is me" links, and recent history with undo. */
-export default function ReviewPage() {
-  const isAdmin = useIsAdmin()
-  const { data: queue = [], isLoading } = useReviewQueue(isAdmin)
-  const { data: history = [] } = useRecentHistory(isAdmin)
-  const { data: members = [] } = useMembers()
-  const claims = members.filter((m) => m.person_status === 'pending')
-  const names = useMemo(() => new Map(members.map((m) => [m.id, m.name || m.email])), [members])
-  if (!isAdmin) return <div className="flex h-full flex-col"><AppHeader /><p className="p-6 text-ink-mute">Only admins can review changes.</p></div>
-  return (
-    <div className="flex h-full flex-col">
-      <AppHeader />
-      <main className="min-h-0 flex-1 overflow-auto">
-        <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
-          <div>
-            <h1 className="text-2xl">Review</h1>
-            <p className="text-sm text-ink-mute">Changes relatives suggest wait here until you approve them. Anything approved can be undone from Recent changes below.</p>
-          </div>
-
-          <section className="space-y-3">
-            <h2 className="text-xl">Waiting for review <span className="text-ink-mute">{queue.length}</span></h2>
-            {isLoading && <p className="text-ink-mute">Loading…</p>}
-            {!isLoading && queue.length === 0 && <p className="card text-sm text-ink-mute">Nothing waiting. New suggestions will appear here.</p>}
-            {queue.map((r) => <RequestCard key={r.id} r={r} author={names.get(r.author_id) ?? 'A relative'} />)}
-          </section>
-
-          {claims.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-xl">“This is me” requests <span className="text-ink-mute">{claims.length}</span></h2>
-              {claims.map((m) => <ClaimCard key={m.id} profileId={m.id} who={m.name || m.email} note={m.note} personId={m.person_id!} />)}
-            </section>
-          )}
-
-          <section className="space-y-3">
-            <h2 className="text-xl">Recent changes</h2>
-            {history.length === 0 && <p className="card text-sm text-ink-mute">No changes yet.</p>}
-            <ul className="card divide-y divide-line p-0">
-              {history.map((r) => <HistoryRow key={r.id} r={r} author={names.get(r.author_id) ?? 'A relative'} reviewer={r.reviewed_by ? names.get(r.reviewed_by) : undefined} />)}
-            </ul>
-          </section>
-        </div>
-      </main>
-    </div>
-  )
-}
+/** The cards the Admin page uses: a suggested change, a “this is me” request, and a row of recent history with undo. */
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '')
 
-function RequestCard({ r, author }: { r: ChangeRequest; author: string }) {
+export function RequestCard({ r, author }: { r: ChangeRequest; author: string }) {
   const review = useReviewRequest()
   const { data } = useTreeData(r.tree_id)
   const people = useMemo(() => {
@@ -154,7 +108,7 @@ function Thumb({ path }: { path: string }) {
   return small && full ? <a href={full} target="_blank" rel="noreferrer"><img src={small} alt="" loading="lazy" className="mt-1 h-28 w-28 rounded border border-line object-cover" /></a> : null
 }
 
-function ClaimCard({ profileId, who, note, personId }: { profileId: string; who: string; note: string | null; personId: string }) {
+export function ClaimCard({ profileId, who, note, personId }: { profileId: string; who: string; note: string | null; personId: string }) {
   const review = useReviewClaim()
   const { data: p } = usePerson(personId)
   return (
@@ -178,7 +132,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   reverted: { label: 'Undone', cls: 'bg-paper text-ink-mute' },
 }
 
-function HistoryRow({ r, author, reviewer }: { r: ChangeRequest; author: string; reviewer?: string }) {
+export function HistoryRow({ r, author, reviewer }: { r: ChangeRequest; author: string; reviewer?: string }) {
   const revert = useRevertRequest()
   const [busy, setBusy] = useState(false)
   const s = STATUS[r.status] ?? { label: r.status, cls: 'bg-paper text-ink-mute' }

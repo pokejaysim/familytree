@@ -131,6 +131,30 @@ routerAdd("POST", "/api/sft/review-claim", (e) => {
   return e.json(200, { ok: true })
 }, $apis.requireAuth("users"))
 
+// The admin links a member's account to their person in the tree, or clears the link.
+routerAdd("POST", "/api/sft/link-member", (e) => {
+  const lib = require(`${__hooks}/sft_lib.js`)
+  if (!lib.isAdmin(e.auth)) throw new ForbiddenError("Only admins can link members to the tree.")
+  const body = e.requestInfo().body || {}
+  $app.runInTransaction((tx) => {
+    const u = lib.findOrNull(tx, "users", String(body.user || ""))
+    if (!u) lib.fail("That account no longer exists.")
+    if (!body.person) {
+      u.set("person", "")
+      u.set("person_status", "")
+    } else {
+      const personId = String(body.person)
+      if (!lib.findOrNull(tx, "people", personId)) lib.fail("That person is not in the tree.")
+      const taken = tx.findRecordsByFilter("users", "person = {:p} && person_status = 'approved' && id != {:u}", "", 1, 0, { p: personId, u: u.id })
+      if (taken.length) lib.fail(`${taken[0].getString("name") || taken[0].email()} is already linked to this person.`)
+      u.set("person", personId)
+      u.set("person_status", "approved")
+    }
+    tx.save(u)
+  })
+  return e.json(200, { ok: true })
+}, $apis.requireAuth("users"))
+
 // Badges for the admin: changes and profile links waiting for review, and accounts waiting for approval.
 routerAdd("GET", "/api/sft/counts", (e) => {
   const lib = require(`${__hooks}/sft_lib.js`)

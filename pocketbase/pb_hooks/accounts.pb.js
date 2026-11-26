@@ -4,6 +4,7 @@
 // - A new account is always pending and view-only, whatever the sign-up form sends; only an
 //   admin (or the dashboard) can approve it. It gets a confirm-your-email message, and the admins
 //   get a note that someone is waiting. If email isn't set up yet, sign-up still works.
+// - Each member's last visit is noted (last_seen) for the Admin page, at most every 10 minutes.
 // - An upload always belongs to whoever uploaded it and starts out "pending" (waiting for review).
 // - Every night, abandoned uploads are cleared away, along with kept copies of deleted photos
 //   that are old enough that nobody will undo them.
@@ -38,10 +39,24 @@ onRecordCreateRequest((e) => {
       to: admins.map((a) => ({ address: a.email(), name: a.getString("name") })),
       subject: `${name} wants to join the family tree`,
       text: `${name} (${e.record.email()}) just signed up${note ? ` and wrote: "${note}"` : ""}.\n\n`
-        + "Their account can't see anything until you approve it on the Members page.",
+        + "Their account can't see anything until you approve it on the Admin page:\n"
+        + `${meta.appURL}/admin`,
     }))
   } catch (err) {
     console.log("sft: couldn't email the admins about a sign-up", String(err))
+  }
+}, "users")
+
+// Signing in and the app's start-up check (auth-refresh) both count as a visit.
+onRecordAuthRequest((e) => {
+  e.next()
+  try {
+    const now = new DateTime()
+    const last = e.record.getDateTime("last_seen")
+    if (!last.isZero() && now.unix() - last.unix() < 600) return
+    $app.db().newQuery("UPDATE users SET last_seen = {:t} WHERE id = {:id}").bind({ t: now.string(), id: e.record.id }).execute()
+  } catch (err) {
+    console.log("sft: couldn't note a visit", String(err))
   }
 }, "users")
 

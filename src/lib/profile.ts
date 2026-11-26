@@ -16,6 +16,10 @@ export interface Profile {
   reviewed_at: string | null
   person_id: string | null
   person_status: 'pending' | 'approved' | null
+  /** They've confirmed their email address (they can't sign in until they have). */
+  verified: boolean
+  /** Their last visit, recorded since the Admin page arrived (null before then). */
+  last_seen: string | null
 }
 
 /** A PocketBase user account as the app's member profile (Supabase kept these in a separate "profiles" table). */
@@ -30,6 +34,8 @@ const toProfile = (r: RecordModel): Profile => ({
   reviewed_at: r.reviewed_at ? String(r.reviewed_at).replace(' ', 'T') : null,
   person_id: r.person || null,
   person_status: r.person_status || null,
+  verified: !!r.verified,
+  last_seen: r.last_seen ? String(r.last_seen).replace(' ', 'T') : null,
 })
 
 /** The signed-in user's own membership record. */
@@ -76,6 +82,21 @@ export function useReviewMember() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); qc.invalidateQueries({ queryKey: ['pendingCount'] }) },
   })
 }
+
+/** The admin links a member to their person in the tree (person null clears it). */
+export function useLinkMember() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ user, person }: { user: string; person: string | null }) => {
+      await call(pb.send('/api/sft/link-member', { method: 'POST', body: { user, person } }))
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['members'] }); qc.invalidateQueries({ queryKey: ['profile'] }) },
+  })
+}
+
+/** Send a member the same emails they could ask for themselves: a password reset link, or the confirm-your-email link. */
+export const sendAccountEmail = (kind: 'reset' | 'confirm', email: string) =>
+  call(kind === 'reset' ? pb.collection('users').requestPasswordReset(email) : pb.collection('users').requestVerification(email))
 
 /** The visitor's own person in the tree, once an admin has confirmed "This is me"; otherwise null. */
 export function useMeId(): string | null {

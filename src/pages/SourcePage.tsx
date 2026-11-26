@@ -44,7 +44,7 @@ export default function SourcePage() {
         </div>
         {canEdit && <div className="flex gap-1">
           <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> {isAdmin ? 'Edit' : 'Suggest an edit'}</button>
-          <button className="btn-danger" onClick={async () => { if (confirm(isAdmin ? 'Delete this source and all its citations? You can undo this from the Review page.' : 'Suggest deleting this source? It will be reviewed first.')) { const r = await submit.mutateAsync({ summary: `Delete the source "${s.title}"`, changes: [{ table: 'sources', op: 'delete', key: { id: s.id } }] }); if (r.status === 'approved') nav(`/trees/${treeId}/sources`) } }}><Trash2 size={14} /></button>
+          <button className="btn-danger" onClick={async () => { if (confirm(isAdmin ? 'Delete this source and all its citations? You can undo this from the Admin page.' : 'Suggest deleting this source? It will be reviewed first.')) { const r = await submit.mutateAsync({ summary: `Delete the source "${s.title}"`, changes: [{ table: 'sources', op: 'delete', key: { id: s.id } }] }); if (r.status === 'approved') nav(`/trees/${treeId}/sources`) } }}><Trash2 size={14} /></button>
         </div>}
       </div>
       {s.notes && <p className="card whitespace-pre-wrap text-sm">{s.notes}</p>}

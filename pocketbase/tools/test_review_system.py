@@ -243,5 +243,14 @@ must(call("POST", "/api/sft/claim", admin, {"person": mum}))
 check(rec("users", admin_id)[1]["person_status"] == "approved", "the admin's own link applies at once")
 check(must(call("GET", "/api/sft/counts", admin))["members"] == 2, "the admin's badge counts accounts waiting for approval (the pending one and the sign-up)")
 
+print("Admin page")
+check(bool(rec("users", editor_id)[1].get("last_seen")), "signing in records when a member was last here")
+check(call("POST", "/api/sft/link-member", editor, {"user": editor2_id, "person": dad})[0] == 403, "only the admin can link members to the tree")
+must(call("POST", "/api/sft/link-member", admin, {"user": editor2_id, "person": dad}))
+u = rec("users", editor2_id)[1]
+check(u["person"] == dad and u["person_status"] == "approved", "the admin can link a member to their person, at once")
+check(call("POST", "/api/sft/link-member", admin, {"user": viewer_id, "person": dad})[0] == 400, "...but not to someone another member is already linked to")
+check(call("POST", "/api/sft/link-member", admin, {"user": editor2_id, "person": None})[0] == 200 and rec("users", editor2_id)[1]["person"] == "", "the admin can clear a member's link")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)

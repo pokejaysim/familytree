@@ -14,15 +14,15 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **Profiles:** on a laptop the record (family, life events, sources) is on the left and the photos on the right; on a phone the photos are a swipeable strip under the name. Captions are always shown in full under each photo.
 - **Accounts:** email and password, with self-serve sign-up (name plus a "how are you related" note), email confirmation (`?confirm=` link) and password reset (`?reset=` link), both handled in `App.tsx`.
   - **Approval queue:** a hook makes every new account `status` pending and `role` viewer, whatever the form sends. Only confirmed emails can sign in, and the app shows `PendingPage` until approval.
-  - **Managing members:** admins manage everyone on `/members` (`MembersPage`; Approve = editor, "View only" = viewer). The header badges come from `GET /api/sft/counts`. `useCanEdit()` from `src/lib/profile.ts` hides edit controls from viewers.
+  - **Managing members:** admins manage everyone on `/admin` (`AdminPage`; Approve = editor, "Approve as view only" = viewer; role, linked person, last visit from `users.last_seen`, send a reset or confirmation email). `/members` and `/review` redirect there. The header's one Admin badge comes from `GET /api/sft/counts`. `useCanEdit()` from `src/lib/profile.ts` hides edit controls from viewers.
   - Jason is the admin.
 - **Reviewed contributions:** every data change goes through `POST /api/sft/submit` (`src/lib/changes.ts`, `useSubmit`).
   - **One user action = one request:** each is a `change_requests` record holding ordered inserts, updates and deletes. New rows get client IDs (`newId()`), so a request can create a person and link them in one go.
-  - **Who applies what:** editors' requests wait (status pending) for an admin on `/review` (`ReviewPage`: approve or decline with a note, "this is me" links, recent history with Undo). Admins' requests apply immediately but are still recorded.
+  - **Who applies what:** editors' requests wait (status pending) for an admin on `/admin` (cards in `src/components/ReviewCards.tsx`: approve or decline with a note, "this is me" links, recent history with Undo). Admins' requests apply immediately but are still recorded.
   - **History and undo:** hooks write every record change to `change_log`, including cascades and dashboard edits. `/api/sft/revert` undoes a request, including cascaded deletes and photo files.
   - **Photos:** contributors upload into `uploads` (waiting for review); approval moves the file into `media`.
   - **Admin-only:** tree-level text (foreword and preface) and creating trees.
-  - **"This is me":** `users.person` / `person_status`, via `/api/sft/claim` and `/api/sft/review-claim`. A linked account's avatar opens their profile.
+  - **"This is me":** `users.person` / `person_status`, via `/api/sft/claim` and `/api/sft/review-claim`; the admin can also set it directly with `/api/sft/link-member {user, person}`. A linked account's avatar opens their profile.
   - **For contributors:** `/contribute` (`ContributePage`: a guide plus their suggestions), a "Help complete …'s profile" box listing gaps, pending notices on profiles, and "Send for review" buttons. Feedback goes through `lib/toast.tsx`.
   - **Rule:** never write family data with direct collection calls in the app. Scripts and the dashboard bypass review; they're logged with no request ID.
 
@@ -54,7 +54,7 @@ Origin: rebuilding and extending the family tree Jason's granddad made in the 19
 - **The app side:**
   - **`src/lib/pb.ts`:** the client plus an adapter. Pages keep the Supabase-era shapes (`person_id`, `photo_path`, `storage_path`), and `toApp`/`toPbFields` translate.
   - **Files:** refs `"media/<id>/<file>"` or `"uploads/<id>/<file>"`. `useSignedUrl(ref, thumb?)` builds URLs from one shared file token (1 h); thumbnails are `160x160` for the map and avatars, `480x0` for galleries. Run `tools/make_thumbs.pb.js` after bulk imports.
-  - **Uploads:** `uploadToTree` puts a file in `uploads`. `changes.ts` turns a media insert's upload ref into `data.upload`, and `photo_path` into the `photo` link; `hydrate()` maps stored requests back for the Review page.
+  - **Uploads:** `uploadToTree` puts a file in `uploads`. `changes.ts` turns a media insert's upload ref into `data.upload`, and `photo_path` into the `photo` link; `hydrate()` maps stored requests back for the Admin page.
   - **Accounts:** `profile.ts` reads users as profiles. Members' emails show because users `manageRule` = admin.
 - **Developing:** use a test copy of PocketBase built from a snapshot (see "Developing against a test copy" in `pocketbase/README.md`; made-up accounts; dev auto sign-in uses `VITE_PB_DEV_EMAIL/PASSWORD`). Never develop against the real server. The copy used for the switchover was deleted on 2026-11-25.
 - **Supabase:** the old project `nurkbmmacrepftlepizi` is kept untouched as a fallback for a month after the switchover (it can be un-paused within 90 days). `supabase/migrations/` is history only.

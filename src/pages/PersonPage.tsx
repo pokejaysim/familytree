@@ -120,7 +120,7 @@ export default function PersonPage() {
           <Link className="btn-ghost" to={`/trees/${treeId}/chart/${personId}`}><GitFork size={14} /> Chart</Link>
           {canEdit && <button className="btn-ghost" onClick={() => setEditing(true)}><Pencil size={14} /> {isAdmin ? 'Edit' : 'Suggest an edit'}</button>}
           {canEdit && <button className="btn-danger" title={isAdmin ? 'Delete person' : 'Suggest removing this person'} onClick={async () => {
-            if (!confirm(isAdmin ? `Delete ${name}? You can undo this from the Review page.` : `Suggest removing ${name} from the tree? ${ADMIN_NAME} will review it first.`)) return
+            if (!confirm(isAdmin ? `Delete ${name}? You can undo this from the Admin page.` : `Suggest removing ${name} from the tree? ${ADMIN_NAME} will review it first.`)) return
             const r = await send(`Remove ${name} from the tree`, [{ table: 'people', op: 'delete', key: { id: personId } }])
             if (r.status === 'approved') nav(`/trees/${treeId}/people`)
           }}><Trash2 size={14} /></button>}
@@ -230,7 +230,7 @@ function PendingNotice({ personId }: { personId: string }) {
           </li>
         ))}
       </ul>
-      {isAdmin && <Link to="/review" className="mt-2 inline-block text-[15px] text-brass underline underline-offset-4 hover:text-moss">Review now</Link>}
+      {isAdmin && <Link to="/admin" className="mt-2 inline-block text-[15px] text-brass underline underline-offset-4 hover:text-moss">Review now</Link>}
     </section>
   )
 }
