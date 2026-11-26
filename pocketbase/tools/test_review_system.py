@@ -252,5 +252,15 @@ check(u["person"] == dad and u["person_status"] == "approved", "the admin can li
 check(call("POST", "/api/sft/link-member", admin, {"user": viewer_id, "person": dad})[0] == 400, "...but not to someone another member is already linked to")
 check(call("POST", "/api/sft/link-member", admin, {"user": editor2_id, "person": None})[0] == 200 and rec("users", editor2_id)[1]["person"] == "", "the admin can clear a member's link")
 
+print("Site health")
+check(call("GET", "/api/sft/health", editor)[0] == 403, "only the admin can see site health")
+h = must(call("GET", "/api/sft/health", admin))
+check(h["totals"]["people"] >= 2 and h["storage"]["used"] and h["storage"]["site"]["free"] > 0, "site health counts people and reports disk space")
+check("password" not in json.dumps(h).lower() and "username" not in json.dumps(h).lower(), "site health returns no email login details")
+check(h["email"]["ready"] is False, "with email off, site health says email isn't set up")
+check(call("POST", "/api/sft/test-email", editor)[0] == 403, "only the admin can send a test email")
+s2, b2 = call("POST", "/api/sft/test-email", admin)
+check(s2 == 400 and "isn't set up" in str(b2), "with email off, a test email explains why it can't be sent")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)
