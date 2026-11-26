@@ -31,6 +31,7 @@ onRecordCreateRequest((e) => {
     $mails.sendRecordVerification($app, e.record)
   } catch (err) {
     console.log("sft: couldn't send the confirmation email (is email set up?)", String(err))
+    $app.logger().warn("sft: couldn't send the confirmation email", "error", String(err)) // shown on the Admin page
   }
   try {
     const meta = $app.settings().meta
@@ -48,6 +49,7 @@ onRecordCreateRequest((e) => {
     }))
   } catch (err) {
     console.log("sft: couldn't email the admins about a sign-up", String(err))
+    $app.logger().warn("sft: couldn't email the admins about a sign-up", "error", String(err)) // shown on the Admin page
   }
 }, "users")
 
@@ -110,6 +112,7 @@ routerAdd("POST", "/api/sft/contact", (e) => {
     }))
   } catch (err) {
     console.log("sft: couldn't send a Help page message", String(err))
+    $app.logger().warn("sft: couldn't send a Help page message", "error", String(err)) // shown on the Admin page
     throw new ApiError(502, "Your message couldn't be sent just now. Please try again in a few minutes.", {})
   }
   return e.json(200, { ok: true })

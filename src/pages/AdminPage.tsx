@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, KeyRound, Link2, Mail, Search, X } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, KeyRound, Link2, Mail, RefreshCw, Search, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import AppHeader from '../components/AppHeader'
 import Modal from '../components/Modal'
 import PersonPicker from '../components/PersonPicker'
+import TreeSettingsForm from '../components/TreeSettingsForm'
 import { ClaimCard, HistoryRow, RequestCard } from '../components/ReviewCards'
 import { sendAccountEmail, useIsAdmin, useLinkMember, useMembers, useReviewMember, type MemberRole, type Profile } from '../lib/profile'
 import { useRecentHistory, useReviewQueue } from '../lib/changes'
@@ -13,11 +14,13 @@ import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pb'
 import { fullName } from '../lib/dates'
 import { toast } from '../lib/toast'
+import { sendTestEmail, useSiteHealth, type SiteHealth } from '../lib/health'
 import type { Person } from '../lib/types'
 
 /**
  * The admin's one page: what's waiting (sign-ups, "this is me" requests, suggested changes),
- * everyone who has an account, and recent changes with undo. /review and /members lead here.
+ * everyone who has an account, recent changes with undo, the site's health (backups, space, email)
+ * and the tree's own settings (name, description, foreword, introduction). /review and /members lead here.
  */
 export default function AdminPage() {
   const isAdmin = useIsAdmin()
@@ -52,6 +55,8 @@ export default function AdminPage() {
               <Chip to="waiting">Waiting for you{waiting > 0 && <span className="ml-1.5 rounded-full bg-brass-light px-1.5 text-[13px] font-semibold text-moss">{waiting}</span>}</Chip>
               <Chip to="members">Members · {approved.length}</Chip>
               <Chip to="history">Recent changes</Chip>
+              <Chip to="health">Site health</Chip>
+              <Chip to="tree">Tree settings</Chip>
             </nav>
           </div>
           {error && <p className="text-danger">{error.message}</p>}
@@ -110,6 +115,24 @@ export default function AdminPage() {
               ? <p className="card text-[15px] text-ink-mute">No changes yet.</p>
               : <ul className="divide-y divide-line rounded-lg border border-line bg-white">{history.map((r) => <HistoryRow key={r.id} r={r} author={names.get(r.author_id) ?? 'A relative'} reviewer={r.reviewed_by ? names.get(r.reviewed_by) : undefined} />)}</ul>}
           </section>
+
+          <section id="health" className="scroll-mt-4 space-y-3">
+            <div>
+              <h2 className="text-[22px]">Site health</h2>
+              <p className="mt-1 text-[15px] text-ink-mute">A quick look at the home server: backups, space and email.</p>
+            </div>
+            <HealthPanel />
+          </section>
+
+          {trees?.[0] && (
+            <section id="tree" className="scroll-mt-4 space-y-3">
+              <div>
+                <h2 className="text-[22px]">Tree settings</h2>
+                <p className="mt-1 text-[15px] text-ink-mute">The name and words everyone sees on the home page and when they open the foreword. Changes show for everyone as soon as you save.</p>
+              </div>
+              <div className="card"><TreeSettingsForm key={trees[0].id} tree={trees[0]} /></div>
+            </section>
+          )}
         </div>
       </main>
     </div>
@@ -263,5 +286,109 @@ function LinkModal({ m, people, taken, onClose }: { m: Profile; people: Person[]
         {m.person_status === 'approved' && <button className="text-[15px] text-danger underline underline-offset-4" disabled={link.isPending} onClick={() => pick(null)}>Remove the link</button>}
       </div>
     </Modal>
+  )
+}
+
+const size = (n: number) => {
+  const units = ['bytes', 'KB', 'MB', 'GB', 'TB']
+  let i = 0
+  while (n >= 1000 && i < units.length - 1) { n /= 1000; i++ }
+  return `${n >= 100 || i === 0 ? Math.round(n) : n.toFixed(1)} ${units[i]}`
+}
+const moment = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+const PROBLEMS: [RegExp, string][] = [[/admins about a sign-up/, 'The email telling you about a sign-up'], [/confirmation|verification/i, 'A confirm-your-email message'], [/password reset/i, 'A password reset email'], [/test email/, 'A test email'], [/Help page message/, 'A message from the Help page']]
+const problemText = (m: string) => PROBLEMS.find(([re]) => re.test(m))?.[1] ?? 'An email'
+/** Backups run nightly; one older than this means a night was missed. */
+const STALE_HOURS = 36
+
+function HealthPanel() {
+  const isAdmin = useIsAdmin()
+  const { data: h, isLoading, error, refetch, isFetching } = useSiteHealth(isAdmin)
+  if (isLoading) return <p className="text-ink-mute">Checking…</p>
+  if (error || !h) return <p className="card text-[15px] text-danger">Couldn’t check the server: {error?.message ?? 'no answer'}</p>
+  return (
+    <div className="card divide-y divide-line py-1">
+      <Backups h={h} />
+      <Space h={h} />
+      <Email h={h} />
+      <Row ok title="In the tree">
+        <p>{h.totals.people} people, {h.totals.media} photos and files, {h.totals.sources} {h.totals.sources === 1 ? 'source' : 'sources'}, {h.totals.members} {h.totals.members === 1 ? 'member' : 'members'}.</p>
+      </Row>
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 text-[15px] text-ink-mute">
+        <span>Checked {ago(h.checkedAt)}</span>
+        <button className="btn-ghost" disabled={isFetching} onClick={() => refetch()}><RefreshCw size={15} className={isFetching ? 'motion-safe:animate-spin' : ''} /> Check again</button>
+      </div>
+    </div>
+  )
+}
+
+function Row({ ok, title, children }: { ok: boolean; title: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-3 py-3">
+      {ok ? <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-moss" aria-label="All good" /> : <AlertTriangle size={20} className="mt-0.5 shrink-0 text-danger" aria-label="Needs a look" />}
+      <div className="min-w-0 flex-1 space-y-1 text-[15px] leading-relaxed text-ink-soft">
+        <h3 className="text-[17px] text-ink">{title}</h3>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Backups({ h }: { h: SiteHealth }) {
+  const { snapshot: s, snapshotLastRunFailed: failed, builtIn: b } = h.backups
+  const hours = s?.at ? (Date.now() - Date.parse(s.at)) / 3600000 : Infinity
+  const ok = !!s?.at && hours < STALE_HOURS && !failed
+  return (
+    <Row ok={ok} title="Backups">
+      {!s ? <p>Couldn’t read the backup drive. It may be unplugged or not switched on.</p>
+        : !s.at ? <p>There are no backups on the backup drive yet.</p>
+        : <p>The last backup was made {ago(s.at)} ({moment(s.at)}) and is {size(s.bytes)}. A new one is made every night at 4:30 am, and the backup drive holds the last 30 ({s.count} there now).</p>}
+      {s?.at && hours >= STALE_HOURS && <p className="text-danger">That’s more than a day and a half ago, so a night has been missed. Something may be wrong with the nightly backup.</p>}
+      {failed && <p className="text-danger">The last nightly backup didn’t finish. The server’s notes will say why.</p>}
+      {b?.at && <p>The server also keeps its own copy, made {ago(b.at)}, on the same drive as the site ({b.keep} kept).</p>}
+    </Row>
+  )
+}
+
+function Space({ h }: { h: SiteHealth }) {
+  const { used, site, backup } = h.storage
+  const ok = !!site && site.free > 1e9 && (!backup || backup.free > 5e9)
+  return (
+    <Row ok={ok} title="Space">
+      <p>
+        {used ? `The family tree takes up ${size(used)}. ` : ''}
+        {site ? `The site’s drive has ${size(site.free)} free` : 'Couldn’t check the site’s drive'}
+        {backup ? `, and the backup drive has ${size(backup.free)} free of ${size(backup.total)}.` : '. Couldn’t check the backup drive.'}
+      </p>
+      {!ok && site && backup && <p className="text-danger">One of the drives is nearly full. Old backups or files may need clearing out.</p>}
+    </Row>
+  )
+}
+
+function Email({ h }: { h: SiteHealth }) {
+  const [busy, setBusy] = useState(false)
+  const { ready, from, problems } = h.email
+  const test = async () => {
+    setBusy(true)
+    try {
+      const r = await sendTestEmail()
+      toast('saved', 'Test email sent', `Look for it at ${r.to} in a minute or two, and check Junk if it isn’t there.`)
+    } catch (err) {
+      toast('error', 'The test email didn’t send', errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Row ok={ready && problems.length === 0} title="Email">
+      {!ready ? <p>Email isn’t set up, so nobody gets confirmation or password reset links.</p>
+        : <p>Emails come from {from}. {problems.length === 0 ? 'None failed to send in the last 30 days.' : `${problems.length} failed to send in the last 30 days:`}</p>}
+      {problems.length > 0 && (
+        <ul className="list-disc space-y-0.5 pl-5">
+          {problems.map((p, i) => <li key={i}>{problemText(p.message)}, {moment(p.at)}</li>)}
+        </ul>
+      )}
+      {ready && <button className="btn-ghost mt-2" disabled={busy} onClick={test}><Mail size={15} /> Send me a test email</button>}
+    </Row>
   )
 }

@@ -66,6 +66,8 @@ Same behaviour as the Supabase version.
   - `/api/sft/claim {person}` links your account; an admin's link applies at once, everyone else's waits.
   - `/api/sft/review-claim {user, approve}` is for the admin.
   - `/api/sft/link-member {user, person}` lets the admin link (or, with no person, unlink) a member directly.
+  - `GET /api/sft/health` (admin) reports backups, disk space, email and totals for the Admin page. It reads the snapshot folder `/mnt/PiDrive1/_pocketbase-backups` (read-only is enough, so `pocketbase.service` needs no change).
+  - `POST /api/sft/test-email` (admin) sends a test email to the signed-in admin.
   - `GET /api/sft/counts` gives the admin's badges.
 
 To test changes to the hooks:

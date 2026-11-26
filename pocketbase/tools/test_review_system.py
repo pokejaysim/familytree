@@ -268,5 +268,15 @@ check(call("POST", "/api/sft/contact", None, {**msg, "website": "spam.example"})
 tries = [call("POST", "/api/sft/contact", None, msg)[0] for _ in range(4)]
 check(429 not in tries[:3] and tries[3] == 429, "anyone can send a message, but only 3 an hour from one address")
 
+print("Site health")
+check(call("GET", "/api/sft/health", editor)[0] == 403, "only the admin can see site health")
+h = must(call("GET", "/api/sft/health", admin))
+check(h["totals"]["people"] >= 2 and h["storage"]["used"] and h["storage"]["site"]["free"] > 0, "site health counts people and reports disk space")
+check("password" not in json.dumps(h).lower() and "username" not in json.dumps(h).lower(), "site health returns no email login details")
+check(h["email"]["ready"] is False, "with email off, site health says email isn't set up")
+check(call("POST", "/api/sft/test-email", editor)[0] == 403, "only the admin can send a test email")
+s2, b2 = call("POST", "/api/sft/test-email", admin)
+check(s2 == 400 and "isn't set up" in str(b2), "with email off, a test email explains why it can't be sent")
+
 print(f"\n{results['pass']} passed, {results['fail']} failed")
 sys.exit(1 if results["fail"] else 0)
