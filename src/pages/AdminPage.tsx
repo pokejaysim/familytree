@@ -7,7 +7,7 @@ import Modal from '../components/Modal'
 import PersonPicker from '../components/PersonPicker'
 import TreeSettingsForm from '../components/TreeSettingsForm'
 import { ClaimCard, HistoryRow, RequestCard } from '../components/ReviewCards'
-import { sendAccountEmail, useIsAdmin, useLinkMember, useMembers, useReviewMember, type MemberRole, type Profile } from '../lib/profile'
+import { sendResetLink, useIsAdmin, useLinkMember, useMembers, useReviewMember, type MemberRole, type Profile } from '../lib/profile'
 import { useRecentHistory, useReviewQueue } from '../lib/changes'
 import { usePerson, useTreeData, useTrees } from '../lib/queries'
 import { useAuth } from '../lib/auth'
@@ -169,15 +169,14 @@ const ago = (iso: string) => {
 const VISITS_FROM = '2026-11-26T02:00:00Z'
 const lastHere = (m: Profile) => (m.last_seen ? ago(m.last_seen) : m.created_at > VISITS_FROM ? 'Not yet' : `Not since ${day(VISITS_FROM)}`)
 
-/** Sends one of the account emails, after checking, and says how it went. */
+/** Sends a member a password reset link, after checking, and says how it went. */
 function useSender(m: Profile) {
   const [busy, setBusy] = useState(false)
-  const send = async (kind: 'reset' | 'confirm') => {
-    const what = kind === 'reset' ? 'a password reset link' : 'a new confirm-your-email link'
-    if (!confirm(`Send ${what} to ${m.email}?`)) return
+  const send = async () => {
+    if (!confirm(`Send a password reset link to ${m.email}?`)) return
     setBusy(true)
     try {
-      await sendAccountEmail(kind, m.email)
+      await sendResetLink(m.email)
       toast('saved', 'Email sent', `It’s on its way to ${m.email}. The link works for 24 hours.`)
     } catch (err) {
       toast('error', 'Couldn’t send the email', (err as { status?: number })?.status === 429 ? 'Too many tries in a row. Wait a few seconds, then try again.' : errorMessage(err))
@@ -190,22 +189,23 @@ function useSender(m: Profile) {
 
 function JoinCard({ m }: { m: Profile }) {
   const review = useReviewMember()
-  const sender = useSender(m)
+  const who = m.name || m.email
+  // Approving emails them a "You're in" note with a link (pb_hooks/accounts.pb.js).
+  const approve = (role: MemberRole) => review.mutate({ id: m.id, status: 'approved', role }, { onSuccess: () => toast('saved', `${who} is in`, `They’ll get an email at ${m.email} to say so.`) })
   return (
     <article className="card space-y-3">
       <div>
         <p className="text-[17px] text-ink [overflow-wrap:anywhere]">{m.name || m.email}</p>
         <p className="text-[15px] text-ink-mute [overflow-wrap:anywhere]">{m.email} · signed up {day(m.created_at)}</p>
         {m.note && <p className="mt-1 text-[15px] italic text-ink-soft">“{m.note}”</p>}
-        {!m.verified && <p className="mt-1 text-[15px] text-ink-soft">They haven’t confirmed their email yet, so they can’t sign in until they do, even once you approve them.</p>}
       </div>
       {review.error && <p className="text-[15px] text-danger">{review.error.message}</p>}
       <div className="flex flex-wrap gap-2">
-        <button className="btn-primary" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}><Check size={15} /> Approve</button>
-        <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'viewer' })}>Approve as view only</button>
+        <button className="btn-primary" disabled={review.isPending} onClick={() => approve('editor')}><Check size={15} /> Approve</button>
+        <button className="btn-ghost" disabled={review.isPending} onClick={() => approve('viewer')}>Approve as view only</button>
         <button className="btn-ghost" disabled={review.isPending} onClick={() => { if (confirm(`Decline ${m.name || m.email}? They won’t be able to see the tree.`)) review.mutate({ id: m.id, status: 'declined' }) }}><X size={15} /> Decline</button>
-        {!m.verified && <button className="btn-ghost" disabled={sender.busy} onClick={() => sender.send('confirm')}><Mail size={15} /> Resend confirmation email</button>}
       </div>
+      <p className="text-[14px] text-ink-mute">Check the email looks right before approving: that’s where their “You’re in” email and any password reset links go.</p>
     </article>
   )
 }
@@ -245,16 +245,14 @@ function MemberRow({ m, isMe, people, taken }: { m: Profile; isMe: boolean; peop
         </dd>
         <dt className="text-ink-mute">Last here</dt><dd>{lastHere(m)}</dd>
         <dt className="text-ink-mute">Joined</dt><dd>{day(m.created_at)}</dd>
-        {!m.verified && <><dt className="text-ink-mute">Email</dt><dd className="text-ink-soft">Not confirmed yet, so they can’t sign in</dd></>}
       </dl>
       {review.error && <p className="mt-2 text-[15px] text-danger">{review.error.message}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {m.status === 'approved' ? <>
-          <button className="btn-ghost" disabled={sender.busy} onClick={() => sender.send('reset')}><KeyRound size={15} /> Send password reset link</button>
-          {!m.verified && <button className="btn-ghost" disabled={sender.busy} onClick={() => sender.send('confirm')}><Mail size={15} /> Resend confirmation email</button>}
+          <button className="btn-ghost" disabled={sender.busy} onClick={sender.send}><KeyRound size={15} /> Send password reset link</button>
           {!isMe && <button className="ml-auto text-[15px] text-danger underline underline-offset-4" disabled={review.isPending} onClick={() => { if (confirm(`Remove ${who}’s access? They won’t be able to see the tree. You can let them back in later.`)) review.mutate({ id: m.id, status: 'declined' }) }}>Remove access</button>}
         </> : (
-          <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' })}><Check size={15} /> Let them back in</button>
+          <button className="btn-ghost" disabled={review.isPending} onClick={() => review.mutate({ id: m.id, status: 'approved', role: 'editor' }, { onSuccess: () => toast('saved', `${who} is back in`, `They’ll get an email at ${m.email} to say so.`) })}><Check size={15} /> Let them back in</button>
         )}
       </div>
       {linking && <LinkModal m={m} people={people} taken={taken} onClose={() => setLinking(false)} />}
@@ -296,7 +294,7 @@ const size = (n: number) => {
   return `${n >= 100 || i === 0 ? Math.round(n) : n.toFixed(1)} ${units[i]}`
 }
 const moment = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
-const PROBLEMS: [RegExp, string][] = [[/admins about a sign-up/, 'The email telling you about a sign-up'], [/confirmation|verification/i, 'A confirm-your-email message'], [/password reset/i, 'A password reset email'], [/test email/, 'A test email'], [/Help page message/, 'A message from the Help page']]
+const PROBLEMS: [RegExp, string][] = [[/admins about a sign-up/, 'The email telling you about a sign-up'], [/you're-in/, 'A “You’re in” email to someone you approved'], [/confirmation|verification/i, 'A confirm-your-email message'], [/password reset/i, 'A password reset email'], [/test email/, 'A test email'], [/Help page message/, 'A message from the Help page']]
 const problemText = (m: string) => PROBLEMS.find(([re]) => re.test(m))?.[1] ?? 'An email'
 /** Backups run nightly; one older than this means a night was missed. */
 const STALE_HOURS = 36
@@ -381,7 +379,7 @@ function Email({ h }: { h: SiteHealth }) {
   }
   return (
     <Row ok={ready && problems.length === 0} title="Email">
-      {!ready ? <p>Email isn’t set up, so nobody gets confirmation or password reset links.</p>
+      {!ready ? <p>Email isn’t set up, so nobody gets “You’re in” emails or password reset links, and you don’t hear about sign-ups.</p>
         : <p>Emails come from {from}. {problems.length === 0 ? 'None failed to send in the last 30 days.' : `${problems.length} failed to send in the last 30 days:`}</p>}
       {problems.length > 0 && (
         <ul className="list-disc space-y-0.5 pl-5">

@@ -124,7 +124,17 @@ if s == 200:
     n = rec("users", b["id"])[1]
     check(n["status"] == "pending" and n["role"] == "viewer" and not n["verified"], "a new account is pending, view-only and unconfirmed, whatever the form sent")
     check(n["note"] == "I'm a cousin", "the sign-up note is kept")
-check(call("POST", "/api/collections/users/auth-with-password", body={"identity": "newcomer@example.test", "password": "longpassword1"})[0] != 200, "an unconfirmed email can't sign in")
+s2, b2 = call("POST", "/api/collections/users/auth-with-password", body={"identity": "newcomer@example.test", "password": "longpassword1"})
+check(s2 == 200, "a new member can sign in straight away (approval is the only step)")
+if s2 == 200:
+    check(call("GET", "/api/collections/people/records", b2["token"])[1].get("totalItems") == 0, "...but sees nobody until approved")
+    check(call("POST", "/api/sft/submit", b2["token"], {"tree": "x", "changes": [{"table": "people", "op": "insert", "data": {"given_names": "X"}}]})[0] == 403, "...and can't suggest changes until approved")
+check(call("POST", "/api/collections/users/auth-with-password", body={"identity": "newcomer@example.test", "password": "wrong-password"})[0] == 400, "a wrong password still doesn't work")
+s4, b4 = call("POST", "/api/collections/users/records", body={"email": "approve-me@example.test", "password": "longpassword1", "passwordConfirm": "longpassword1", "name": "Approve Me"})
+t4 = must(call("POST", "/api/collections/users/auth-with-password", body={"identity": "approve-me@example.test", "password": "longpassword1"}), "sign in approve-me")["token"]
+s3, _ = call("PATCH", f"/api/collections/users/records/{b4['id']}", admin, {"status": "approved", "role": "editor"})
+check(s3 == 200 and rec("users", b4["id"])[1]["status"] == "approved", "the admin can approve them (the you're-in email can't block it)")
+check(call("GET", "/api/collections/people/records", t4)[1].get("totalItems", 0) >= 1, "...and then they see the family without signing in again")
 check(call("GET", "/api/collections/people/records", pending)[1].get("totalItems") == 0, "a pending account sees nobody")
 check(call("GET", "/api/collections/people/records")[1].get("totalItems") == 0, "someone not signed in sees nobody")
 check(call("GET", "/api/collections/people/records", viewer)[1].get("totalItems", 0) >= 3, "an approved member sees the family")

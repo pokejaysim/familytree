@@ -16,7 +16,7 @@ export interface Profile {
   reviewed_at: string | null
   person_id: string | null
   person_status: 'pending' | 'approved' | null
-  /** They've confirmed their email address (they can't sign in until they have). */
+  /** They confirmed their email at some point (an older sign-up, or a password reset). Not needed to sign in. */
   verified: boolean
   /** Their last visit, recorded since the Admin page arrived (null before then). */
   last_seen: string | null
@@ -97,9 +97,8 @@ export function useLinkMember() {
   })
 }
 
-/** Send a member the same emails they could ask for themselves: a password reset link, or the confirm-your-email link. */
-export const sendAccountEmail = (kind: 'reset' | 'confirm', email: string) =>
-  call(kind === 'reset' ? pb.collection('users').requestPasswordReset(email) : pb.collection('users').requestVerification(email))
+/** Send a member a password reset link, the same email they could ask for themselves. */
+export const sendResetLink = (email: string) => call(pb.collection('users').requestPasswordReset(email))
 
 /** Record that the signed-in member has seen the welcome video, so it doesn't play again on any device. */
 export const markWelcomed = () => call(pb.send('/api/sft/welcomed', { method: 'POST' }))

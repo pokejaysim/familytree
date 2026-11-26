@@ -2,7 +2,6 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } fr
 import { useAuth } from './lib/auth'
 import LoginPage, { type Notice } from './pages/LoginPage'
 import { pb } from './lib/pb'
-import { ADMIN_NAME } from './config'
 import UpdatePasswordPage from './pages/UpdatePasswordPage'
 import { useEffect, useState } from 'react'
 import { markWelcomed, useMeId, useProfile } from './lib/profile'
@@ -29,7 +28,7 @@ import { Toaster, toast } from './lib/toast'
 /**
  * Links from PocketBase's emails:
  * - …/?reset=<token> (forgot password) shows the new-password page until it's saved or cancelled;
- * - …/?confirm=<token> (confirm your email) is confirmed straight away, whoever is signed in.
+ * - …/?confirm=<token> (from emails sent before sign-up was simplified) is confirmed straight away; it's no longer needed to sign in.
  * Either way the outcome becomes a notice on the sign-in page (and a toast for anyone already in).
  */
 const handledConfirmations = new Set<string>() // React's dev double-run must not use a token twice
@@ -43,8 +42,8 @@ function useEmailLinks() {
     handledConfirmations.add(confirmToken)
     const tell = (n: Notice) => { setNotice(n); toast(n.ok ? 'saved' : 'error', n.text) }
     pb.collection('users').confirmVerification(confirmToken)
-      .then(() => tell({ text: `Thanks, your email is confirmed. You can sign in now, and you’ll be able to look around once ${ADMIN_NAME} has approved your account.`, ok: true }))
-      .catch(() => tell({ text: "That confirmation link has expired or was already used. Try signing in, and ask for a new link if you need one." }))
+      .then(() => tell({ text: 'Thanks, your email is confirmed.', ok: true }))
+      .catch(() => tell({ text: 'That confirmation link is old or was already used. You don’t need it any more: just sign in.' }))
       .finally(() => setParams((p) => { p.delete('confirm'); return p }, { replace: true }))
   }, [confirmToken, setParams])
   const resetDone = (message: string) => {

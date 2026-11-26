@@ -8,7 +8,11 @@ import BrandPanel from '../components/BrandPanel'
 type Mode = 'signin' | 'signup' | 'reset'
 export type Notice = { text: string; ok?: boolean }
 
-/** `notice`: news from an email link (email confirmed, password changed), shown above the form. */
+/**
+ * Sign in, sign up, or ask for a reset link. Signing up signs you straight in: until an admin approves the
+ * account, App shows the "You're on the list" page (there's no confirm-your-email step).
+ * `notice`: news from an email link (password changed, or an older confirm link), shown above the form.
+ */
 export default function LoginPage({ notice }: { notice?: Notice }) {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
@@ -16,19 +20,20 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
   const [name, setName] = useState('')
   const [note, setNote] = useState('')
   const [msg, setMsg] = useState<Notice | null>(notice ?? null)
-  const [offerResend, setOfferResend] = useState(false)
   const [busy, setBusy] = useState(false)
   useEffect(() => { if (notice) setMsg(notice) }, [notice])
 
   const users = pb.collection('users')
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true); setMsg(null); setOfferResend(false)
+    setBusy(true); setMsg(null)
     try {
       if (mode === 'signin') { await users.authWithPassword(email, password); noteSignIn() }
       else if (mode === 'signup') {
         await users.create({ email, password, passwordConfirm: password, name, note })
-        setMsg({ text: `Check your email for a confirmation link. Once you’ve confirmed it and ${ADMIN_NAME} has approved your account, you can sign in and look around.`, ok: true })
+        // Straight in: they land on the "You're on the list" page until they're approved.
+        try { await users.authWithPassword(email, password); noteSignIn() }
+        catch { setMode('signin'); setMsg({ text: 'Your account is ready. Sign in with your email and password.', ok: true }) }
       } else {
         await users.requestPasswordReset(email)
         setMsg({ text: 'If that address has an account, a reset link is on its way.', ok: true })
@@ -39,24 +44,21 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
       if (status === 429) setMsg({ text: { signin: 'Too many tries in a row. Wait a few seconds, then try again.', signup: 'Too many sign-ups from this internet connection. Please try again in an hour.', reset: 'Too many reset emails asked for from this internet connection. Please try again in 15 minutes.' }[mode] })
       else if (status === 0) setMsg({ text: errorMessage(err) }) // couldn't reach the server
       else if (mode === 'signin') {
-        // PocketBase doesn't say which part failed: a wrong password and an unconfirmed email look the same.
-        setMsg({ text: "That email and password didn’t work. Check the email is the one you signed up with here, or use Forgot password. If you’ve just signed up, confirm your email first using the link we sent you." })
-        setOfferResend(true)
+        setMsg({ text: status === 403
+          ? `This account can’t sign in right now. Send ${ADMIN_NAME} a message from the Help page.`
+          : 'That email and password didn’t work. Check it’s the email you signed up with, or tap Forgot password.' })
+      } else if (mode === 'signup' && (err as { response?: { data?: { email?: { code?: string } } } })?.response?.data?.email?.code === 'validation_not_unique') {
+        setMsg({ text: 'There’s already an account with that email. Tap Back to sign in, or use Forgot password if you can’t remember the password.' })
       } else setMsg({ text: errorMessage(err) })
     } finally {
       setBusy(false)
     }
   }
-  const resend = async () => {
-    setOfferResend(false)
-    const limited = await users.requestVerification(email).then(() => false, (err: { status?: number }) => err?.status === 429)
-    setMsg(limited ? { text: 'Too many confirmation emails asked for from this internet connection. Please try again in 15 minutes.' } : { text: 'If that address is waiting to be confirmed, a new link is on its way.', ok: true })
-  }
 
   const title = { signin: 'Sign in', signup: 'Create your account', reset: 'Reset your password' }[mode]
   const blurb = {
     signin: 'Welcome back to the family.',
-    signup: `Family members can request an account here. ${ADMIN_NAME} approves each one before it can see the tree.`,
+    signup: `Family members can ask for an account here. ${ADMIN_NAME} approves each one before it can see the tree, and you’ll get an email when you’re in.`,
     reset: 'Enter your email and we’ll send a link to choose a new password.',
   }[mode]
 
@@ -79,13 +81,12 @@ export default function LoginPage({ notice }: { notice?: Notice }) {
           </div>
         )}
         {msg && <p role="status" className={`text-[15px] ${msg.ok ? 'text-moss' : 'text-danger'}`}>{msg.text}</p>}
-        {offerResend && email && <button type="button" className="whitespace-nowrap text-[15px] text-brass underline underline-offset-2 hover:text-moss" onClick={resend}>Send me a new confirmation link</button>}
         <button className="btn-primary w-full justify-center" disabled={busy}>{busy ? 'One moment…' : { signin: 'Sign in', signup: 'Create account', reset: 'Send reset link' }[mode]}</button>
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-2 text-[15px] text-brass">
           {mode === 'signin' ? (
             <>
-              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('signup'); setMsg(null); setOfferResend(false) }}>New here? Create an account</button>
-              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('reset'); setMsg(null); setOfferResend(false) }}>Forgot password?</button>
+              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('signup'); setMsg(null) }}>New here? Create an account</button>
+              <button type="button" className="whitespace-nowrap underline underline-offset-4 hover:text-moss" onClick={() => { setMode('reset'); setMsg(null) }}>Forgot password?</button>
             </>
           ) : (
             <button type="button" className="hover:underline" onClick={() => { setMode('signin'); setMsg(null) }}>Back to sign in</button>

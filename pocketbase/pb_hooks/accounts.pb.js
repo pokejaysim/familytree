@@ -2,8 +2,9 @@
 // Sign-ups and uploads.
 //
 // - A new account is always pending and view-only, whatever the sign-up form sends; only an
-//   admin (or the dashboard) can approve it. It gets a confirm-your-email message, and the admins
-//   get a note that someone is waiting. If email isn't set up yet, sign-up still works.
+//   admin (or the dashboard) can approve it. The admins get a note that someone is waiting.
+//   There's no confirm-your-email step: Jason's approval is the gate (see migration 1765200000).
+// - When an admin approves someone, that person gets a "You're in" email with a link to the site.
 // - Each member's last visit is noted (last_seen) for the Admin page, at most every 10 minutes.
 // - The welcome video is marked as seen (welcomed_at) so it only plays on a member's first sign-in.
 // - The Help page's message form emails the admins. Anyone can use it (people who can't sign in need
@@ -25,14 +26,8 @@ onRecordCreateRequest((e) => {
     e.record.setVerified(false)
   }
   e.next()
-  if (e.record.verified()) return
+  if (e.hasSuperuserAuth()) return // made in the dashboard: no notice needed
 
-  try {
-    $mails.sendRecordVerification($app, e.record)
-  } catch (err) {
-    console.log("sft: couldn't send the confirmation email (is email set up?)", String(err))
-    $app.logger().warn("sft: couldn't send the confirmation email", "error", String(err)) // shown on the Admin page
-  }
   try {
     const meta = $app.settings().meta
     const admins = $app.findRecordsByFilter("users", "role = 'admin' && status = 'approved'", "", 20, 0)
@@ -51,6 +46,36 @@ onRecordCreateRequest((e) => {
   } catch (err) {
     console.log("sft: couldn't email the admins about a sign-up", String(err))
     $app.logger().warn("sft: couldn't email the admins about a sign-up", "error", String(err)) // shown on the Admin page
+  }
+}, "users")
+
+// Approved (or let back in): tell them, with a link. A role change on its own doesn't send anything.
+onRecordUpdateRequest((e) => {
+  const was = e.record.original().getString("status")
+  e.next()
+  if (was === "approved" || e.record.getString("status") !== "approved") return
+  try {
+    const meta = $app.settings().meta
+    if (!meta.senderAddress) return
+    const first = (e.record.getString("name").trim().split(/\s+/)[0] || "").replace(/[<>&"]/g, "")
+    const site = meta.appURL
+    $app.newMailClient().send(new MailerMessage({
+      from: { address: meta.senderAddress, name: meta.senderName },
+      to: [{ address: e.record.email(), name: e.record.getString("name") }],
+      subject: `You're in: the ${meta.appName}`,
+      html: [
+        `<p>Hello${first ? " " + first : ""},</p>`,
+        "<p>Jason has approved your account, so you can now explore the family tree and add what you know.</p>",
+        `<p><a href="${site}" style="display:inline-block;padding:10px 18px;background:#2E4A38;color:#FAF8F3;border-radius:6px;text-decoration:none">Open the family tree</a></p>`,
+        `<p>Sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap <em>Forgot password?</em> on the sign-in page.</p>`,
+        "<p>Jason</p>",
+      ].join("\n"),
+      text: `Hello${first ? " " + first : ""},\n\nJason has approved your account, so you can now explore the family tree and add what you know:\n${site}\n\n`
+        + `Sign in with this email address (${e.record.email()}) and the password you chose. If you've forgotten it, tap "Forgot password?" on the sign-in page.\n\nJason`,
+    }))
+  } catch (err) {
+    console.log("sft: couldn't send the you're-in email", String(err))
+    $app.logger().warn("sft: couldn't send the you're-in email", "error", String(err)) // shown on the Admin page
   }
 }, "users")
 
